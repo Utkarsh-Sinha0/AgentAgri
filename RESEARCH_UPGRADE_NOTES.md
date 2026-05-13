@@ -24,6 +24,22 @@ Date: 2026-05-14
    - Product implication from the evidence above: advice should not only say what to do, but what it changes, what it depends on, and how it affects future recommendations.
    - Applied change: every persisted advisory now builds an action impact network with expected result, dependencies, risks, metric deltas, and effects on prior/future suggestions.
 
+6. Farmer-facing AI must expose context, not only chat answers.
+   - World Bank's 2025 framing favors practical Small AI that fits real farmer workflows, while the India data-infrastructure review highlights that farm decisions fail when weather, market, soil, and spatial data remain fragmented.
+   - Applied change: the PWA now defaults to a personalized farmer dashboard that combines profile completeness, active fields/crops, NDVI, weather, mandi, finance, advisories, memory, and sync status in one responsive page.
+
+7. Spatial context should be multi-scale and farmer-relevant.
+   - AgriRegion and India data-infrastructure findings both point to spatial heterogeneity: field-level advice should not be flattened into district-wide guidance.
+   - Applied change: the dashboard map now shows field/village/tehsil/district/state cluster overlays. As zoom decreases, nearby farmer-risk overlays merge level by level, and the selected popup explains what that cluster means for the farmer's current field/crop.
+
+8. Weather data should drive both advice and interface state.
+   - NASA POWER and IMD-style data make weather a first-class operational input, not a passive label.
+   - Applied change: the dashboard builds a weather skin from current forecast plus local IST day/night state, so the farmer page visually reflects sunny, cloudy, rain, storm, or night conditions while still keeping the UI readable.
+
+9. Continuity requires server memory plus device-local cache.
+   - For low-connectivity farmers, cloud-only state is brittle; for safety and personalization, device-only state is insufficient.
+   - Applied change: the dashboard payload includes a server sync marker and the PWA stores the latest farmer dashboard in localStorage, allowing the farmer to resume context while keeping authoritative memory on the server.
+
 ## Implemented Modules
 
 - `app/models_memory.py`
@@ -48,12 +64,27 @@ Date: 2026-05-14
   - `/api/farmers/{farmer_id}/conversation`
   - `/api/advisories/{advisory_id}/impact-network`
   - `/api/impact-network`
+  - `/api/farmer-dashboard`
+  - `/api/farmers/{farmer_id}/profile`
   - stats now include conversation and impact counts
 
 - `pwa/src/main.jsx`
+  - farmer-first dashboard mode
+  - weather-aware page skin
+  - field/crop/NDVI, money, memory, and profile views
+  - multi-scale cluster map overlays
+  - local dashboard cache for offline resume
   - new Impact tab
   - action consequence cards
   - conversation graph readiness signal
+
+- `app/services/farmer_dashboard.py`
+  - dashboard aggregation service for farmer profile, fields, crop cycles, crop tasks, weather, mandi, finance, memory, advisories, cluster overlays, and sync metadata
+
+- `app/bot/telegram_bot.py`
+  - `/dashboard` command
+  - dashboard URL button after advisory
+  - clearer command buttons that describe what each action will do
 
 ## Sources Used
 

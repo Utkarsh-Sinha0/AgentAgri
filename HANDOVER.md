@@ -56,7 +56,7 @@ AgriMesh V4.0 is a **local-first, AI-powered agricultural intelligence agent** f
 | Grammar schemas | **5** |
 | Telegram commands | **24** |
 | Registered sources | **10** (6 official + 4 tool) |
-| Tests | **33 passing** |
+| Tests | **37 passing** |
 | Target VRAM | ~8.9 GB / 12 GB (74%) |
 | Target latency | p50 ≤ 3.5s, p95 ≤ 6.0s |
 
@@ -295,6 +295,9 @@ evals/
 | `source_documents` | Registered evidence sources | source_name, source_type, trust_level, freshness_ttl_hours |
 | `source_citations` | Advisory-to-source links | advisory_id, source_document_id, evidence_snapshot |
 | `farmer_profiles` | Extended farmer characteristics | farm_size_acres, irrigation_source, equipment, budget, scheme enrollment |
+| `conversation_threads` | Durable per-farmer/field/crop conversations | farmer_id, field_id, crop_cycle_id, title, last_turn_at |
+| `conversation_turns` | Stored farmer/assistant/tool turns | thread_id, role, content, evidence_article_ids |
+| `action_impacts` | Action consequence graph | advisory_id, action_index, expected_result, dependencies, metric_deltas |
 
 ### Relationship Types (9)
 
@@ -629,28 +632,26 @@ No silent "first field" fallback unless the farmer has only one field/crop.
 ┌─────────────────────────────────────────────────┐
 │  🌾 AgriMesh V4.0    Extension Worker Dashboard │
 ├─────────────────────────────────────────────────┤
-│  [Clusters] [Memory] [Sources] [Eval]                       │
+│  Farmer mode: [Overview] [Fields] [Map] [Money] [Memory]     │
+│  Extension mode: [Clusters] [Memory] [Impact] [Sources] [Eval]│
 │                                                  │
-│  Tab 1: Alert Clusters                           │
-│  - Pending clusters sorted by severity            │
-│  - Broadcast message composer                     │
-│  - Approve/Dismiss actions                        │
-│  - Farmer count, crop, district, severity badge   │
+│  Farmer Overview                                │
+│  - Weather/day-night visual skin for current field             │
+│  - Profile completeness questions                              │
+│  - Active crop status, next tasks, advisory cards              │
 │                                                  │
-│  Tab 2: Living Memory                            │
-│  - Real memory summaries from /api/memory/summaries          │
-│  - Field/village/tehsil/district/state/national scales        │
-│  - Privacy/public boundary indicators                         │
+│  Farmer Map                                     │
+│  - Field/village/tehsil/district/state cluster merge overlays  │
+│  - Popup explains relevance to selected farmer/crop            │
+│  - Responsive no-dependency map visualization                  │
 │                                                  │
-│  Tab 3: Source Registry                          │
-│  - Official vs seeded sources                    │
-│  - Trust level and freshness badges              │
-│  - Evidence readiness for demo                   │
+│  Farmer Money + Memory                          │
+│  - P&L, category spend bars, mandi signal                      │
+│  - Conversation threads and action impact network              │
+│  - localStorage cache plus server sync marker                  │
 │                                                  │
-│  Tab 4: Eval Dashboard                           │
-│  - Faithfulness, Relevancy, Schema Validity       │
-│  - Safety Pass Rate, Latency p50/p95              │
-│  - Run timestamp, model info, grammar status      │
+│  Extension Console                              │
+│  - Cluster review, memory summaries, impact, sources, eval     │
 │                                                  │
 └─────────────────────────────────────────────────┘
 ```
@@ -660,7 +661,7 @@ No silent "first field" fallback unless the farmer has only one field/crop.
 - Source-owned **shadcn/ui-style primitives**: Button, Card, Badge, Input, Tabs
 - **lucide-react** icons for dashboard controls and status
 - **Vite** (build tool)
-- Minimal light operational theme with CSS custom properties
+- Farmer-first responsive theme with weather skins and operational extension mode
 - Restrictive CSP in the built PWA
 
 ---
@@ -920,7 +921,10 @@ USE_GRAMMAR_DECODING=1
 - Graph-Wiki with 11 articles + 9 relationship types
 - 4 MCP servers (weather, mandi, scheme, finance)
 - 24 Telegram commands + structured data capture
-- PWA dashboard (4 tabs: clusters, memory, sources, eval)
+- PWA dashboard (farmer mode plus extension mode)
+- Farmer-first personalized dashboard with weather skin, cluster map, finance, memory, and local cache
+- Telegram `/dashboard` deep link into the farmer page
+- Durable conversation memory and action impact network
 - 6-level degradation ladder + circuit breaker
 - Living memory system (extract, coarsen, traverse)
 - Evidence/source registry (10 sources)
@@ -930,7 +934,7 @@ USE_GRAMMAR_DECODING=1
 - Pattern discovery (nightly batch)
 - Eval harness (15 golden queries, 6 metrics)
 - Security (Argon2id, rate limiting, privacy manager)
-- 33 passing tests
+- 37 passing tests
 - Docker + docker-compose
 - Alembic migrations
 - pyproject.toml (Ruff + pytest + coverage)

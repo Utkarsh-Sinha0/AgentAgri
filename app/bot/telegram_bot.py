@@ -70,16 +70,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "2. /register — अपना पंजीकरण करें\n"
         "3. /field — अपना खेत पंजीकृत करें\n"
         "4. /crop — अपनी फसल की जानकारी दें\n"
-        "5. फोटो भेजें या समस्या लिखें 📸\n\n"
+        "5. /dashboard — निजी खेत डैशबोर्ड खोलें\n"
+        "6. फोटो भेजें या समस्या लिखें 📸\n\n"
         "📞 किसान कॉल सेंटर: 1800-180-1551"
     )
 
     keyboard = [
-        [InlineKeyboardButton("⚡ डेमो चालू करें / Start Demo", callback_data="cmd_demo")],
-        [InlineKeyboardButton("📝 रजिस्टर / Register", callback_data="cmd_register")],
-        [InlineKeyboardButton("🌱 फसल / Crop", callback_data="cmd_crop")],
-        [InlineKeyboardButton("📸 फोटो भेजें / Send Photo", callback_data="cmd_photo")],
-        [InlineKeyboardButton("ℹ️ सहायता / Help", callback_data="cmd_help")],
+        [InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")],
+        [InlineKeyboardButton("🧭 Dashboard: map, weather, money, memory", url=_dashboard_url(phone=user_id))],
+        [InlineKeyboardButton("📝 Register: save farmer profile", callback_data="cmd_register")],
+        [InlineKeyboardButton("🌱 Crop: set active field crop", callback_data="cmd_crop")],
+        [InlineKeyboardButton("📸 Photo: diagnose crop symptoms", callback_data="cmd_photo")],
+        [InlineKeyboardButton("ℹ️ Help: commands and what they do", callback_data="cmd_help")],
     ]
 
     await update.message.reply_text(
@@ -229,11 +231,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "cmd_help":
         await query.message.reply_text(
             "ℹ️ सहायता / Help\n\n"
-            "/register — किसान पंजीकरण\n"
-            "/field — खेत पंजीकरण\n"
-            "/crop — फसल जानकारी\n"
-            "/prices — मंडी भाव\n"
-            "/finance — खेत का हिसाब\n\n"
+            "/dashboard — निजी वेब पेज: मौसम बैकग्राउंड, खेत, map clusters, finance, memory\n"
+            "/register — किसान पंजीकरण और server-side profile\n"
+            "/profile set — पानी, बजट, बीमा, मंडी, risk preference जैसी जानकारी जोड़ें\n"
+            "/field — खेत पंजीकरण: area, soil, irrigation\n"
+            "/crop — active crop और stage set करें\n"
+            "/prices — मंडी भाव + MSP context\n"
+            "/finance — खर्च/बिक्री और profit-loss\n"
+            "/memory — पुराने field context और patterns देखें\n"
+            "/why — advice के evidence और verifier देखें\n\n"
             "फसल की समस्या लिखें या फोटो भेजें।"
         )
     elif data == "cmd_photo":
@@ -656,6 +662,12 @@ async def _process_farmer_query(
             keyboard.append([
                 InlineKeyboardButton("📋 साक्ष्य / Evidence", callback_data="show_evidence"),
             ])
+        keyboard.append([
+            InlineKeyboardButton(
+                "🧭 Personal dashboard / खेत पेज",
+                url=_dashboard_url(farmer_id=farmer.id),
+            )
+        ])
         if response.verifier_report and response.verifier_report.passes_all:
             keyboard.append([
                 InlineKeyboardButton("✅ सत्यापित / Verified", callback_data="show_verifier"),
@@ -1441,6 +1453,34 @@ async def why_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
 
 
+async def dashboard_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /dashboard — open personalized farmer PWA."""
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+    farmer_id = state.get("farmer_id")
+    if not farmer_id:
+        async with async_session_factory() as db:
+            farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
+            farmer_id = farmer.id if farmer else ""
+    url = _dashboard_url(farmer_id=farmer_id, phone=user_id if not farmer_id else None)
+    await update.message.reply_text(
+        "🧭 *आपका AgriMesh Dashboard*\n\n"
+        "यह पेज दिखाएगा: field weather, crop stage, NDVI, nearby clusters, मंडी, finance, memory, और पुराने सवालों का context.\n"
+        "फोन में cache रहेगा ताकि कमजोर network में भी आखिरी data दिखे।",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Open dashboard", url=url)]]),
+    )
+
+
+def _dashboard_url(farmer_id: str | None = None, phone: str | None = None) -> str:
+    base = settings.dashboard_base_url.rstrip("/")
+    if farmer_id:
+        return f"{base}/?mode=farmer&farmer_id={farmer_id}"
+    if phone:
+        return f"{base}/?mode=farmer&phone={phone}"
+    return f"{base}/?mode=farmer"
+
+
 async def sources_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /sources — show source freshness dashboard."""
     await update.message.send_chat_action(ChatAction.TYPING)
@@ -1547,6 +1587,7 @@ def create_bot() -> Application:
     app.add_handler(CommandHandler("sale", sale_command))
     app.add_handler(CommandHandler("finance", finance_command))
     app.add_handler(CommandHandler("memory", memory_command))
+    app.add_handler(CommandHandler("dashboard", dashboard_command))
     app.add_handler(CommandHandler("why", why_command))
     app.add_handler(CommandHandler("sources", sources_command))
     app.add_handler(CommandHandler("feedback", feedback_command))

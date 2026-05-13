@@ -39,6 +39,29 @@ class ClusterReviewRequest(BaseModel):
     broadcast_message: str = PydanticField(default="", max_length=1200)
 
 
+class FarmerProfileUpdate(BaseModel):
+    farm_size_acres: float | None = None
+    irrigation_source: str | None = None
+    water_reliability: str | None = None
+    soil_test_status: str | None = None
+    primary_soil_type: str | None = None
+    equipment_access: list[str] | str | None = None
+    labor_availability: str | None = None
+    storage_access: str | None = None
+    transport_access: str | None = None
+    annual_budget_rs: int | None = None
+    risk_tolerance: str | None = None
+    credit_access: str | None = None
+    insurance_status: str | None = None
+    organic_preference: bool | None = None
+    preferred_mandis: list[str] | str | None = None
+    nearest_mandi_km: float | None = None
+    pm_kisan_enrolled: bool | None = None
+    pmfby_enrolled: bool | None = None
+    kcc_holder: bool | None = None
+    soil_health_card: bool | None = None
+
+
 # ─── Lifespan ─────────────────────────────────────────────────────────
 
 @asynccontextmanager
@@ -286,6 +309,42 @@ async def farmer_advisories(
             for a in advisories
         ],
     }
+
+
+@app.get("/api/farmer-dashboard")
+async def current_farmer_dashboard(
+    farmer_id: str | None = None,
+    phone: str | None = None,
+    db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_api_key),
+):
+    """Complete farmer-facing dashboard payload for the PWA."""
+    from app.services.farmer_dashboard import get_farmer_dashboard
+
+    data = await get_farmer_dashboard(db, farmer_id=farmer_id, phone=phone)
+    if data.get("error") == "farmer_not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farmer not found")
+    return data
+
+
+@app.put("/api/farmers/{farmer_id}/profile")
+async def update_farmer_profile(
+    farmer_id: str,
+    request: FarmerProfileUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_api_key),
+):
+    """Update the farmer profile questionnaire answers."""
+    from app.services.farmer_dashboard import upsert_farmer_profile
+
+    result = await upsert_farmer_profile(
+        db,
+        farmer_id=farmer_id,
+        payload=request.model_dump(exclude_unset=True),
+    )
+    if result.get("error") == "farmer_not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farmer not found")
+    return result
 
 
 @app.get("/api/farmers/{farmer_id}/conversation")

@@ -52,6 +52,7 @@ class Settings(BaseSettings):
 
     # ─── Telegram ─────────────────────────
     telegram_bot_token: str = Field(default="", alias="TELEGRAM_BOT_TOKEN")
+    dashboard_base_url: str = Field(default="http://localhost:8000", alias="AGRIMESH_DASHBOARD_BASE_URL")
 
     # ─── MCP Ports ────────────────────────
     mcp_weather_port: int = Field(default=9001, alias="MCP_WEATHER_PORT")

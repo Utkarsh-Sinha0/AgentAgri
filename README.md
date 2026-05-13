@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-33%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-37%20passed-brightgreen)](tests/)
 [![Kaggle](https://img.shields.io/badge/kaggle-gemma--4--good--hackathon-orange)](https://kaggle.com)
 
 ---
@@ -94,8 +94,8 @@ Extension worker sees: Cluster of 3 similar reports in Munger Block
 | 💰 **Farm Finance** | Expense tracking, revenue logging, automated P&L calculation |
 | 🚨 **Community Alerts** | 6-factor similarity clustering across farms, extension worker review |
 | 🧠 **Memory Palace** | 7-scale hierarchical memory: Field → Village → Tehsil → District → State → National → International |
-| 📱 **Telegram Bot** | 11 slash commands, photo upload, structured data capture |
-| 🖥️ **PWA Dashboard** | Extension worker cluster review, eval metrics, memory visualization |
+| 📱 **Telegram Bot** | Slash commands, photo upload, structured data capture, farmer dashboard deep link |
+| 🖥️ **PWA Dashboard** | Personalized farmer dashboard plus extension worker cluster review, eval metrics, memory visualization |
 
 ---
 
@@ -378,7 +378,7 @@ Visit:
 
 ```bash
 make help          # Show all commands
-make test          # Run 32 tests
+make test          # Run 37 tests
 make eval          # Run eval harness on golden queries
 make run-bot       # Start Telegram bot only
 make run-api       # Start FastAPI server only
@@ -405,7 +405,8 @@ Then in Telegram:
 2. Send `/memory` to show prior observations, outcomes, and NDVI trend.
 3. Send `/prices` to show seeded mandi/MSP intelligence.
 4. Send `/finance` to show the demo farm ledger.
-5. Send `pattiyon pe brown spots hain` or a crop photo to exercise local Gemma 4 advisory, retrieval, memory context, verifier, and evidence cards.
+5. Send `/dashboard` to open the farmer's personal web page with weather skin, field map clusters, NDVI, finance, memory, and advisories.
+6. Send `pattiyon pe brown spots hain` or a crop photo to exercise local Gemma 4 advisory, retrieval, memory context, verifier, and evidence cards.
 
 The demo memory palace is seeded from `data/seed/memory_palace.json`: soil-test history, brown-spot follow-up, stem-borer scouting, fungicide safety, mandi/MSP planning, farm expenses, NDVI history, and a community alert cluster.
 
@@ -424,6 +425,7 @@ ALLOWED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
 ALLOWED_HOSTS=localhost,127.0.0.1
 AGRIMESH_REQUIRE_API_KEY=false
 AGRIMESH_API_KEY=change-this-before-production
+AGRIMESH_DASHBOARD_BASE_URL=http://localhost:8000
 ```
 
 For production, set `APP_ENV=production`, restrict `ALLOWED_ORIGINS` and `ALLOWED_HOSTS` to the deployed domains, and set a strong `AGRIMESH_API_KEY`. API routes then require `X-AgriMesh-API-Key`; `/health` remains unauthenticated for platform health checks.
@@ -478,7 +480,8 @@ agrimesh/
 │   │   ├── weather.py       # Seeded weather data (IMD-compatible API)
 │   │   ├── mandi.py         # Seeded mandi prices (agmarknet format)
 │   │   ├── scheme.py        # 5 government schemes (PM-KISAN, etc.)
-│   │   └── finance.py       # Expense/revenue/P&L tracking
+│   │   ├── finance.py       # Expense/revenue/P&L tracking
+│   │   └── farmer_dashboard.py # Farmer profile, weather, map, money, memory payload
 │   │
 │   ├── mcp_servers/         # 4 FastMCP servers
 │   │   ├── weather_server.py
@@ -516,14 +519,15 @@ agrimesh/
 ├── evals/
 │   └── golden_queries.jsonl # 15 golden eval queries
 │
-├── tests/                   # 32 passing tests
+├── tests/                   # 37 passing tests
 │   ├── test_e4b_grammar.py  # Schema validation + safety + verifier
 │   ├── test_retrieval.py    # SQL filter + keyword retrieval
 │   ├── test_agent_e2e.py    # Agent pipeline with mocks
 │   ├── test_api_security.py # API key, validation, degradation health
-│   └── test_demo_seed.py    # Demo memory-palace idempotency
+│   ├── test_demo_seed.py    # Demo memory-palace idempotency
+│   └── test_farmer_dashboard.py # Personalized dashboard + profile upsert
 │
-├── pwa/                     # React + shadcn-style PWA (extension worker dashboard)
+├── pwa/                     # React PWA (farmer dashboard + extension console)
 │   ├── src/main.jsx
 │   ├── index.html
 │   └── vite.config.js
@@ -828,6 +832,7 @@ async def compute_pnl(farmer_id, crop_cycle_id) -> dict: ...
 | `/sale` | Log harvest sale |
 | `/finance` | View Profit & Loss |
 | `/memory` | View field history + NDVI trend |
+| `/dashboard` | Open personal farmer web page from Telegram |
 | `/health` | System health check |
 | 📸 Photo | Crop photo analysis |
 
@@ -839,25 +844,29 @@ Before hitting the LLM, the bot checks for structured patterns:
 
 Zero LLM cost for financial tracking.
 
-### PWA Dashboard (Extension Workers)
+### PWA Dashboard (Farmer + Extension Worker)
 
 ```
 ┌─────────────────────────────────────────────┐
-│  AgriMesh V4.0      Extension Worker        │
+│  AgriMesh V4.0      Farmer Intelligence     │
 │─────────────────────────────────────────────│
-│  [Clusters] [Memory] [Sources] [Eval]       │
+│  [Overview] [Fields] [Map] [Money] [Memory] │
 │                                             │
-│  Farmers · Advisories · Memory · Sources    │
-│  Cluster review queue                       │
-│  Living memory scale summaries              │
-│  Official/seeded source freshness           │
-│  Eval metrics and latency gates             │
+│  Weather-aware background for field time     │
+│  Profile completeness and questions          │
+│  Field/crop/NDVI/action dashboard            │
+│  Cluster map that merges as zoom changes     │
+│  Local cache for offline resume              │
 └─────────────────────────────────────────────┘
 ```
 
-The PWA is now a React/Vite dashboard using source-owned shadcn-style primitives
-(`Button`, `Card`, `Badge`, `Input`, `Tabs`) and lucide icons. It keeps a minimal
-operational layout for extension workers rather than a marketing-style landing page.
+The PWA defaults to the farmer dashboard and accepts `?farmer_id=...` or
+`?phone=...` links from Telegram. It renders a weather/day-night skin, next
+actions, field-level crop status, NDVI trend, mandi/finance signals, durable
+conversation memory, and a no-dependency map overlay. Cluster pins merge from
+field → village → tehsil → district → state as zoom changes; selecting a cluster
+opens farmer-relevant insights for the current field/crop. The previous
+extension-worker console remains available with `?mode=extension`.
 
 ---
 
@@ -990,7 +999,13 @@ Protected API routes require `X-AgriMesh-API-Key` when `APP_ENV=production` or `
 ### Farmer
 
 ```http
+GET /api/farmer-dashboard?farmer_id={id}
+GET /api/farmer-dashboard?phone={phone}
+PUT /api/farmers/{farmer_id}/profile
 GET /api/farmers/{farmer_id}/advisories?limit=20
+GET /api/farmers/{farmer_id}/conversation
+GET /api/advisories/{advisory_id}/impact-network
+GET /api/impact-network
 ```
 
 ### Eval Dashboard
@@ -1054,7 +1069,11 @@ http://localhost:8000/redoc (ReDoc)
 - [x] 4 MCP servers (weather, mandi, scheme, finance)
 - [x] Telegram bot (11 commands + photo analysis)
 - [x] `/demo` Telegram flow with seeded farm memory palace, finance, NDVI, and alert cluster
-- [x] PWA dashboard (extension workers)
+- [x] PWA dashboard (farmer personalized mode + extension worker mode)
+- [x] Telegram `/dashboard` deep link into farmer page
+- [x] Weather/day-night dashboard backgrounds
+- [x] Field/village/tehsil/district/state cluster map merge overlays
+- [x] Durable conversation memory and action impact network
 - [x] 6-level degradation ladder
 - [x] 4-line anti-hallucination defense
 - [x] Golden-query eval harness
