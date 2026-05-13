@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Safety Check",
+  "description": "LLM self-grading safety classifier for advisory outputs.",
+  "type": "object",
+  "properties": {
+    "is_dangerous": {
+      "type": "boolean",
+      "description": "Does the text contain dangerous advice?"
+    },
+    "danger_category": {
+      "type": "string",
+      "enum": ["none", "chemical_dosage", "medical_guarantee", "scheme_promise", "unsafe_practice", "other"],
+      "description": "Category of danger, if any"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Brief explanation of the safety determination",
+      "maxLength": 200
+    }
+  },
+  "required": ["is_dangerous", "danger_category"],
+  "additionalProperties": false
+}

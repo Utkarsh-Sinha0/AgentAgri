@@ -1,0 +1,28 @@
+{
+  "id": "wiki_nitrogen_excess",
+  "title": "Nitrogen Excess and Crop Susceptibility",
+  "title_hi": "नाइट्रोजन की अधिकता और फसल संवेदनशीलता",
+  "content": "Excessive nitrogen application, particularly urea top-dressing, increases crop susceptibility to multiple fungal diseases including rice blast, sheath blight, and bacterial leaf blight.\n\nMechanism: High nitrogen promotes lush, succulent tissue with thinner cell walls and higher free amino acid content in leaves, which serves as food for pathogens. It also creates a dense canopy microclimate with higher humidity — ideal for fungal spore germination.\n\nSymptoms of nitrogen excess: Dark green, overly lush foliage. Lodging (plants falling over). Delayed maturity. Increased disease incidence.\n\nRecommendation: Follow the 4R principle — Right source, Right rate, Right time, Right place. For rice, split nitrogen application: 50% at transplanting, 25% at tillering, 25% at panicle initiation. Use Leaf Color Chart (LCC) to determine if additional nitrogen is needed — if LCC value is 4 or above, do NOT apply more nitrogen.",
+  "content_hi": "नाइट्रोजन का अधिक प्रयोग, विशेषकर यूरिया की टॉप-ड्रेसिंग, फसल को कई फफूंद जनित रोगों के प्रति संवेदनशील बनाता है।\n\nलक्षण: गहरे हरे, अत्यधिक घने पत्ते। पौधों का गिरना। परिपक्वता में देरी।\n\nसिफारिश: नाइट्रोजन का विभाजित प्रयोग करें। लीफ कलर चार्ट (LCC) का उपयोग करें।",
+  "summary": "Excess nitrogen makes crops vulnerable to fungal diseases. Use split application and Leaf Color Chart to optimize nitrogen use.",
+  "summary_hi": "अधिक नाइट्रोजन फसलों को फफूंद रोगों के प्रति संवेदनशील बनाती है। नाइट्रोजन का विभाजित प्रयोग करें।",
+  "applicable_crops": [],
+  "applicable_stages": ["vegetative", "flowering"],
+  "topic_tags": ["nutrient_deficiency", "nitrogen", "fertilizer"],
+  "risk_level": "WATCH",
+  "causes_of": ["wiki_rice_blast", "wiki_rice_sheath_blight"],
+  "aggravated_by": [],
+  "prevented_by": ["wiki_balanced_fertilizer"],
+  "confused_with": [],
+  "actions": [
+    "Stop urea/nitrogen top-dressing immediately if Leaf Color Chart (LCC) reading is 4 or above.",
+    "Switch to split nitrogen application: apply in 3 splits (50% basal, 25% at tillering, 25% at panicle initiation).",
+    "Use a Leaf Color Chart (available at KVK for ~₹10) before every nitrogen application.",
+    "Drain the field for 2-3 days to reduce nitrogen uptake rate.",
+    "Apply muriate of potash (MOP) at 40 kg/ha to improve plant resistance."
+  ],
+  "warnings": [
+    "Do NOT apply urea within 3 days of rain — most of it will be lost to runoff/volatilization.",
+    "Lush dark green leaves are a warning sign, not a good sign. They attract pests and diseases."
+  ]
+}

@@ -1,0 +1,45 @@
+[project]
+name = "agrimesh"
+version = "4.0.0"
+description = "AI Agricultural Advisory for Smallholder Farmers — Gemma 4 E4B + RAG + MCP"
+requires-python = ">=3.11"
+license = {text = "Apache-2.0"}
+readme = "README.md"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501", # line too long (handled by formatter)
+    "B008", # do not perform function calls in argument defaults
+    "N818", # exception names should end with Error
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --tb=short --cov=app --cov-report=term-missing"
+
+[tool.coverage.run]
+omit = ["tests/*", "venv/*", "scripts/*"]
+
+[tool.alembic]
+script_location = "alembic"
+sqlalchemy.url = "sqlite:///./data/agrimesh.db"

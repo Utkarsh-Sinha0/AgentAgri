@@ -1,0 +1,24 @@
+{
+  "rice": {
+    "paddy_basmati": {"min": 2200, "max": 2800, "modal": 2500, "unit": "₹/quintal"},
+    "paddy_common": {"min": 1950, "max": 2300, "modal": 2150, "unit": "₹/quintal"},
+    "msp_2025_26": 2300
+  },
+  "wheat": {
+    "grain": {"min": 2350, "max": 2650, "modal": 2500, "unit": "₹/quintal"},
+    "msp_2025_26": 2425
+  },
+  "maize": {
+    "grain": {"min": 2000, "max": 2400, "modal": 2200, "unit": "₹/quintal"},
+    "msp_2025_26": 2225
+  },
+  "pulses": {
+    "moong": {"min": 8000, "max": 9500, "modal": 8700, "unit": "₹/quintal"},
+    "arhar": {"min": 7500, "max": 9000, "modal": 8300, "unit": "₹/quintal"},
+    "msp_2025_26_moong": 8682,
+    "msp_2025_26_arhar": 7550
+  },
+  "last_updated": "2026-05-12",
+  "source": "seeded — agmarknet.gov.in compatible format",
+  "mandis_tracked": ["Munger", "Bhagalpur", "Patna", "Begusarai", "Khagaria"]
+}

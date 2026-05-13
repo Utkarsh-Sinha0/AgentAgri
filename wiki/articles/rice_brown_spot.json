@@ -1,0 +1,28 @@
+{
+  "id": "wiki_rice_brown_spot",
+  "title": "Rice Brown Spot (Bipolaris oryzae)",
+  "title_hi": "धान का भूरा धब्बा रोग",
+  "content": "Brown spot is caused by Bipolaris oryzae (Helminthosporium oryzae). It is strongly associated with nutrient-deficient soils, particularly low potassium and silicon.\n\nSymptoms: Oval to round brown spots on leaves, often with a yellow halo. Spots can coalesce, causing leaf drying. On grains, black discoloration at the embryo end (pecky rice).\n\nFavorable conditions: Poor soil fertility, especially potassium deficiency. High relative humidity (85%+). Temperatures 25-33°C. Water stress or drought predisposes plants.\n\nManagement: Soil testing and balanced fertilization are critical. Apply potash (MOP) at 40-60 kg/ha if soil potassium is low. Silicon application (calcium silicate 200 kg/ha) reduces severity. Seed treatment with carbendazim 2g/kg seed. Foliar spray of mancozeb 2.5g/L at disease onset. Always verify dosage with your local KVK.",
+  "content_hi": "भूरा धब्बा रोग Bipolaris oryzae से होता है। यह पोषक तत्वों की कमी वाली मिट्टी, विशेषकर पोटाश की कमी से जुड़ा है।\n\nलक्षण: पत्तियों पर अंडाकार भूरे धब्बे, पीले घेरे के साथ। दानों पर काला रंग।\n\nप्रबंधन: मिट्टी परीक्षण करवाएं। पोटाश उर्वरक का प्रयोग करें। सिलिकॉन का प्रयोग लाभदायक है।",
+  "summary": "Brown spot is a fungal disease of rice linked to potassium-deficient soils. Produces oval brown leaf spots with yellow halos.",
+  "summary_hi": "भूरा धब्बा धान का एक फफूंद जनित रोग है जो पोटाश की कमी वाली मिट्टी में होता है। पत्तियों पर पीले घेरे वाले भूरे धब्बे बनते हैं।",
+  "applicable_crops": ["rice"],
+  "applicable_stages": ["seedling", "vegetative", "flowering"],
+  "topic_tags": ["fungal_disease", "nutrient_deficiency", "rice"],
+  "risk_level": "WATCH",
+  "causes_of": [],
+  "aggravated_by": ["wiki_potassium_deficiency", "wiki_water_stress"],
+  "prevented_by": ["wiki_balanced_fertilizer", "wiki_soil_testing"],
+  "confused_with": ["wiki_rice_blast"],
+  "actions": [
+    "Get your soil tested at the nearest Krishi Vigyan Kendra (KVK) or Soil Testing Lab to check potassium levels.",
+    "Apply Muriate of Potash (MOP) at the rate recommended by your soil test report (typically 40-60 kg/ha for deficient soils).",
+    "Apply calcium silicate at 200 kg/ha if available — silica strengthens rice against brown spot.",
+    "For seed treatment in the next season: treat seeds with carbendazim 2g per kg of seed before sowing.",
+    "Ensure proper water management — alternate wetting and drying reduces disease pressure better than continuous flooding."
+  ],
+  "warnings": [
+    "Brown spot symptoms overlap with blast. Check: brown spot lesions are oval with yellow halo; blast lesions are diamond-shaped with gray center.",
+    "Do NOT skip soil testing — applying fertilizers without knowing soil nutrient status can worsen the problem."
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "id": "wiki_wheat_rust",
+  "title": "Wheat Rust Disease (Puccinia species)",
+  "title_hi": "गेहूं का रतुआ/रस्ट रोग",
+  "content": "Wheat rust is caused by three Puccinia species: Stem Rust (P. graminis), Leaf Rust (P. triticina), and Stripe/Yellow Rust (P. striiformis). Rust can cause 30-100% yield loss if unchecked.\n\nSymptoms: Stem rust — reddish-brown pustules on stems and leaves. Leaf rust — small orange-brown pustules on leaves only. Stripe rust — yellow stripes of pustules along leaf veins.\n\nFavorable conditions: Stem rust (warm 25-30°C, high humidity). Leaf rust (15-22°C, dew). Stripe rust (cool 10-15°C, high elevation areas).\n\nManagement: Plant resistant varieties. Early sowing (before Nov 15 in North India). Avoid excess nitrogen. Foliar spray of propiconazole 25 EC at 0.1% at first sign of pustules. Always follow label instructions.",
+  "content_hi": "गेहूं का रतुआ तीन प्रकार का होता है: तना रतुआ, पत्ता रतुआ, और पीला/धारीदार रतुआ।\n\nलक्षण: लाल-भूरे फफोले तनों और पत्तियों पर।\n\nप्रबंधन: प्रतिरोधी किस्में लगाएं। जल्दी बुवाई करें। नाइट्रोजन की अधिकता से बचें।",
+  "summary": "Wheat rust (stem, leaf, stripe) causes reddish-brown pustules. Plant resistant varieties, sow early, avoid excess nitrogen.",
+  "summary_hi": "गेहूं का रतुआ लाल-भूरे फफोले पैदा करता है। प्रतिरोधी किस्में लगाएं, जल्दी बुवाई करें।",
+  "applicable_crops": ["wheat"],
+  "applicable_stages": ["vegetative", "flowering", "fruiting"],
+  "topic_tags": ["fungal_disease", "wheat", "rust"],
+  "risk_level": "PREVENTIVE_ACTION",
+  "causes_of": [],
+  "prevented_by": ["wiki_balanced_fertilizer"],
+  "correlated_with": [],
+  "followed_by": [],
+  "treated_by": ["wiki_fungicide_safety"],
+  "aggravated_by": ["wiki_nitrogen_excess"],
+  "variant_of": [],
+  "regional_of": [],
+  "confused_with": [],
+  "actions": [
+    "Inspect wheat leaves and stems for reddish-brown pustules — rub a leaf on white paper; if orange powder rubs off, it is rust.",
+    "If rust is detected early, apply propiconazole 25 EC at 0.1% (1ml/L water) following label instructions exactly.",
+    "For the next season: sow wheat before November 15 in North India — late-sown wheat is much more vulnerable to rust.",
+    "Plant rust-resistant varieties: HD 3086, HD 2967, PBW 723, or DBW 187."
+  ],
+  "warnings": [
+    "Do NOT confuse rust with nutrient deficiency spots. Rust pustules release orange powder when rubbed — nutrient spots do not.",
+    "Stripe rust can explode rapidly in cool, humid weather (Jan-Feb in North India). Scout fields weekly during this period."
+  ]
+}

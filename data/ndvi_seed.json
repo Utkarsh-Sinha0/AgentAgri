@@ -1,0 +1,18 @@
+{
+  "default_field": {
+    "field_id": "default",
+    "lat": 25.38,
+    "lng": 86.47,
+    "source": "seeded — Sentinel-2 compatible format",
+    "ndvi_weekly": [
+      {"week": "2026-W14", "date": "2026-04-01", "ndvi": 0.62},
+      {"week": "2026-W15", "date": "2026-04-08", "ndvi": 0.68},
+      {"week": "2026-W16", "date": "2026-04-15", "ndvi": 0.71},
+      {"week": "2026-W17", "date": "2026-04-22", "ndvi": 0.65},
+      {"week": "2026-W18", "date": "2026-04-29", "ndvi": 0.58},
+      {"week": "2026-W19", "date": "2026-05-06", "ndvi": 0.52}
+    ],
+    "trend": "declining",
+    "interpretation": "NDVI has declined from 0.71 (week 16) to 0.52 (week 19). This may indicate crop stress — possible causes: water stress, nutrient deficiency, or disease onset. Correlate with rainfall data and farmer observations."
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "wiki_stem_borer",
+  "title": "Rice Stem Borer (Scirpophaga incertulas)",
+  "title_hi": "धान का तना छेदक कीट",
+  "content": "The yellow stem borer (YSB) is the most destructive insect pest of rice in India, causing 10-40% yield loss. The adult is a pale yellow moth. The larva bores into the rice stem, causing 'dead heart' at vegetative stage and 'white ear head' at reproductive stage.\n\nSymptoms: Central leaf whorl dries up (dead heart at tillering). White, empty panicles (white ear at heading). Small holes in stem with frass (insect waste).\n\nFavorable conditions: High nitrogen fertilizer, continuous flooding, dense planting, warm temperatures (>25°C).\n\nManagement: Clip seedling tips before transplanting to remove eggs. Use pheromone traps (8/ha) for monitoring. Release Trichogramma japonicum egg parasitoids. Apply cartap hydrochloride or chlorantraniliprole ONLY if ETL exceeds 5% dead hearts. Always follow label instructions.",
+  "content_hi": "तना छेदक धान का सबसे विनाशकारी कीट है, जो 10-40% उपज हानि करता है।\n\nलक्षण: बीच की पत्ती सूखना। सफेद खाली बालियां। तने में छोटे छेद।\n\nप्रबंधन: रोपाई से पहले पौध के सिरे काटें। फिरोमोन ट्रैप लगाएं। ट्राइकोग्रामा परजीवी छोड़ें।",
+  "summary": "Rice stem borer causes 'dead heart' and 'white ear' symptoms. Monitor with pheromone traps. Use Trichogramma biocontrol.",
+  "summary_hi": "तना छेदक धान का प्रमुख कीट है जो 'डेड हार्ट' और 'व्हाइट ईयर' लक्षण पैदा करता है।",
+  "applicable_crops": ["rice"],
+  "applicable_stages": ["seedling", "vegetative", "flowering"],
+  "topic_tags": ["pest", "rice", "stem_borer"],
+  "risk_level": "PREVENTIVE_ACTION",
+  "causes_of": [],
+  "aggravated_by": ["wiki_nitrogen_excess"],
+  "prevented_by": ["wiki_balanced_fertilizer"],
+  "confused_with": ["wiki_rice_blast"],
+  "actions": [
+    "Inspect the field for 'dead hearts' — central leaf whorl that has dried up while outer leaves are green.",
+    "Install pheromone traps at 8 per hectare to monitor moth population — replace lures every 30 days.",
+    "If more than 5% dead hearts are found, release Trichogramma japonicum egg parasitoid cards at 50,000 adults/ha.",
+    "Clip the top 2-3 cm of rice seedlings before transplanting — this removes stem borer eggs laid on leaf tips.",
+    "Avoid excessive nitrogen fertilizer — lush green crop attracts more stem borer moths."
+  ],
+  "warnings": [
+    "Do NOT apply insecticide during flowering — it kills pollinators and natural enemies of stem borer.",
+    "Cartap hydrochloride is toxic to fish — do not use in fields that drain into fish ponds."
+  ]
+}

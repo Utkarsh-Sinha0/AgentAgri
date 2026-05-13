@@ -1,0 +1,28 @@
+{
+  "id": "wiki_bacterial_leaf_blight",
+  "title": "Bacterial Leaf Blight of Rice (Xanthomonas oryzae)",
+  "title_hi": "धान का जीवाणु पत्ता झुलसा",
+  "content": "Bacterial Leaf Blight (BLB) is caused by Xanthomonas oryzae pv. oryzae. It is widespread in irrigated and rainfed lowland rice, especially in South and Southeast Asia.\n\nSymptoms: Water-soaked lesions at leaf margins that turn yellow to white and extend along the leaf. In severe cases, entire leaf dries up. 'Kresek' phase in seedlings causes complete wilting.\n\nFavorable conditions: High humidity (80%+), temperatures 25-34°C, heavy rain with wind (bacteria spread through water and wounds), excess nitrogen, and dense planting.\n\nManagement: Plant resistant varieties (Swarna, IR64, Pusa Basmati). Balanced fertilization (avoid excess N). Avoid flooding. Seed treatment with Streptocycline. Foliar spray of copper oxychloride 2.5g/L at early disease appearance. Practice field sanitation.",
+  "content_hi": "जीवाणु पत्ता झुलसा Xanthomonas oryzae से होता है। यह सिंचित और वर्षा आधारित धान में व्यापक है।\n\nलक्षण: पत्ती के किनारों से पानी से भीगे धब्बे, पीले-सफेद होकर फैलते हैं।\n\nप्रबंधन: प्रतिरोधी किस्में लगाएं। संतुलित उर्वरक। स्ट्रेप्टोसाइक्लिन से बीज उपचार।",
+  "summary": "Bacterial leaf blight causes water-soaked leaf margin lesions in rice. Spreads through water and wounds. Use resistant varieties and balanced nitrogen.",
+  "summary_hi": "जीवाणु पत्ता झुलसा पत्तियों के किनारों से पानी से भीगे घाव पैदा करता है। प्रतिरोधी किस्में लगाएं।",
+  "applicable_crops": ["rice"],
+  "applicable_stages": ["seedling", "vegetative", "flowering"],
+  "topic_tags": ["bacterial_disease", "rice"],
+  "risk_level": "PREVENTIVE_ACTION",
+  "causes_of": [],
+  "aggravated_by": ["wiki_nitrogen_excess"],
+  "prevented_by": ["wiki_balanced_fertilizer"],
+  "confused_with": ["wiki_rice_blast", "wiki_rice_brown_spot"],
+  "actions": [
+    "Inspect leaf margins for water-soaked lesions that turn yellow-white — this distinguishes BLB from brown spot.",
+    "Drain the field for 2-3 days — standing water spreads the bacteria between plants.",
+    "Avoid walking through the field when plants are wet — bacteria spread on hands and clothes.",
+    "Apply copper oxychloride 2.5g/L as foliar spray at first sign of disease — repeat after 10 days if rain continues.",
+    "For the next season, plant BLB-resistant varieties: Swarna, IR64, or Pusa Basmati 1509."
+  ],
+  "warnings": [
+    "BLB is often confused with leaf blast. Check: BLB lesions start at leaf margins and are water-soaked. Blast lesions are diamond-shaped with gray centers.",
+    "Do NOT apply excess nitrogen — lush crops are much more susceptible to BLB."
+  ]
+}

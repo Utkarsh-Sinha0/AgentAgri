@@ -1,0 +1,30 @@
+{
+  "id": "wiki_rice_blast",
+  "title": "Rice Blast Disease (Pyricularia oryzae)",
+  "title_hi": "धान का झुलसा/ब्लास्ट रोग",
+  "content": "Rice blast is caused by the fungus Pyricularia oryzae (Magnaporthe oryzae). It is one of the most destructive diseases of rice worldwide, capable of causing 30-100% yield loss under favorable conditions.\n\nSymptoms: Leaf blast produces diamond-shaped lesions with gray centers and brown margins on leaves. Node blast causes black/brown discoloration at nodes, which may break. Neck blast affects the panicle neck, causing white/brown discoloration and empty grains.\n\nFavorable conditions: High humidity (90%+), temperatures 25-28°C, extended leaf wetness (12+ hours), high nitrogen fertilizer application, and dense canopy.\n\nManagement: Use resistant varieties. Apply balanced fertilizer (avoid excess nitrogen). Maintain proper spacing. Chemical control: triazole or strobilurin fungicides at booting stage if disease pressure is high. Always follow label instructions for dosage.",
+  "content_hi": "धान का झुलसा रोग Pyricularia oryzae नामक फफूंद से होता है। यह दुनिया भर में धान की सबसे विनाशकारी बीमारियों में से एक है।\n\nलक्षण: पत्तियों पर हीरे के आकार के भूरे किनारों वाले धब्बे। गांठों पर काला/भूरा रंग। बालियों की गर्दन पर सफेद/भूरा रंग और दाने खाली रह जाना।\n\nअनुकूल परिस्थितियां: 90%+ नमी, 25-28°C तापमान, 12+ घंटे पत्तियों का गीला रहना, अधिक नाइट्रोजन।\n\nप्रबंधन: प्रतिरोधी किस्में लगाएं। संतुलित उर्वरक का प्रयोग करें। उचित दूरी बनाए रखें।",
+  "summary": "Rice blast is a devastating fungal disease causing diamond-shaped leaf lesions and panicle damage. Thrives in high humidity (90%+) at 25-28°C.",
+  "summary_hi": "धान का झुलसा रोग एक विनाशकारी फफूंद जनित रोग है जो पत्तियों पर हीरे के आकार के धब्बे और बालियों को नुकसान पहुंचाता है।",
+  "applicable_crops": ["rice"],
+  "applicable_stages": ["seedling", "vegetative", "flowering", "fruiting"],
+  "topic_tags": ["fungal_disease", "rice", "blast"],
+  "risk_level": "PREVENTIVE_ACTION",
+  "causes_of": [],
+  "aggravated_by": ["wiki_rice_sheath_blight", "wiki_nitrogen_excess"],
+  "prevented_by": ["wiki_balanced_fertilizer", "wiki_fungicide_safety"],
+  "confused_with": ["wiki_rice_brown_spot", "wiki_bacterial_leaf_blight"],
+  "actions": [
+    "Monitor the field daily for diamond-shaped leaf lesions. Check the leaf collar and neck area.",
+    "Reduce nitrogen fertilizer application if leaves are dark green and lush — excess nitrogen favors blast.",
+    "Improve field drainage — standing water for >12 hours increases blast risk.",
+    "If blast is confirmed and at booting/heading stage, apply a recommended triazole fungicide following label instructions EXACTLY.",
+    "Remove and destroy severely infected plants to reduce spore load.",
+    "For the next season, plant a blast-resistant rice variety like IR64, Swarna Sub1, or DRR Dhan 44."
+  ],
+  "warnings": [
+    "Do NOT apply fungicide during heavy rain or if rain is forecast within 24 hours.",
+    "Do NOT exceed the recommended fungicide dose — it will not improve control and may harm beneficial organisms.",
+    "Blast can be confused with brown spot. If lesions are oval (not diamond-shaped), consult brown spot guidance first."
+  ]
+}

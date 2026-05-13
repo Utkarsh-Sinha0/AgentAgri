@@ -1,0 +1,30 @@
+# Python runtime and caches
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases and generated state
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+.playwright-mcp/
+
+# Frontend dependencies and builds
+pwa/node_modules/
+pwa/dist/
+
+# Logs and OS/editor noise
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

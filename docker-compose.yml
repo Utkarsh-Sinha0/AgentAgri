@@ -1,0 +1,81 @@
+# docker-compose.yml — AgriMesh V4.0 Production Stack
+# Ollama runs natively (not in Docker) for GPU passthrough
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: agrimesh
+      POSTGRES_USER: agrimesh
+      POSTGRES_PASSWORD: agrimesh_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agrimesh"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://agrimesh:agrimesh_dev@postgres:5432/agrimesh
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - REDIS_URL=redis://redis:6379/0
+      - APP_ENV=development
+      - ALLOWED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,host.docker.internal
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./wiki:/app/wiki
+      - ./evals:/app/evals
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  mcp-weather:
+    build: .
+    command: python -m app.mcp_servers.weather_server
+    ports:
+      - "9001:9001"
+
+  mcp-mandi:
+    build: .
+    command: python -m app.mcp_servers.mandi_server
+    ports:
+      - "9002:9002"
+
+  mcp-scheme:
+    build: .
+    command: python -m app.mcp_servers.scheme_server
+    ports:
+      - "9003:9003"
+
+  mcp-finance:
+    build: .
+    command: python -m app.mcp_servers.finance_server
+    ports:
+      - "9004:9004"
+
+volumes:
+  pgdata:

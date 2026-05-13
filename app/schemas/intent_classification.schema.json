@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Intent Classification",
+  "description": "Classify user intent for adaptive retrieval routing.",
+  "type": "object",
+  "properties": {
+    "intent": {
+      "type": "string",
+      "enum": ["disease_diagnosis", "nutrient_advice", "weather_query", "market_query", "finance_query", "scheme_query", "general_chat", "command"]
+    },
+    "needs_retrieval": {
+      "type": "boolean",
+      "description": "Whether wiki retrieval is needed"
+    },
+    "needs_tool_call": {
+      "type": "boolean",
+      "description": "Whether weather/mandi/scheme MCP tools are needed"
+    },
+    "language": {
+      "type": "string",
+      "enum": ["hi", "en", "mixed"]
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 120
+    }
+  },
+  "required": ["intent", "needs_retrieval", "language"],
+  "additionalProperties": false
+}

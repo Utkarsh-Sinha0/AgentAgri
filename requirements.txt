@@ -1,0 +1,61 @@
+# AgriMesh V4.0 — Production Dependencies
+# Core
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
+pydantic==2.13.4
+pydantic-settings==2.14.1
+
+# Database
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# Ollama / LLM
+ollama==0.4.7
+httpx==0.28.1
+
+# Retrieval (BGE-M3, reranker — via llama.cpp Python bindings OR sentence-transformers)
+sentence-transformers==5.5.0
+FlagEmbedding==1.3.4
+transformers==5.8.0
+lxml==6.1.0
+
+# MCP (Model Context Protocol)
+mcp==1.24.0
+fastmcp==3.2.0
+
+# Telegram Bot
+python-telegram-bot==21.10
+
+# Image processing (crop photos)
+Pillow==12.2.0
+opencv-python-headless==4.10.0.84
+
+# Audio (Whisper for voice — feature-flagged until Gemma 4 native ships)
+# openai-whisper==20240930  # Disabled: build issues on Python 3.13, feature-flagged off anyway
+
+# Safety / NLP
+indic-nlp-library==0.92
+# langdetect for language detection
+langdetect==1.0.9
+
+# Utilities
+python-dotenv==1.2.2
+loguru==0.7.3
+tenacity==9.0.0
+redis==5.2.1
+python-multipart==0.0.28
+aiofiles==24.1.0
+orjson==3.11.6
+argon2-cffi==23.1.0
+ruff==0.8.6
+
+# Testing
+pytest==9.0.3
+pytest-asyncio==1.3.0
+pytest-cov==7.1.0
+httpx==0.28.1
+
+# PWA (optional — build separately)
+# preact, tailwindcss — built via npm, not pip

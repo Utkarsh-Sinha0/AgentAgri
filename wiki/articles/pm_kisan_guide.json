@@ -1,0 +1,34 @@
+{
+  "id": "wiki_pm_kisan_guide",
+  "title": "PM-KISAN Scheme: Complete Enrollment Guide",
+  "title_hi": "PM-KISAN योजना: पूर्ण नामांकन गाइड",
+  "content": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN) provides ₹6,000 per year to eligible farmer families in three equal installments of ₹2,000.\n\nEligibility:\n- Small and marginal farmer families with cultivable land up to 2 hectares (5 acres)\n- All states except those with 100% income tax coverage\n\nIneligible:\n- Income tax payers (previous assessment year)\n- Serving/retired government employees (except Class IV)\n- Constitutional post holders\n- Professionals (doctors, engineers, lawyers, CAs)\n- Families holding constitutional posts\n\nDocuments needed: Aadhaar card, bank passbook (with IFSC), land records (khasra/khatoni), mobile number linked to Aadhaar.\n\nHow to apply: Visit pmkisan.gov.in → 'Farmer Corner' → 'New Farmer Registration'. Or visit your nearest Common Service Centre (CSC). Enrollment is FREE — never pay anyone.\n\nCheck payment status: At pmkisan.gov.in → 'Beneficiary Status'. Or call PM-KISAN helpline: 155261 / 1800-115-526.",
+  "content_hi": "PM-KISAN पात्र किसान परिवारों को ₹6,000 प्रति वर्ष (₹2,000 की तीन किस्तों में) प्रदान करता है।\n\nपात्रता: 2 हेक्टेयर (5 एकड़) तक की कृषि भूमि वाले छोटे और सीमांत किसान।\n\nदस्तावेज: आधार कार्ड, बैंक पासबुक, भूमि रिकॉर्ड, आधार से जुड़ा मोबाइल नंबर।\n\nआवेदन: pmkisan.gov.in पर जाएं या नजदीकी CSC पर संपर्क करें।",
+  "summary": "PM-KISAN provides ₹6,000/year in 3 installments. Eligible: farmers with ≤5 acres. Apply free at pmkisan.gov.in or CSC.",
+  "summary_hi": "PM-KISAN सालाना ₹6,000 देता है। पात्र: 5 एकड़ तक के किसान। pmkisan.gov.in पर मुफ्त आवेदन करें।",
+  "applicable_crops": [],
+  "applicable_stages": [],
+  "topic_tags": ["scheme_guide", "pm_kisan", "government_scheme"],
+  "risk_level": "NORMAL",
+  "causes_of": [],
+  "prevented_by": [],
+  "correlated_with": [],
+  "followed_by": [],
+  "treated_by": [],
+  "aggravated_by": [],
+  "variant_of": [],
+  "regional_of": [],
+  "confused_with": [],
+  "actions": [
+    "Check your eligibility: do you own less than 5 acres (2 hectares) of cultivable land?",
+    "Gather documents: Aadhaar card, bank passbook with IFSC code, land records (khasra/khatoni).",
+    "Visit pmkisan.gov.in and click 'New Farmer Registration' under Farmer Corner.",
+    "Or visit your nearest Common Service Centre (CSC) — enrollment is COMPLETELY FREE.",
+    "After registration, check payment status at pmkisan.gov.in → Beneficiary Status — use your Aadhaar number."
+  ],
+  "warnings": [
+    "PM-KISAN enrollment is FREE. Never pay anyone for registration — report fraud to 155261.",
+    "If your installment is delayed, check the beneficiary list on pmkisan.gov.in before assuming rejection.",
+    "Update your Aadhaar-bank linkage and land records if your application shows 'pending' for more than 3 months."
+  ]
+}

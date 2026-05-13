@@ -1,0 +1,33 @@
+{
+  "id": "wiki_mandi_selling_guide",
+  "title": "Mandi Selling Guide for Smallholder Farmers",
+  "title_hi": "छोटे किसानों के लिए मंडी बिक्री गाइड",
+  "content": "Selling your harvest at the right time and place can mean 20-40% more income. Here's what every smallholder farmer should know:\n\n1. Know the MSP: Minimum Support Price is the government's guaranteed minimum price. If mandi prices are below MSP, sell to FCI (Food Corporation of India) instead.\n\n2. Grade your produce: Clean, sorted, graded produce fetches 10-15% higher prices. Remove damaged grains, foreign matter, and moisture before taking to mandi.\n\n3. Check multiple mandis: Prices can vary ₹200-500/quintal between mandis just 50km apart. Use AgriMesh /prices to compare.\n\n4. Timing matters: Prices are typically lowest at harvest peak (Oct-Nov for Kharif, Mar-Apr for Rabi). If you can store safely, waiting 4-6 weeks after harvest peak can improve prices 15-25%.\n\n5. Avoid distress sales: Never sell immediately after harvest to pay off loans — the commission agent knows you're desperate. Plan your finances so you have 4-6 weeks of buffer.\n\n6. FCI procurement: For rice and wheat, FCI buys at MSP. Carry your Aadhaar, bank passbook, and land records. Register on the FCI portal before harvest season.",
+  "content_hi": "सही समय और जगह पर फसल बेचने से 20-40% अधिक आमदनी हो सकती है।\n\n1. MSP जानें: न्यूनतम समर्थन मूल्य सरकार की गारंटीड कीमत है।\n2. फसल की ग्रेडिंग करें: साफ, छंटा हुआ अनाज 10-15% अधिक भाव पर बिकता है।\n3. कई मंडियों के भाव देखें।\n4. समय का ध्यान रखें: कटाई के चरम पर भाव सबसे कम होते हैं।\n5. मजबूरी में न बेचें।\n6. FCI खरीद: धान और गेहूं के लिए FCI MSP पर खरीदता है।",
+  "summary": "Selling at the right mandi and time can increase income 20-40%. Grade produce, check multiple mandis, avoid harvest-peak distress sales.",
+  "summary_hi": "सही मंडी और समय पर बेचने से 20-40% अधिक आय हो सकती है। फसल की ग्रेडिंग करें, कई मंडियों के भाव देखें।",
+  "applicable_crops": [],
+  "applicable_stages": ["harvest", "post_harvest"],
+  "topic_tags": ["market_intelligence", "selling", "mandi", "msp"],
+  "risk_level": "NORMAL",
+  "causes_of": [],
+  "prevented_by": [],
+  "correlated_with": ["wiki_rice_blast", "wiki_rice_brown_spot"],
+  "followed_by": [],
+  "treated_by": [],
+  "aggravated_by": [],
+  "variant_of": [],
+  "regional_of": [],
+  "confused_with": [],
+  "actions": [
+    "Grade your produce before taking to mandi — remove damaged grains, stones, and foreign matter.",
+    "Check prices at 2-3 nearby mandis using /prices command before deciding where to sell.",
+    "If current mandi price is below MSP, locate the nearest FCI procurement center and sell there instead.",
+    "Store 30-40% of your harvest if prices are below seasonal average — wait 4-6 weeks for price recovery.",
+    "Avoid selling the entire harvest at once — staggered selling reduces risk."
+  ],
+  "warnings": [
+    "Do NOT sell to the first commission agent (आढ़तिया) who approaches you at the farm gate — their price is usually 15-25% below mandi rate.",
+    "Never take an advance (साई) from a trader against future harvest — this locks you into below-market prices."
+  ]
+}

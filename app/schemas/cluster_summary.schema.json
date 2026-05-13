@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Cluster Summary",
+  "description": "Extension worker dashboard: cluster analysis output.",
+  "type": "object",
+  "properties": {
+    "cluster_title": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "cluster_title_hi": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "recommended_broadcast_message": {
+      "type": "string",
+      "maxLength": 600
+    },
+    "recommended_broadcast_message_hi": {
+      "type": "string",
+      "maxLength": 600
+    },
+    "severity_assessment": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "affected_area_estimate": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "preventive_measures": {
+      "type": "array",
+      "items": { "type": "string" },
+      "maxItems": 5
+    }
+  },
+  "required": ["cluster_title", "summary", "severity_assessment"],
+  "additionalProperties": false
+}

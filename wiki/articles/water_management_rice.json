@@ -1,0 +1,27 @@
+{
+  "id": "wiki_water_management_rice",
+  "title": "Water Management in Rice Cultivation",
+  "title_hi": "धान की खेती में जल प्रबंधन",
+  "content": "Proper water management is the single most important factor for healthy rice. Poor water management increases disease risk, reduces nutrient uptake, and wastes water.\n\nKey principles:\n1. Alternate Wetting and Drying (AWD): Instead of continuous flooding, allow the field to dry until the water table drops 15 cm below surface, then re-flood. This saves 30% water and reduces methane emissions without yield loss.\n2. Drainage before harvest: Drain the field 7-10 days before harvest. This hardens the grain, reduces lodging, and makes mechanical harvesting easier.\n3. Waterlogging damage: Standing water for >3 days during vegetative stage causes root rot and nutrient deficiency. Emergency drainage trenches may be needed.\n4. Seedling stage: Maintain 2-3 cm water depth during the first week after transplanting for better establishment.\n\nSigns of water stress:\n- Leaves rolling inward (drought)\n- Yellowing of lower leaves (waterlogging)\n- Reduced tillering\n- Stunted growth",
+  "content_hi": "धान की खेती में उचित जल प्रबंधन सबसे महत्वपूर्ण है।\n\nमुख्य सिद्धांत:\n1. AWD विधि — बारी-बारी से सुखाना और पानी भरना।\n2. कटाई से 7-10 दिन पहले पानी निकाल दें।\n3. जलभराव से जड़ सड़न।\n4. रोपाई के बाद 2-3 सेमी पानी।",
+  "summary": "Alternate Wetting and Drying (AWD) saves 30% water. Drain 7-10 days before harvest. Avoid waterlogging for >3 days.",
+  "summary_hi": "AWD विधि से 30% पानी बचता है। कटाई से 7-10 दिन पहले खेत सुखाएं। 3 दिन से अधिक जलभराव न होने दें।",
+  "applicable_crops": ["rice"],
+  "applicable_stages": ["seedling", "vegetative", "flowering", "fruiting", "harvest"],
+  "topic_tags": ["water_management", "irrigation", "rice"],
+  "risk_level": "WATCH",
+  "causes_of": ["wiki_rice_blast"],
+  "aggravated_by": [],
+  "prevented_by": [],
+  "confused_with": [],
+  "actions": [
+    "Adopt Alternate Wetting and Drying (AWD): irrigate only when water table drops 15 cm below surface — use a simple PVC pipe to monitor.",
+    "If continuous rain has waterlogged the field for 3+ days, dig emergency drainage channels to the lowest edge of the field.",
+    "At grain-filling stage, maintain 2-3 cm standing water until 7-10 days before harvest, then drain completely.",
+    "Check for leaf rolling in the morning — if leaves are rolled before 9 AM, the crop is water-stressed and needs irrigation."
+  ],
+  "warnings": [
+    "Do NOT keep the field continuously flooded throughout the season — this wastes water, increases disease, and produces methane.",
+    "Sudden drainage during flowering can cause sterility — transition slowly over 3-4 days."
+  ]
+}

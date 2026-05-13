@@ -1,0 +1,49 @@
+{
+  "schemes": [
+    {
+      "id": "pm_kisan",
+      "name": "PM-KISAN",
+      "name_hi": "प्रधानमंत्री किसान सम्मान निधि",
+      "description": "₹6,000 per year in 3 installments for small & marginal farmers",
+      "eligibility": {"land_owned_acres_max": 5.0},
+      "benefit": "₹2,000 per installment (3 installments/year)",
+      "apply_link": "https://pmkisan.gov.in"
+    },
+    {
+      "id": "pmfby",
+      "name": "PM Fasal Bima Yojana",
+      "name_hi": "प्रधानमंत्री फसल बीमा योजना",
+      "description": "Crop insurance at very low premium (2% Kharif, 1.5% Rabi)",
+      "eligibility": {"crops_covered": ["rice", "wheat", "maize", "pulses", "oilseeds", "cotton", "sugarcane"]},
+      "benefit": "Full sum insured for crop loss",
+      "apply_link": "https://pmfby.gov.in"
+    },
+    {
+      "id": "kcc",
+      "name": "Kisan Credit Card",
+      "name_hi": "किसान क्रेडिट कार्ड",
+      "description": "Low-interest crop loan up to ₹3 lakh at 4% effective rate",
+      "eligibility": {"all_farmers": true},
+      "benefit": "₹3 lakh limit, 4% effective interest",
+      "apply_link": "https://www.myscheme.gov.in/schemes/kcc"
+    },
+    {
+      "id": "shc",
+      "name": "Soil Health Card",
+      "name_hi": "मृदा स्वास्थ्य कार्ड",
+      "description": "Free soil testing and fertilizer recommendations",
+      "eligibility": {"all_farmers": true},
+      "benefit": "Soil health card with nutrient status",
+      "apply_link": "https://soilhealth.dac.gov.in"
+    },
+    {
+      "id": "pkvy",
+      "name": "Paramparagat Krishi Vikas Yojana",
+      "name_hi": "परंपरागत कृषि विकास योजना",
+      "description": "Organic farming promotion — ₹50,000/ha over 3 years",
+      "eligibility": {"organic_farming": true, "min_cluster_size": 50},
+      "benefit": "₹50,000/ha over 3 years",
+      "apply_link": "https://pgsindia-ncof.gov.in"
+    }
+  ]
+}

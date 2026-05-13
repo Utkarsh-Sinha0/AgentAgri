@@ -1,0 +1,28 @@
+{
+  "id": "wiki_potassium_deficiency",
+  "title": "Potassium Deficiency in Crops",
+  "title_hi": "फसलों में पोटाश की कमी",
+  "content": "Potassium (K) is a macronutrient critical for disease resistance, water regulation, and grain quality. Potassium deficiency is widespread in Indian soils, particularly in Bihar, Eastern UP, and Odisha.\n\nSymptoms: Yellowing/browning starting at leaf tips and margins (tip burn), moving inward. Lower/older leaves affected first. Weak stems, increased lodging. Reduced grain size and quality. Increased susceptibility to fungal and bacterial diseases.\n\nCauses: Sandy/light soils (low K holding capacity). Continuous cropping without K fertilization. Excessive N application (antagonistic effect). Heavy rainfall leaching K from root zone.\n\nManagement: Apply Muriate of Potash (MOP) at 40-60 kg K2O/ha based on soil test. Alternatively, use vermicompost or crop residue incorporation. For organic: wood ash, compost, or Sulphate of Potash (SOP) for chloride-sensitive crops.",
+  "content_hi": "पोटाश एक प्रमुख पोषक तत्व है जो रोग प्रतिरोधक क्षमता, जल नियंत्रण और दाने की गुणवत्ता के लिए आवश्यक है।\n\nलक्षण: पत्तियों के किनारे और सिरे पीले/भूरे होना। निचली पत्तियां पहले प्रभावित। कमजोर तने। दाने छोटे।\n\nप्रबंधन: मिट्टी परीक्षण के अनुसार पोटाश (MOP) 40-60 किलो/हेक्टेयर डालें।",
+  "summary": "Potassium deficiency causes leaf tip burn, weak stems, and increases disease susceptibility. Apply MOP based on soil test.",
+  "summary_hi": "पोटाश की कमी से पत्तियों के किनारे जलते हैं, तने कमजोर होते हैं और रोग अधिक लगते हैं। मिट्टी परीक्षण करवाएं।",
+  "applicable_crops": [],
+  "applicable_stages": [],
+  "topic_tags": ["nutrient_deficiency", "potassium", "soil_health"],
+  "risk_level": "WATCH",
+  "causes_of": ["wiki_rice_brown_spot"],
+  "aggravated_by": ["wiki_nitrogen_excess"],
+  "prevented_by": ["wiki_balanced_fertilizer", "wiki_soil_testing"],
+  "confused_with": ["wiki_nitrogen_deficiency"],
+  "actions": [
+    "Get soil tested for potassium (K) levels at nearest KVK or Soil Testing Lab.",
+    "Apply Muriate of Potash (MOP) at 40-60 kg/ha if soil test shows K deficiency.",
+    "Incorporate crop residues (paddy straw, wheat straw) into soil after harvest — they contain significant potassium.",
+    "Apply vermicompost at 2-3 tonnes/ha to improve overall soil potassium status.",
+    "Avoid applying excess nitrogen when potassium is deficient — the imbalance worsens disease susceptibility."
+  ],
+  "warnings": [
+    "Do NOT apply MOP to tobacco, potato, or grapes if chloride sensitivity is a concern. Use Sulphate of Potash (SOP) instead.",
+    "Potassium deficiency symptoms mimic nitrogen deficiency in early stages. Check: K deficiency starts at leaf tips/margins, N deficiency causes uniform yellowing from tip."
+  ]
+}

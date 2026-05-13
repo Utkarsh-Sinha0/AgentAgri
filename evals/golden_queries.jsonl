@@ -1,0 +1,15 @@
+{"id": "gq_001", "query": "मेरे धान की पत्तियों पर भूरे धब्बे हैं, क्या करूं?", "language": "hi", "topic": "disease", "crop": "rice", "stage": "vegetative", "expected_risk_level": "PREVENTIVE_ACTION"}
+{"id": "gq_002", "query": "गेहूं में पीले पत्ते हो रहे हैं", "language": "hi", "topic": "nutrient", "crop": "wheat", "stage": "vegetative", "expected_risk_level": "WATCH"}
+{"id": "gq_003", "query": "my tomato plants have white powder on leaves", "language": "en", "topic": "disease", "crop": "tomato", "stage": "vegetative", "expected_risk_level": "PREVENTIVE_ACTION"}
+{"id": "gq_004", "query": "मक्का की फसल में कीड़े लग गए हैं", "language": "hi", "topic": "pest", "crop": "maize", "stage": "vegetative", "expected_risk_level": "PREVENTIVE_ACTION"}
+{"id": "gq_005", "query": "5 din se lagatar barish ho rahi hai, dhan ki fasal mein paani bhar gaya", "language": "hi", "topic": "weather", "crop": "rice", "stage": "vegetative", "expected_risk_level": "ESCALATE"}
+{"id": "gq_006", "query": "मंडी में गेहूं का भाव क्या चल रहा है?", "language": "hi", "topic": "market", "crop": "wheat", "stage": "harvest", "expected_risk_level": "NORMAL"}
+{"id": "gq_007", "query": "PM Kisan ki kisht kab aayegi?", "language": "hi", "topic": "scheme", "crop": null, "stage": null, "expected_risk_level": "NORMAL"}
+{"id": "gq_008", "query": "namaste", "language": "hi", "topic": "chat", "crop": null, "stage": null, "expected_risk_level": "NORMAL"}
+{"id": "gq_009", "query": "अरहर की फसल में फली नहीं आ रही, पत्ते मुड़ रहे हैं", "language": "hi", "topic": "disease", "crop": "arhar", "stage": "flowering", "expected_risk_level": "PREVENTIVE_ACTION"}
+{"id": "gq_010", "query": "उर्वरक कितना डालना चाहिए धान में?", "language": "hi", "topic": "nutrient", "crop": "rice", "stage": "vegetative", "expected_risk_level": "WATCH"}
+{"id": "gq_011", "query": "धान में बालियां सूख रही हैं, कारण और उपाय?", "language": "hi", "topic": "disease", "crop": "rice", "stage": "flowering", "expected_risk_level": "PREVENTIVE_ACTION"}
+{"id": "gq_012", "query": "rice leaves turning yellow from tip, lower leaves first", "language": "en", "topic": "nutrient", "crop": "rice", "stage": "vegetative", "expected_risk_level": "WATCH"}
+{"id": "gq_013", "query": "बारिश के बाद धान में क्या डालें?", "language": "hi", "topic": "weather", "crop": "rice", "stage": "vegetative", "expected_risk_level": "WATCH"}
+{"id": "gq_014", "query": "फसल बीमा के लिए कैसे आवेदन करें?", "language": "hi", "topic": "scheme", "crop": null, "stage": null, "expected_risk_level": "NORMAL"}
+{"id": "gq_015", "query": "How to control stem borer in rice?", "language": "en", "topic": "pest", "crop": "rice", "stage": "vegetative", "expected_risk_level": "PREVENTIVE_ACTION"}

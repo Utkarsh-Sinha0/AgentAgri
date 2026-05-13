@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tool Call Schema",
+  "description": "ReAct planning step — agent decides which MCP tools to invoke.",
+  "type": "object",
+  "properties": {
+    "plan": {
+      "type": "string",
+      "description": "One-line reasoning for tool selection"
+    },
+    "tool_calls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "enum": ["get_forecast", "get_historical_weather", "get_mandi_prices", "get_msp", "match_schemes", "log_expense", "compute_pnl", "no_tool"]
+          },
+          "parameters": {
+            "type": "object"
+          }
+        },
+        "required": ["tool_name", "parameters"],
+        "additionalProperties": false
+      },
+      "maxItems": 4
+    },
+    "needs_clarification": {
+      "type": "boolean",
+      "description": "Should we ask the farmer a follow-up question before proceeding?"
+    },
+    "clarification_question": {
+      "type": "string",
+      "description": "The question to ask, if needs_clarification is true"
+    }
+  },
+  "required": ["plan", "tool_calls", "needs_clarification"],
+  "additionalProperties": false
+}

@@ -1,0 +1,30 @@
+{
+  "id": "wiki_fungicide_safety",
+  "title": "Safe Fungicide Use for Smallholder Farmers",
+  "title_hi": "छोटे किसानों के लिए सुरक्षित फफूंदनाशक उपयोग",
+  "content": "Safe and effective fungicide use is critical for smallholder farmers. In India, pesticide misuse causes ~40,000 hospitalizations annually (AIIMS 2024 study).\n\nCore safety rules:\n1. ALWAYS read the label. Dosage is crop-specific and stage-specific.\n2. Wear protective equipment: gloves, mask, long-sleeved clothing, and closed shoes.\n3. Never mix different pesticides unless the label explicitly says it is compatible.\n4. Do NOT spray during flowering — it kills pollinators and can cause grain sterility.\n5. Maintain a Pre-Harvest Interval (PHI) — usually 15-21 days. Do NOT harvest before this.\n6. Dispose of empty containers safely — triple-rinse and puncture. Never reuse for food/water.\n7. Store pesticides in locked cabinets away from children, food, and water sources.\n\nApplication timing: Spray in early morning or late evening when bees are not active and wind speed is low (<8 km/h). Do NOT spray if rain is forecast within 24 hours.\n\nAlternatives: For many fungal diseases, neem oil (5 ml/L), Trichoderma viride (4g/kg seed treatment), and Pseudomonas fluorescens (10g/L foliar) are effective, cheaper, and safer than synthetic fungicides.",
+  "content_hi": "फफूंदनाशक का सुरक्षित उपयोग छोटे किसानों के लिए बहुत महत्वपूर्ण है।\n\nसुरक्षा नियम:\n1. हमेशा लेबल पढ़ें।\n2. दस्ताने, मास्क, पूरी बांह के कपड़े पहनें।\n3. अलग-अलग कीटनाशक कभी न मिलाएं।\n4. फूल आने के समय स्प्रे न करें।\n5. फसल कटाई से 15-21 दिन पहले स्प्रे बंद कर दें।\n\nविकल्प: नीम तेल, ट्राइकोडर्मा, स्यूडोमोनास।",
+  "summary": "Safe fungicide use: read labels, wear PPE, never mix chemicals, respect pre-harvest interval. Consider neem oil and biocontrol alternatives.",
+  "summary_hi": "सुरक्षित फफूंदनाशक उपयोग: लेबल पढ़ें, सुरक्षा उपकरण पहनें, कभी न मिलाएं। नीम तेल और जैविक विकल्प अपनाएं।",
+  "applicable_crops": [],
+  "applicable_stages": ["vegetative", "flowering", "fruiting"],
+  "topic_tags": ["chemical_safety", "pesticide", "ipm"],
+  "risk_level": "NORMAL",
+  "causes_of": [],
+  "aggravated_by": [],
+  "prevented_by": [],
+  "confused_with": [],
+  "actions": [
+    "Before applying any fungicide, read the product label completely. Check the recommended crop, stage, and dosage.",
+    "Wear gloves, a mask, and long-sleeved clothing during application. Wash hands and clothes immediately after spraying.",
+    "Spray in early morning (6-8 AM) or late evening (4-6 PM) when wind is calm.",
+    "Consider neem oil spray (5 ml per litre of water) as a first-line treatment for mild fungal issues — it is safer and cheaper.",
+    "Maintain at minimum 15 days between last fungicide application and harvest.",
+    "Triple-rinse empty containers, puncture them, and dispose at a designated collection point. Never reuse for food or water."
+  ],
+  "warnings": [
+    "Do NOT apply any fungicide during flowering stage — it kills pollinators and causes grain sterility.",
+    "Do NOT mix different pesticides — chemical reactions can create toxic compounds or reduce effectiveness.",
+    "Store all pesticides locked away from children, food items, and water sources."
+  ]
+}

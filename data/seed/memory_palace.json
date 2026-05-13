@@ -1,0 +1,121 @@
+{
+  "version": "2026-05-12-demo",
+  "scenario": "Munger rice smallholder demo memory palace",
+  "field_profile": {
+    "farmer_name": "Ram Kumar",
+    "district": "Munger",
+    "tehsil": "Munger Sadar",
+    "village": "Bariarpur",
+    "field_name": "Demo Rice Memory Plot",
+    "area_acres": 2.5,
+    "soil_type": "clay_loam",
+    "soil_ph": 6.8,
+    "lat": 25.38,
+    "lng": 86.47,
+    "irrigation_type": "canal",
+    "crop_name": "rice",
+    "variety": "Swarna-Sub1",
+    "current_stage": "vegetative",
+    "days_after_sowing": 52
+  },
+  "observations": [
+    {
+      "days_ago": 36,
+      "text": "DEMO_MEMORY: Soil health card showed low potassium and medium organic carbon before transplanting.",
+      "outcome": "Farmer applied muriate of potash and farmyard manure before first irrigation.",
+      "risk_level": "WATCH",
+      "confidence": "HIGH",
+      "actions": [
+        "Use soil test results before adding more urea.",
+        "Split potassium application instead of applying only nitrogen."
+      ],
+      "warnings": [
+        "Do not apply extra urea when leaves are already lush green."
+      ],
+      "evidence_article_ids": ["wiki_potassium_deficiency", "wiki_nitrogen_excess"]
+    },
+    {
+      "days_ago": 24,
+      "text": "DEMO_MEMORY: Brown oval spots appeared on lower rice leaves after cloudy humid weather.",
+      "outcome": "Drainage was improved and infected leaves did not spread after seven days.",
+      "risk_level": "PREVENTIVE_ACTION",
+      "confidence": "MEDIUM",
+      "actions": [
+        "Scout lower leaves every two days for expansion of oval brown spots.",
+        "Improve drainage and avoid water stress."
+      ],
+      "warnings": [
+        "Do not spray fungicide without confirming disease spread or extension-worker advice."
+      ],
+      "evidence_article_ids": ["wiki_rice_brown_spot", "wiki_water_management_rice"]
+    },
+    {
+      "days_ago": 15,
+      "text": "DEMO_MEMORY: Stem borer moth trap count rose but dead-heart symptoms stayed below economic threshold.",
+      "outcome": "Farmer continued monitoring instead of applying insecticide immediately.",
+      "risk_level": "WATCH",
+      "confidence": "MEDIUM",
+      "actions": [
+        "Check 20 random hills for dead hearts before any pesticide decision.",
+        "Use light trap observations as a warning signal, not as the only trigger."
+      ],
+      "warnings": [
+        "Avoid calendar-based insecticide sprays when pest pressure is below threshold."
+      ],
+      "evidence_article_ids": ["wiki_stem_borer"]
+    },
+    {
+      "days_ago": 8,
+      "text": "DEMO_MEMORY: Farmer asked whether to spray before forecast rain and flowering.",
+      "outcome": "Spray was postponed because rain was expected and flowering was approaching.",
+      "risk_level": "NORMAL",
+      "confidence": "HIGH",
+      "actions": [
+        "Spray only in low wind and no-rain windows if spraying is actually needed.",
+        "Keep pre-harvest interval and pollinator safety in mind."
+      ],
+      "warnings": [
+        "Do not spray during flowering or before rain unless the label and extension worker allow it."
+      ],
+      "evidence_article_ids": ["wiki_fungicide_safety"]
+    },
+    {
+      "days_ago": 3,
+      "text": "DEMO_MEMORY: Mandi modal price for paddy was below MSP; farmer considered delaying sale.",
+      "outcome": "Farmer planned partial sale and checked FCI procurement documents.",
+      "risk_level": "WATCH",
+      "confidence": "HIGH",
+      "actions": [
+        "Compare local mandi modal price with MSP before sale.",
+        "Prepare land record, Aadhaar, bank passbook, and crop details for procurement."
+      ],
+      "warnings": [
+        "Do not distress-sell the full harvest when MSP channel is available and storage is safe."
+      ],
+      "evidence_article_ids": ["wiki_mandi_selling_guide", "wiki_pm_kisan_guide"]
+    }
+  ],
+  "finance_entries": [
+    {"days_ago": 52, "type": "expense", "category": "seed", "amount": 1850, "description": "DEMO: Swarna-Sub1 seed and nursery preparation"},
+    {"days_ago": 45, "type": "expense", "category": "labour", "amount": 4200, "description": "DEMO: transplanting labour"},
+    {"days_ago": 31, "type": "expense", "category": "fertilizer", "amount": 3200, "description": "DEMO: DAP, urea, and MOP split application"},
+    {"days_ago": 18, "type": "expense", "category": "irrigation", "amount": 950, "description": "DEMO: canal cleaning and pump diesel"},
+    {"days_ago": 2, "type": "revenue", "category": "expected_harvest_sale", "amount": 0, "description": "DEMO: expected sale will be recorded after harvest"}
+  ],
+  "ndvi_weekly": [
+    {"weeks_ago": 7, "ndvi": 0.43, "cloud_cover_pct": 18},
+    {"weeks_ago": 6, "ndvi": 0.49, "cloud_cover_pct": 12},
+    {"weeks_ago": 5, "ndvi": 0.56, "cloud_cover_pct": 9},
+    {"weeks_ago": 4, "ndvi": 0.61, "cloud_cover_pct": 16},
+    {"weeks_ago": 3, "ndvi": 0.59, "cloud_cover_pct": 30},
+    {"weeks_ago": 2, "ndvi": 0.64, "cloud_cover_pct": 11},
+    {"weeks_ago": 1, "ndvi": 0.66, "cloud_cover_pct": 8},
+    {"weeks_ago": 0, "ndvi": 0.65, "cloud_cover_pct": 6}
+  ],
+  "community_alert": {
+    "issue_category": "fungal_disease",
+    "farmer_count": 7,
+    "severity": 0.68,
+    "broadcast_message": "Scout rice leaves for brown spot and blast after humid cloudy weather. Improve drainage and avoid extra urea."
+  }
+}
