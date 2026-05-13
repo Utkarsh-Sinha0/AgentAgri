@@ -209,6 +209,87 @@ class FarmerProfile(Base):
     last_updated = Column(DateTime, default=datetime.utcnow)
 
 
+# ─── Conversation Continuity ──────────────────────────────────────────
+
+class ConversationThread(Base):
+    """
+    Durable farmer conversation scoped to a field/crop cycle.
+    Lets farmers continue from prior context even if Telegram process memory is lost.
+    """
+    __tablename__ = "conversation_threads"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id"), nullable=True, index=True)
+    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=True, index=True)
+    channel = Column(String(30), default="telegram")
+
+    title = Column(String(200), nullable=True)
+    running_summary = Column(Text, default="")
+    last_user_message = Column(Text, default="")
+    last_agent_message = Column(Text, default="")
+    last_advisory_id = Column(String(36), nullable=True)
+    last_observation_id = Column(String(36), nullable=True)
+    turn_count = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+    turns = relationship("ConversationTurn", back_populates="thread", lazy="selectin")
+
+
+class ConversationTurn(Base):
+    """One user-agent exchange, retained for short-context recovery and audit."""
+    __tablename__ = "conversation_turns"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    thread_id = Column(String(36), ForeignKey("conversation_threads.id"), nullable=False, index=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id"), nullable=True, index=True)
+    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=True)
+    observation_id = Column(String(36), ForeignKey("observations.id"), nullable=True)
+    advisory_id = Column(String(36), ForeignKey("advisories.id"), nullable=True)
+
+    user_message = Column(Text, default="")
+    agent_response = Column(Text, default="")
+    detected_followup = Column(Boolean, default=False)
+    risk_level = Column(String(30), nullable=True)
+    confidence = Column(String(10), nullable=True)
+    retrieval_path = Column(String(10), nullable=True)
+    evidence_article_ids = Column(JSON, default=list)
+    memory_snapshot = Column(Text, default="")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    thread = relationship("ConversationThread", back_populates="turns")
+
+
+class ActionImpact(Base):
+    """
+    Deterministic action impact graph node.
+    Describes how an advisory action changes expected crop, cost, risk, and later advice.
+    """
+    __tablename__ = "action_impacts"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    advisory_id = Column(String(36), ForeignKey("advisories.id"), nullable=False, index=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id"), nullable=True, index=True)
+    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=True)
+
+    action_index = Column(Integer, default=0)
+    action_text = Column(Text, nullable=False)
+    impact_level = Column(String(20), default="medium")  # low, medium, high, critical
+    expected_result = Column(Text, default="")
+    time_horizon = Column(String(80), default="")
+    dependencies = Column(JSON, default=list)
+    risks = Column(JSON, default=list)
+    metrics_delta = Column(JSON, default=dict)
+    affects_previous_suggestions = Column(JSON, default=list)
+    evidence_article_ids = Column(JSON, default=list)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 # ─── Indexes ──────────────────────────────────────────────────────────
 
 Index("ix_memory_atoms_farmer_event", MemoryAtom.farmer_id, MemoryAtom.event_at)
@@ -216,3 +297,6 @@ Index("ix_memory_atoms_field_type", MemoryAtom.field_id, MemoryAtom.atom_type)
 Index("ix_memory_atoms_district", MemoryAtom.district, MemoryAtom.atom_type)
 Index("ix_memory_summaries_scale_lookup", MemorySummary.scale, MemorySummary.scale_id)
 Index("ix_source_citations_advisory", SourceCitation.advisory_id)
+Index("ix_conversation_thread_scope", ConversationThread.farmer_id, ConversationThread.field_id, ConversationThread.crop_cycle_id)
+Index("ix_conversation_turns_thread_created", ConversationTurn.thread_id, ConversationTurn.created_at)
+Index("ix_action_impacts_advisory_action", ActionImpact.advisory_id, ActionImpact.action_index)

@@ -376,6 +376,40 @@ h1 {
   line-height: 1.55;
 }
 
+.strong-copy {
+  margin-bottom: 8px;
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+.impact-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.impact-columns strong {
+  font-size: 0.82rem;
+}
+
+.impact-delta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.impact-delta span {
+  min-height: 24px;
+  padding: 3px 8px;
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
 .pattern-list {
   margin: 12px 0 0;
   padding-left: 18px;
@@ -502,7 +536,8 @@ h1 {
   }
 
   .operator-controls,
-  .source-row {
+  .source-row,
+  .impact-columns {
     align-items: stretch;
     grid-template-columns: 1fr;
   }

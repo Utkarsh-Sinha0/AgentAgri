@@ -44,6 +44,7 @@ class AgentContext:
     crop_name: str | None = None
     crop_stage: str | None = None
     field_id: str | None = None
+    crop_cycle_id: str | None = None
     observation_id: str | None = None
     image_path: str | None = None
     is_followup: bool = False
@@ -92,6 +93,7 @@ class AgentOrchestrator:
         t0 = time.perf_counter()
         evidence = EvidenceBundle()
         thinking_enabled = False
+        detected_followup = ctx.is_followup
 
         # ── Step 0: Vision analysis (if photo provided) ──────────
         vision_result = None
@@ -116,6 +118,21 @@ class AgentOrchestrator:
             needs_retrieval = True
             needs_tools = False
 
+        # ── Step 1.5: Durable conversation routing ───────────────
+        previous_article_ids: list[str] = []
+        try:
+            from app.services.conversation import looks_like_followup, previous_evidence_article_ids
+
+            detected_followup = detected_followup or looks_like_followup(ctx.message)
+            previous_article_ids = await previous_evidence_article_ids(
+                db,
+                farmer_id=ctx.farmer_id,
+                field_id=ctx.field_id,
+                crop_cycle_id=ctx.crop_cycle_id,
+            )
+        except Exception as exc:
+            logger.warning(f"Conversation continuity lookup failed: {exc}")
+
         # ── Step 2: Speculative retrieval (fire in parallel) ─────
         retrieval_task = None
         if needs_retrieval:
@@ -126,7 +143,8 @@ class AgentOrchestrator:
                 crop_name=ctx.crop_name,
                 stage=ctx.crop_stage,
                 topic_tags=topic_tags,
-                is_followup=ctx.is_followup,
+                is_followup=detected_followup,
+                previous_article_ids=previous_article_ids,
             )
 
         # ── Step 3: ReAct planning + MCP tool calls ──────────────
@@ -185,6 +203,11 @@ class AgentOrchestrator:
 
         # Load memory context
         evidence.memory_context = await self._load_memory_context(db, ctx)
+        profile_context = await self._load_personal_profile_context(db, ctx)
+        conversation_context = await self._load_conversation_context(db, ctx)
+        evidence.memory_context = "\n".join(
+            part for part in [profile_context, conversation_context, evidence.memory_context] if part
+        )
 
         # Load NDVI satellite data (§10.3)
         evidence.ndvi_data = await self._load_ndvi_data(db, ctx)
@@ -241,6 +264,18 @@ class AgentOrchestrator:
             retrieval_result.get("path", "fast") if retrieval_result else "none",
             thinking_enabled,
         )
+
+        if advisory_id:
+            await self._record_conversation_and_impacts(
+                db=db,
+                ctx=ctx,
+                advisory_id=advisory_id,
+                display_text=display_text,
+                recommendation=recommendation,
+                evidence=evidence,
+                retrieval_path=retrieval_result.get("path", "none") if retrieval_result else "none",
+                detected_followup=detected_followup,
+            )
 
         latency_ms = int((time.perf_counter() - t0) * 1000)
 
@@ -309,7 +344,7 @@ class AgentOrchestrator:
             db=db,
             farmer_id=ctx.farmer_id,
             field_id=ctx.field_id,
-            crop_cycle_id=None,
+            crop_cycle_id=ctx.crop_cycle_id,
             crop_name=ctx.crop_name,
             crop_stage=ctx.crop_stage,
             risk_type="disease",
@@ -325,6 +360,58 @@ class AgentOrchestrator:
             if mem.get("type") == "village_summary":
                 lines.append(f"    Village pattern: {mem.get('patterns', [])}")
         return "\n".join(lines)
+
+    async def _load_personal_profile_context(self, db: AsyncSession, ctx: AgentContext) -> str:
+        """Load stable farmer/field/crop facts for personalization."""
+        from sqlalchemy import select
+
+        from app.models import CropCycle, Farmer, Field
+        from app.models_memory import FarmerProfile
+
+        farmer = await db.scalar(select(Farmer).where(Farmer.id == ctx.farmer_id))
+        field = await db.scalar(select(Field).where(Field.id == ctx.field_id)) if ctx.field_id else None
+        cycle = (
+            await db.scalar(select(CropCycle).where(CropCycle.field_id == ctx.field_id, CropCycle.is_active))
+            if ctx.field_id
+            else None
+        )
+        profile = await db.scalar(select(FarmerProfile).where(FarmerProfile.farmer_id == ctx.farmer_id))
+
+        lines = ["Personal farm context:"]
+        if farmer:
+            lines.append(
+                f"  Farmer region: village={farmer.village or '?'}, tehsil={farmer.tehsil or '?'}, "
+                f"district={farmer.district or '?'}, language={farmer.preferred_language or ctx.language}"
+            )
+        if field:
+            lines.append(
+                f"  Active field: {field.name or field.id}, area={field.area_acres or '?'} acres, "
+                f"soil={field.soil_type or '?'}, irrigation={field.irrigation_type or '?'}"
+            )
+        if cycle:
+            lines.append(
+                f"  Active crop: {cycle.crop_name}, variety={cycle.variety or '?'}, "
+                f"stage={cycle.current_stage or ctx.crop_stage or '?'}"
+            )
+        if profile:
+            lines.append(
+                "  Constraints: "
+                f"water={profile.water_reliability or '?'}, budget={profile.annual_budget_rs or '?'}, "
+                f"risk={profile.risk_tolerance or '?'}, organic={profile.organic_preference}"
+            )
+        return "\n".join(lines) if len(lines) > 1 else ""
+
+    async def _load_conversation_context(self, db: AsyncSession, ctx: AgentContext) -> str:
+        """Load durable previous exchanges for follow-up continuity."""
+        from app.services.conversation import build_conversation_context
+
+        return await build_conversation_context(
+            db=db,
+            farmer_id=ctx.farmer_id,
+            field_id=ctx.field_id,
+            crop_cycle_id=ctx.crop_cycle_id,
+            max_turns=4,
+        )
 
     async def _load_ndvi_data(self, db: AsyncSession, ctx: AgentContext) -> dict | None:
         """§10.3: Load satellite NDVI data for the farmer's field."""
@@ -538,6 +625,43 @@ class AgentOrchestrator:
             logger.error(f"Failed to persist advisory: {exc}")
             await db.rollback()
             return None
+
+    async def _record_conversation_and_impacts(
+        self,
+        db: AsyncSession,
+        ctx: AgentContext,
+        advisory_id: str,
+        display_text: str,
+        recommendation: Recommendation,
+        evidence: EvidenceBundle,
+        retrieval_path: str,
+        detected_followup: bool,
+    ) -> None:
+        """Persist continuity and action impact graph after advisory creation."""
+        try:
+            from app.services.conversation import build_action_impact_network, record_turn
+
+            await record_turn(
+                db,
+                farmer_id=ctx.farmer_id,
+                field_id=ctx.field_id,
+                crop_cycle_id=ctx.crop_cycle_id,
+                observation_id=ctx.observation_id,
+                advisory_id=advisory_id,
+                user_message=ctx.message,
+                agent_response=display_text,
+                detected_followup=detected_followup,
+                risk_level=recommendation.risk_level,
+                confidence=recommendation.confidence,
+                retrieval_path=retrieval_path,
+                evidence_article_ids=[a["id"] for a in evidence.wiki_articles],
+                memory_snapshot=evidence.memory_context,
+            )
+            await build_action_impact_network(db, advisory_id)
+            await db.commit()
+        except Exception as exc:
+            logger.warning(f"Conversation/impact persistence failed: {exc}")
+            await db.rollback()
 
 
 # ─── Singleton ────────────────────────────────────────────────────────

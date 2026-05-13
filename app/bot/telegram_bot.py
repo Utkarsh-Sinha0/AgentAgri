@@ -628,9 +628,10 @@ async def _process_farmer_query(
             crop_name=cycle.crop_name if cycle else state.get("crop_name"),
             crop_stage=cycle.current_stage if cycle else state.get("crop_stage"),
             field_id=field.id if field else state.get("field_id"),
+            crop_cycle_id=cycle.id if cycle else state.get("crop_cycle_id"),
             observation_id=observation.id,
             image_path=image_path,
-            is_followup=False,
+            is_followup=bool(state.get("last_advisory_id")),
         )
 
         # Run agent
@@ -681,6 +682,7 @@ async def _process_farmer_query(
 
         # Store evidence for callback
         state["last_evidence"] = response.evidence_cards
+        state["last_advisory_id"] = response.advisory_id
         state["last_verifier"] = {
             "passes_all": response.verifier_report.passes_all if response.verifier_report else False,
             "details": str(response.verifier_report) if response.verifier_report else "",

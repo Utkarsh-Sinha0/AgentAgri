@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Database,
   FileSearch,
+  GitBranch,
   Leaf,
   RefreshCw,
   Satellite,
@@ -27,6 +28,7 @@ import './styles.css';
 const tabs = [
   { id: 'clusters', label: 'Clusters', icon: AlertTriangle },
   { id: 'memory', label: 'Memory', icon: Brain },
+  { id: 'impact', label: 'Impact', icon: GitBranch },
   { id: 'sources', label: 'Sources', icon: FileSearch },
   { id: 'eval', label: 'Eval', icon: BarChart3 },
 ];
@@ -53,6 +55,7 @@ function App() {
   const [stats, setStats] = useState(null);
   const [clusters, setClusters] = useState([]);
   const [memory, setMemory] = useState([]);
+  const [impacts, setImpacts] = useState([]);
   const [sources, setSources] = useState([]);
   const [evalData, setEvalData] = useState(null);
   const [apiKey, setApiKey] = useState(localStorage.getItem('agrimesh_api_key') || '');
@@ -63,10 +66,11 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      const [statsData, clusterData, memoryData, sourceData, evalResult] = await Promise.all([
+      const [statsData, clusterData, memoryData, impactData, sourceData, evalResult] = await Promise.all([
         api('/api/stats').catch((err) => ({ error: err.message })),
         api('/api/clusters').catch(() => ({ clusters: [] })),
         api('/api/memory/summaries').catch(() => ({ summaries: [] })),
+        api('/api/impact-network').catch(() => ({ impacts: [] })),
         api('/api/sources').catch(() => ({ sources: [] })),
         api('/api/eval/latest').catch(() => null),
       ]);
@@ -74,6 +78,7 @@ function App() {
       setStats(statsData?.error ? null : statsData);
       setClusters(clusterData?.clusters || []);
       setMemory(memoryData?.summaries || []);
+      setImpacts(impactData?.impacts || []);
       setSources(sourceData?.sources || []);
       setEvalData(evalResult);
     } finally {
@@ -133,6 +138,7 @@ function App() {
         <Metric icon={Users} label="Farmers" value={stats?.farmers ?? 0} />
         <Metric icon={BookOpen} label="Advisories" value={stats?.advisories ?? 0} />
         <Metric icon={Brain} label="Memory atoms" value={stats?.memory_atoms ?? 0} />
+        <Metric icon={GitBranch} label="Action impacts" value={stats?.action_impacts ?? impacts.length} />
         <Metric icon={FileSearch} label="Sources" value={stats?.sources ?? sources.length} />
         <Metric icon={Database} label="Wiki articles" value={stats?.wiki_articles ?? 0} />
       </section>
@@ -170,9 +176,71 @@ function App() {
       {loading && <LoadingState />}
       {!loading && activeTab === 'clusters' && <ClusterView clusters={clusters} reviewCluster={reviewCluster} />}
       {!loading && activeTab === 'memory' && <MemoryView memory={memory} stats={stats} />}
+      {!loading && activeTab === 'impact' && <ImpactView impacts={impacts} stats={stats} />}
       {!loading && activeTab === 'sources' && <SourceView sources={sources} />}
       {!loading && activeTab === 'eval' && <EvalView evalData={evalData} />}
     </main>
+  );
+}
+
+function ImpactView({ impacts, stats }) {
+  if (!impacts.length) {
+    return (
+      <Card>
+        <CardContent className="empty-state">
+          <GitBranch size={24} />
+          <span>No action impact nodes yet. They appear after verified advisories are generated.</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <section className="list-grid">
+      {impacts.map((impact) => (
+        <Card key={impact.id}>
+          <CardHeader>
+            <div className="row-between">
+              <CardTitle>Action {impact.action_index + 1}</CardTitle>
+              <Badge variant={impactVariant(impact.impact_level)}>{impact.impact_level}</Badge>
+            </div>
+            <CardDescription>
+              {impact.time_horizon || 'time unknown'} · advisory {shortId(impact.advisory_id)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="body-copy strong-copy">{impact.action_text}</p>
+            <p className="body-copy">{impact.expected_result}</p>
+            <div className="impact-columns">
+              <MiniList title="Needs" items={impact.dependencies} />
+              <MiniList title="Risks" items={impact.risks} />
+            </div>
+            <div className="impact-delta">
+              <span>Yield risk {formatSigned(impact.metrics_delta?.yield_risk)}</span>
+              <span>Cost {formatSigned(impact.metrics_delta?.cost)}</span>
+              <span>Confidence {formatSigned(impact.metrics_delta?.confidence_gain)}</span>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+      <Card>
+        <CardContent className="empty-state">
+          <Database size={22} />
+          <span>{stats?.conversations || 0} durable field conversations are available for follow-up context.</span>
+        </CardContent>
+      </Card>
+    </section>
+  );
+}
+
+function MiniList({ title, items = [] }) {
+  return (
+    <div>
+      <strong>{title}</strong>
+      <ul className="pattern-list">
+        {items.slice(0, 4).map((item) => <li key={item}>{item}</li>)}
+      </ul>
+    </div>
   );
 }
 
@@ -370,9 +438,26 @@ function buildReadiness(stats, sources, memory, clusters) {
     { label: 'Agent DB', ok: Boolean(stats), icon: Database },
     { label: 'Evidence registry', ok: sources.length >= 6, icon: FileSearch },
     { label: 'Living memory', ok: (stats?.memory_atoms || 0) > 0 || memory.length > 0, icon: Brain },
+    { label: 'Conversation graph', ok: (stats?.conversations || 0) >= 0, icon: GitBranch },
     { label: 'Cluster review', ok: Array.isArray(clusters), icon: ShieldCheck },
     { label: 'Satellite/field data', ok: (stats?.memory_atoms || 0) > 0, icon: Satellite },
   ];
+}
+
+function impactVariant(level) {
+  if (level === 'critical') return 'destructive';
+  if (level === 'high') return 'warning';
+  if (level === 'low') return 'outline';
+  return 'default';
+}
+
+function shortId(value) {
+  return value ? value.slice(0, 8) : 'unknown';
+}
+
+function formatSigned(value) {
+  if (typeof value !== 'number') return 'n/a';
+  return `${value > 0 ? '+' : ''}${value.toFixed(2)}`;
 }
 
 function severityVariant(value) {

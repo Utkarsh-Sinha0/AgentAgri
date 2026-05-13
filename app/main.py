@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 from pydantic import BaseModel
 from pydantic import Field as PydanticField
-from sqlalchemy import func, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -288,6 +288,102 @@ async def farmer_advisories(
     }
 
 
+@app.get("/api/farmers/{farmer_id}/conversation")
+async def farmer_conversation(
+    farmer_id: str,
+    field_id: str | None = None,
+    crop_cycle_id: str | None = None,
+    limit: int = 12,
+    db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_api_key),
+):
+    """Return the durable conversation thread for farmer follow-up continuity."""
+    from app.models_memory import ConversationThread, ConversationTurn
+
+    query = select(ConversationThread).where(ConversationThread.farmer_id == farmer_id)
+    if field_id:
+        query = query.where(ConversationThread.field_id == field_id)
+    if crop_cycle_id:
+        query = query.where(ConversationThread.crop_cycle_id == crop_cycle_id)
+    thread = await db.scalar(query.order_by(desc(ConversationThread.updated_at)).limit(1))
+    if not thread:
+        return {"thread": None, "turns": []}
+
+    turns_result = await db.execute(
+        select(ConversationTurn)
+        .where(ConversationTurn.thread_id == thread.id)
+        .order_by(desc(ConversationTurn.created_at))
+        .limit(min(limit, 50))
+    )
+    turns = list(reversed(turns_result.scalars().all()))
+    return {
+        "thread": {
+            "id": thread.id,
+            "farmer_id": thread.farmer_id,
+            "field_id": thread.field_id,
+            "crop_cycle_id": thread.crop_cycle_id,
+            "title": thread.title,
+            "running_summary": thread.running_summary,
+            "last_advisory_id": thread.last_advisory_id,
+            "turn_count": thread.turn_count,
+            "updated_at": thread.updated_at.isoformat() if thread.updated_at else None,
+        },
+        "turns": [
+            {
+                "id": turn.id,
+                "observation_id": turn.observation_id,
+                "advisory_id": turn.advisory_id,
+                "user_message": turn.user_message,
+                "agent_response": turn.agent_response,
+                "detected_followup": turn.detected_followup,
+                "risk_level": turn.risk_level,
+                "confidence": turn.confidence,
+                "retrieval_path": turn.retrieval_path,
+                "evidence_article_ids": turn.evidence_article_ids or [],
+                "created_at": turn.created_at.isoformat() if turn.created_at else None,
+            }
+            for turn in turns
+        ],
+    }
+
+
+@app.get("/api/advisories/{advisory_id}/impact-network")
+async def advisory_impact_network(
+    advisory_id: str,
+    db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_api_key),
+):
+    """Return action-level impact graph for one advisory, creating it if needed."""
+    from app.services.conversation import build_action_impact_network
+
+    impacts = await build_action_impact_network(db, advisory_id)
+    await db.commit()
+    return {
+        "advisory_id": advisory_id,
+        "count": len(impacts),
+        "impacts": [_serialize_impact(item) for item in impacts],
+    }
+
+
+@app.get("/api/impact-network")
+async def latest_impact_network(
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_api_key),
+):
+    """Dashboard feed of latest action impact graph nodes."""
+    from app.models_memory import ActionImpact
+
+    result = await db.execute(
+        select(ActionImpact).order_by(desc(ActionImpact.created_at)).limit(min(limit, 100))
+    )
+    impacts = result.scalars().all()
+    return {
+        "count": len(impacts),
+        "impacts": [_serialize_impact(item) for item in impacts],
+    }
+
+
 # ─── Eval Dashboard API ───────────────────────────────────────────────
 
 @app.get("/api/eval/latest")
@@ -332,10 +428,18 @@ async def system_stats(
         select(func.count(AlertCluster.id)).where(AlertCluster.status == "pending")
     )).scalar()
     wiki_count = (await db.execute(select(func.count(WikiArticle.id)))).scalar()
-    from app.models_memory import MemoryAtom, MemorySummary, SourceDocument
+    from app.models_memory import (
+        ActionImpact,
+        ConversationThread,
+        MemoryAtom,
+        MemorySummary,
+        SourceDocument,
+    )
     memory_atom_count = (await db.execute(select(func.count(MemoryAtom.id)))).scalar()
     memory_summary_count = (await db.execute(select(func.count(MemorySummary.id)))).scalar()
     source_count = (await db.execute(select(func.count(SourceDocument.id)))).scalar()
+    conversation_count = (await db.execute(select(func.count(ConversationThread.id)))).scalar()
+    impact_count = (await db.execute(select(func.count(ActionImpact.id)))).scalar()
 
     return {
         "farmers": farmer_count,
@@ -345,6 +449,8 @@ async def system_stats(
         "memory_atoms": memory_atom_count,
         "memory_summaries": memory_summary_count,
         "sources": source_count,
+        "conversations": conversation_count,
+        "action_impacts": impact_count,
         "model": settings.ollama_model,
     }
 
@@ -417,6 +523,28 @@ async def source_registry(
             }
             for s in sources
         ],
+    }
+
+
+def _serialize_impact(item) -> dict:
+    """Serialize an ActionImpact row for API/PWA consumers."""
+    return {
+        "id": item.id,
+        "advisory_id": item.advisory_id,
+        "farmer_id": item.farmer_id,
+        "field_id": item.field_id,
+        "crop_cycle_id": item.crop_cycle_id,
+        "action_index": item.action_index,
+        "action_text": item.action_text,
+        "impact_level": item.impact_level,
+        "expected_result": item.expected_result,
+        "time_horizon": item.time_horizon,
+        "dependencies": item.dependencies or [],
+        "risks": item.risks or [],
+        "metrics_delta": item.metrics_delta or {},
+        "affects_previous_suggestions": item.affects_previous_suggestions or [],
+        "evidence_article_ids": item.evidence_article_ids or [],
+        "created_at": item.created_at.isoformat() if item.created_at else None,
     }
 
 
