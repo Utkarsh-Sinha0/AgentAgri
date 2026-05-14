@@ -78,8 +78,8 @@ class Settings(BaseSettings):
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
 
     @field_validator("allowed_origins", "allowed_hosts", mode="before")
-    @classmethod
-    def _parse_csv_list(cls, value):
+    @staticmethod
+    def _parse_csv_list(value):
         if isinstance(value, str):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value

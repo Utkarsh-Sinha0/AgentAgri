@@ -200,6 +200,35 @@ class TestVerifier:
         assert report.confidence_calibrated_to_evidence is False
         assert report.passes_all is False
 
+    def test_verifier_flags_repeated_action_from_memory(self):
+        """Memory contradiction check should fail when advice repeats a recorded action."""
+        import asyncio
+
+        from app.services.verifier import EvidenceBundle, Recommendation, VerifierService
+
+        verifier = VerifierService()
+        rec = Recommendation(
+            risk_level="WATCH",
+            confidence="MEDIUM",
+            selected_action_indices=[0],
+            selected_warning_indices=[],
+            actions_text=["Use triazole fungicide only after checking symptoms"],
+            warnings_text=[],
+            contextualization="test",
+        )
+        evidence = EvidenceBundle(
+            wiki_articles=[
+                {"actions": ["Use triazole fungicide only after checking symptoms"], "warnings": []},
+                {"actions": ["Improve field drainage"], "warnings": []},
+                {"actions": ["Scout leaves tomorrow"], "warnings": []},
+            ],
+            memory_context="Farmer already applied triazole fungicide yesterday.",
+        )
+        report, fallback = asyncio.run(verifier.verify(rec, evidence))
+
+        assert report.actions_dont_contradict_memory is False
+        assert report.passes_all is False
+
 
 class TestAdaptiveRouter:
 
@@ -243,7 +272,9 @@ class TestOllamaClient:
             result = asyncio.run(OllamaClient().chat(messages, thinking=True))
 
         sent_messages = client.chat.call_args.kwargs["messages"]
+        sent_options = client.chat.call_args.kwargs["options"]
         assert sent_messages[0]["content"] == "static system"
         assert sent_messages[1]["content"].startswith("<|think|>\n")
         assert messages[1]["content"] == "plan tools"
+        assert sent_options["num_predict"] == 1024
         assert result["content"] == "{}"

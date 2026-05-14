@@ -23,6 +23,6 @@ const buttonVariants = cva('ui-button', {
   },
 });
 
-export function Button({ className, variant, size, ...props }) {
-  return <button className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+export function Button({ className, variant, size, type = 'button', ...props }) {
+  return <button type={type} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
 }

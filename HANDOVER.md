@@ -47,16 +47,16 @@ AgriMesh V4.0 is a **local-first, AI-powered agricultural intelligence agent** f
 
 | Metric | Value |
 |---|---|
-| Total files | **92** |
-| Python files | **36** (~8,000 lines) |
-| Database tables | **17** (12 core + 5 memory/evidence) |
+| Total files | **100** |
+| Python files | **48** |
+| Database tables | **20** (12 core + 8 memory/evidence) |
 | Services | **15** |
 | MCP servers | **4** |
 | Wiki articles | **11** (with 9 graph relationship types) |
 | Grammar schemas | **5** |
 | Telegram commands | **24** |
-| Registered sources | **10** (6 official + 4 tool) |
-| Tests | **37 passing** |
+| Registered sources | **16** |
+| Tests | **42 passing** |
 | Target VRAM | ~8.9 GB / 12 GB (74%) |
 | Target latency | p50 ≤ 3.5s, p95 ≤ 6.0s |
 
@@ -247,19 +247,23 @@ pwa/
 ├── vite.config.js
 ├── index.html                   # Dark theme, CSS variables
 └── src/
-    ├── main.jsx                 # React dashboard shell (clusters, memory, sources, eval)
-    ├── styles.css               # shadcn-style design tokens + responsive layout
+    ├── main.jsx                 # Farmer dashboard + extension console
+    ├── styles.css               # Weather skins, dashboard surfaces, responsive layout
     ├── lib/utils.js             # cn() helper
-    └── components/ui/           # source-owned Button/Card/Badge/Input/Tabs primitives
+    └── components/              # UI primitives and animated icons
 ```
 
 ### Tests & Evals
 ```
 tests/
 ├── conftest.py                  # Test DB fixture (create_all/drop_all per module)
-├── test_e4b_grammar.py          # 20 tests: schemas, safety, verifier, router
-├── test_retrieval.py            # 4 tests: wiki loading, SQL filter, keyword
-└── test_agent_e2e.py            # 4 tests: agent pipeline with mocks
+├── test_e4b_grammar.py          # Schemas, safety, verifier, router, Ollama options
+├── test_retrieval.py            # Wiki loading, SQL filter, keyword guard
+├── test_agent_e2e.py            # Agent pipeline with mocks
+├── test_api_security.py         # API key, dashboard privacy, request validation
+├── test_conversation_impact.py  # Durable conversations and impact graph
+├── test_demo_seed.py            # Demo memory seed richness and idempotence
+└── test_farmer_dashboard.py     # Personalized dashboard + profile upsert
 
 evals/
 └── golden_queries.jsonl         # 15 Hindi/English eval queries
@@ -830,20 +834,22 @@ PrivacyManager.mask_coordinates(lat, lng, scale)
 
 ## 21. Test Suite
 
-### 33 Passing Tests
+### 42 Passing Tests
 
 | Test File | Tests | Coverage |
 |---|---|---|
-| `test_e4b_grammar.py` | 21 | Schema validation, safety regex, verifier, adaptive router, thinking-token request shaping |
-| `test_retrieval.py` | 4 | Wiki loading, SQL metadata filter, keyword retrieval |
+| `test_e4b_grammar.py` | 22 | Schema validation, safety regex, verifier, memory contradiction, adaptive router, thinking-token request shaping |
+| `test_retrieval.py` | 5 | Wiki loading, SQL metadata filter, keyword retrieval and empty-query guard |
 | `test_agent_e2e.py` | 4 | Agent pipeline with mock Ollama + mock retrieval |
-| `test_api_security.py` | 3 | API-key gate, request validation, degradation shape |
+| `test_api_security.py` | 6 | API-key gate, dashboard privacy, request validation, degradation shape |
+| `test_conversation_impact.py` | 2 | Durable conversation turns and action impact network |
 | `test_demo_seed.py` | 1 | Demo memory seed richness and idempotence |
+| `test_farmer_dashboard.py` | 2 | Farmer dashboard payload and profile upsert |
 
 ### Test Commands
 
 ```bash
-make test          # All 33 tests with coverage
+make test          # All 42 tests with coverage
 make test-e4b      # Grammar + verifier tests
 make test-retrieval # Retrieval pipeline tests
 make test-agent    # Agent E2E tests
@@ -888,7 +894,7 @@ docker compose up
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=gemma4:e4b
 OLLAMA_FALLBACK_MODEL=gemma4:e2b
-TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_BOT_TOKEN=
 DATABASE_URL=sqlite+aiosqlite:///./data/agrimesh.db
 USE_GRAMMAR_DECODING=1
 ```
@@ -927,14 +933,14 @@ USE_GRAMMAR_DECODING=1
 - Durable conversation memory and action impact network
 - 6-level degradation ladder + circuit breaker
 - Living memory system (extract, coarsen, traverse)
-- Evidence/source registry (10 sources)
+- Evidence/source registry (16 sources)
 - 6-factor alert similarity scoring
 - Market intelligence (sell advisor + FCI directory)
 - Proactive messaging (4 triggers)
 - Pattern discovery (nightly batch)
 - Eval harness (15 golden queries, 6 metrics)
 - Security (Argon2id, rate limiting, privacy manager)
-- 37 passing tests
+- 42 passing tests
 - Docker + docker-compose
 - Alembic migrations
 - pyproject.toml (Ruff + pytest + coverage)
@@ -997,7 +1003,7 @@ USE_GRAMMAR_DECODING=1
 # Development
 make install        # Install Python dependencies
 make seed           # Initialize database + load wiki + seed data
-make test           # Run all 33 tests
+make test           # Run all 42 tests
 make eval           # Run eval harness
 make lint           # Ruff linter
 make format         # Ruff auto-format

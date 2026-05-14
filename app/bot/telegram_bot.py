@@ -1560,8 +1560,8 @@ async def outcome_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def create_bot() -> Application:
     """Create and configure the Telegram bot application."""
-    token = settings.telegram_bot_token
-    if not token or token == "your_bot_token_here":
+    token = settings.telegram_bot_token.strip()
+    if not token:
         logger.warning("TELEGRAM_BOT_TOKEN not set! Bot will not start.")
         return None
 

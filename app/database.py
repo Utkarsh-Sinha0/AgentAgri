@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 
+from loguru import logger
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
@@ -48,6 +49,8 @@ async def init_db():
     import app.models_memory  # noqa: F401 — register memory + evidence tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        if _use_sqlite:
+            await _sync_sqlite_columns(conn)
 
 
 async def _sync_sqlite_columns(conn) -> None:
@@ -67,5 +70,5 @@ async def _sync_sqlite_columns(conn) -> None:
                     await conn.execute(
                         text(f'ALTER TABLE "{table_name}" ADD COLUMN "{column_name}" {column_type}')
                     )
-    except Exception:
-        pass  # Best-effort sync
+    except Exception as exc:
+        logger.warning(f"SQLite additive schema sync skipped: {exc}")

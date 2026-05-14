@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-37%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-42%20passed-brightgreen)](tests/)
 [![Kaggle](https://img.shields.io/badge/kaggle-gemma--4--good--hackathon-orange)](https://kaggle.com)
 
 ---
@@ -36,6 +36,11 @@
 21. [Competition Tracks](#21-competition-tracks)
 22. [Roadmap](#22-roadmap)
 23. [Contributing](#23-contributing)
+
+Detailed handoff documents:
+
+- [Product pitch and use cases](PRODUCT_PITCH_AND_USE_CASES.md)
+- [Developer spec and tester README](DEVELOPER_SPEC_AND_TESTER_README.md)
 
 ---
 
@@ -378,7 +383,7 @@ Visit:
 
 ```bash
 make help          # Show all commands
-make test          # Run 37 tests
+make test          # Run 42 tests
 make eval          # Run eval harness on golden queries
 make run-bot       # Start Telegram bot only
 make run-api       # Start FastAPI server only
@@ -417,14 +422,15 @@ Copy `.env.example` to `.env` and configure:
 ```env
 OLLAMA_HOST=http://localhost:11434
 OLLAMA_MODEL=gemma4:e4b
-TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_BOT_TOKEN=
 DATABASE_URL=sqlite+aiosqlite:///./data/agrimesh.db
 USE_GRAMMAR_DECODING=1
 APP_ENV=development
 ALLOWED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
 ALLOWED_HOSTS=localhost,127.0.0.1
 AGRIMESH_REQUIRE_API_KEY=false
-AGRIMESH_API_KEY=change-this-before-production
+# Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+AGRIMESH_API_KEY=
 AGRIMESH_DASHBOARD_BASE_URL=http://localhost:8000
 ```
 
@@ -519,11 +525,12 @@ agrimesh/
 ├── evals/
 │   └── golden_queries.jsonl # 15 golden eval queries
 │
-├── tests/                   # 37 passing tests
+├── tests/                   # 42 passing tests
 │   ├── test_e4b_grammar.py  # Schema validation + safety + verifier
 │   ├── test_retrieval.py    # SQL filter + keyword retrieval
 │   ├── test_agent_e2e.py    # Agent pipeline with mocks
-│   ├── test_api_security.py # API key, validation, degradation health
+│   ├── test_api_security.py # API key, privacy, validation, degradation health
+│   ├── test_conversation_impact.py # Conversations + impact graph
 │   ├── test_demo_seed.py    # Demo memory-palace idempotency
 │   └── test_farmer_dashboard.py # Personalized dashboard + profile upsert
 │
@@ -866,7 +873,9 @@ actions, field-level crop status, NDVI trend, mandi/finance signals, durable
 conversation memory, and a no-dependency map overlay. Cluster pins merge from
 field → village → tehsil → district → state as zoom changes; selecting a cluster
 opens farmer-relevant insights for the current field/crop. The previous
-extension-worker console remains available with `?mode=extension`.
+extension-worker console remains available with `?mode=extension`. The UI uses
+lucide icons for most controls and an Its Hover-derived `motion/react` refresh
+icon to keep motion intentional rather than decorative.
 
 ---
 
@@ -1074,6 +1083,7 @@ http://localhost:8000/redoc (ReDoc)
 - [x] Weather/day-night dashboard backgrounds
 - [x] Field/village/tehsil/district/state cluster map merge overlays
 - [x] Durable conversation memory and action impact network
+- [x] Product pitch/use-case doc and mirrored developer/tester spec
 - [x] 6-level degradation ladder
 - [x] 4-line anti-hallucination defense
 - [x] Golden-query eval harness

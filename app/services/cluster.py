@@ -4,12 +4,13 @@ Groups similar observations by geography + crop + issue for extension worker rev
 """
 from __future__ import annotations
 
+import math
 from datetime import datetime
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Advisory, AlertCluster, AlertStatus, Observation
+from app.models import Advisory, AlertCluster, AlertStatus, Field, Observation
 
 
 async def create_cluster(
@@ -182,6 +183,7 @@ async def find_similar_observations(
     # Find observations in same district + crop, within time window
     from datetime import timedelta
     cutoff = obs.created_at - timedelta(hours=time_window_hours)
+    source_field = await db.get(Field, obs.field_id) if obs.field_id else None
 
     # Simplified: find recent observations with similar text content keywords
     keywords = (obs.text_content or "").lower().split()[:5]
@@ -197,6 +199,9 @@ async def find_similar_observations(
             .limit(50)
         )
         for other in all_recent.scalars().all():
+            other_field = await db.get(Field, other.field_id) if other.field_id else None
+            if source_field and other_field and not _within_radius_km(source_field, other_field, radius_km):
+                continue
             other_text = (other.text_content or "").lower()
             match_count = sum(1 for kw in keywords if kw in other_text)
             if match_count >= 2:
@@ -209,3 +214,17 @@ async def find_similar_observations(
                 })
 
     return sorted(similar, key=lambda x: x["match_score"], reverse=True)[:10]
+
+
+def _within_radius_km(source: Field, other: Field, radius_km: float) -> bool:
+    """Approximate field distance with haversine when both observations have coordinates."""
+    if None in (source.lat, source.lng, other.lat, other.lng):
+        return True
+
+    lat1 = math.radians(source.lat)
+    lat2 = math.radians(other.lat)
+    dlat = lat2 - lat1
+    dlng = math.radians(other.lng - source.lng)
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2) ** 2
+    distance_km = 6371.0 * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return distance_km <= radius_km

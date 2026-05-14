@@ -40,6 +40,22 @@ Date: 2026-05-14
    - For low-connectivity farmers, cloud-only state is brittle; for safety and personalization, device-only state is insufficient.
    - Applied change: the dashboard payload includes a server sync marker and the PWA stores the latest farmer dashboard in localStorage, allowing the farmer to resume context while keeping authoritative memory on the server.
 
+10. Modern UI should increase confidence, not add decoration.
+   - Its Hover's motion-first icons support using animation to communicate intent, while 2026 SaaS/dashboard guidance emphasizes calm density, progressive complexity, and the right data at the right moment.
+   - Applied change: the PWA now uses an Its Hover-derived animated refresh icon, hover-intent icon states, visible form labels, stronger contrast surfaces, weather-safe readability, and a more polished map/metric/card system.
+
+11. RAG and agent security need explicit trust boundaries.
+   - OWASP Top 10 for LLM Applications 2025 identifies prompt injection, sensitive information disclosure, excessive agency, vector/embedding weaknesses, misinformation, and unbounded consumption as relevant risks for RAG and agent systems.
+   - Applied change: the agent prompt now explicitly marks farmer messages, retrieved evidence, memory, and conversation history as untrusted factual context, not executable instructions. Protected dashboard access now requires farmer identity when API-key auth is enabled.
+
+12. AI risk management should be governable and testable.
+   - NIST AI RMF and the GenAI Profile emphasize mapping, measuring, managing, and documenting risks rather than trusting model behavior implicitly.
+   - Applied change: the developer spec now records the retrieval/reasoning contract, security checks, dependency checks, demo boundaries, and local verification commands.
+
+13. Agricultural RAG systems should use curated package-of-practices style sources and domain evaluation.
+   - A 2026 Journal of Agricultural Engineering RAG advisory framework compares LLMs on agronomic guidance over package-of-practices documents, reinforcing the need for evidence-grounded domain retrieval rather than generic chat.
+   - Applied change: the existing wiki/evidence registry remains the source of action indices, and empty keyword retrieval now safely returns no evidence instead of generating invalid SQL.
+
 ## Implemented Modules
 
 - `app/models_memory.py`
@@ -67,6 +83,18 @@ Date: 2026-05-14
   - `/api/farmer-dashboard`
   - `/api/farmers/{farmer_id}/profile`
   - stats now include conversation and impact counts
+  - farmer profile input bounds
+  - invalid content-length rejection
+  - production protected dashboard requires farmer identity
+
+- `app/database.py`
+  - SQLite additive schema repair is now called during startup instead of existing as unused helper code
+
+- `app/services/agent.py`
+  - removed unused evidence-card parameter
+
+- `app/services/cluster.py`
+  - `radius_km` now filters same-window observations by approximate field distance when coordinates exist
 
 - `pwa/src/main.jsx`
   - farmer-first dashboard mode
@@ -74,24 +102,78 @@ Date: 2026-05-14
   - field/crop/NDVI, money, memory, and profile views
   - multi-scale cluster map overlays
   - local dashboard cache for offline resume
+  - visible input labels and button titles for clearer tester interaction
   - new Impact tab
   - action consequence cards
   - conversation graph readiness signal
 
+- `pwa/src/styles.css`
+  - contrast-safe weather skins
+  - professional dashboard surfaces, tab states, hover states, map pins, and responsive layout
+
+- `pwa/src/components/icons/hover-refresh-icon.jsx`
+  - animated refresh icon adapted from Its Hover registry
+
 - `app/services/farmer_dashboard.py`
   - dashboard aggregation service for farmer profile, fields, crop cycles, crop tasks, weather, mandi, finance, memory, advisories, cluster overlays, and sync metadata
+  - bounded profile list normalization
+
+- `app/services/retrieval.py`
+  - empty keyword retrieval guard
+
+- `app/utils/ollama_client.py`
+  - explicit untrusted-context instruction for farmer input, memory, conversations, and retrieved evidence
+  - `max_tokens` is now passed to Ollama as `num_predict`
+
+- `app/services/verifier.py`
+  - deterministic memory contradiction check now flags repeated actions already recorded in field memory
+  - removed no-op pass branches from semantic/calibration checks
+
+- `tests/test_api_security.py`
+  - API-key dashboard identity gate
+  - invalid profile numeric rejection
+  - invalid content-length rejection
+
+- `tests/test_retrieval.py`
+  - empty keyword query regression coverage
 
 - `app/bot/telegram_bot.py`
   - `/dashboard` command
   - dashboard URL button after advisory
   - clearer command buttons that describe what each action will do
 
+## Code and Security Audit Results
+
+| Check | Result |
+|---|---|
+| `venv\Scripts\python -m pip check` | Passed, no broken requirements |
+| `venv\Scripts\python -m pip_audit -r requirements.txt` | No known vulnerabilities reported |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+| `venv\Scripts\python -m compileall -q app tests scripts` | Passed |
+| `venv\Scripts\python -m ruff check app tests` | Passed |
+| `venv\Scripts\python -m vulture app scripts tests --min-confidence 80` | Passed after removing unused variables and wiring SQLite schema sync |
+| Focused security/retrieval tests | Passed |
+| `npm run build` | Passed |
+| debt scan over app, pwa/src, scripts, tests, and docs | No stale marker, placeholder, or unused-code patterns found |
+
+Remaining demo-phase boundaries are documented in `DEVELOPER_SPEC_AND_TESTER_README.md`: seeded/live provider split, in-memory rate limit for local demo, SQLite default, and uneven coverage for Telegram/Ollama/external-provider modules.
+
 ## Sources Used
 
 - World Bank Live, "Building AI Foundations From Farms to Future Economies", 2025.
 - AgriRegion, arXiv:2512.10114, 2025.
 - AgriGPT, arXiv:2508.08632, 2025.
+- Journal of Agricultural Engineering, "Empowering farmers with artificial intelligence: a retrieval-augmented generation based large language model advisory framework", 2026.
+- OWASP Top 10 for LLM Applications v2025.
+- NIST AI Risk Management Framework and NIST AI 600-1 Generative AI Profile.
 - NASA POWER Daily API documentation.
 - IMD API Management Platform.
 - FAOSTAT API Developer Portal announcement, 2026.
 - "Unlocking AI's Potential in Agriculture: The Critical Role of Data", arXiv:2603.23289, 2026.
+- Its Hover, animated icon registry and project documentation, 2026.
+- FarmDataViewer field mapping and task management product documentation.
+- AcreMax 360 farm mapping and installable app product documentation.
+- FarmMind GIS mapping feature documentation.
+- SaaSUI 2026 UI trend analysis.
+- Dashboard design pattern guidance for metric strips and navigation.
+- WCAG 2.2 contrast guidance for readable text over variable backgrounds.

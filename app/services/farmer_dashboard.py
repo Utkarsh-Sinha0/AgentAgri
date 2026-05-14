@@ -134,9 +134,7 @@ async def upsert_farmer_profile(
     for key in list_fields:
         if key in payload:
             value = payload[key]
-            if isinstance(value, str):
-                value = [item.strip() for item in value.split(",") if item.strip()]
-            setattr(profile, key, value or [])
+            setattr(profile, key, _clean_profile_list(value))
 
     profile.profile_completeness = _profile_completeness(profile)
     profile.last_updated = datetime.utcnow()
@@ -479,6 +477,26 @@ def _profile_completeness(profile: FarmerProfile) -> float:
         if value not in (None, "", [], 0):
             filled += 1
     return round(filled / len(keys), 2)
+
+
+def _clean_profile_list(value: Any) -> list[str]:
+    """Normalize farmer-entered CSV/list fields without letting them grow unbounded."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        items = value.split(",")
+    elif isinstance(value, list):
+        items = value
+    else:
+        items = [value]
+    cleaned = []
+    for item in items:
+        text = str(item).strip()
+        if text:
+            cleaned.append(text[:80])
+        if len(cleaned) >= 20:
+            break
+    return cleaned
 
 
 def _serialize_cycle(cycle: CropCycle | None) -> dict[str, Any] | None:

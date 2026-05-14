@@ -116,3 +116,11 @@ async def test_keyword_retrieve(db_session):
     results = await keyword_retrieve(db_session, "rice blast fungicide")
     assert len(results) >= 1
     assert results[0]["id"] == "test_kw"
+
+
+@pytest.mark.asyncio
+async def test_keyword_retrieve_empty_query_returns_empty_list(db_session):
+    """Empty keyword searches should not create invalid SQL OR clauses."""
+    from app.services.retrieval import keyword_retrieve
+
+    assert await keyword_retrieve(db_session, "   ") == []

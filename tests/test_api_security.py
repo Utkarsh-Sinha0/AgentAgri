@@ -27,6 +27,41 @@ def test_protected_api_requires_key_when_enabled():
         settings.api_key = old_key
 
 
+def test_protected_dashboard_requires_farmer_identity_when_key_enabled():
+    old_require = settings.require_api_key
+    old_key = settings.api_key
+    settings.require_api_key = True
+    settings.api_key = "test-secret"
+    try:
+        with TestClient(app) as client:
+            response = client.get(
+                "/api/farmer-dashboard",
+                headers={"X-AgriMesh-API-Key": "test-secret"},
+            )
+        assert response.status_code == 400
+        assert "farmer_id or phone" in response.json()["detail"]
+    finally:
+        settings.require_api_key = old_require
+        settings.api_key = old_key
+
+
+def test_profile_update_rejects_invalid_numeric_values_before_db_lookup():
+    with TestClient(app) as client:
+        response = client.put(
+            "/api/farmers/example/profile",
+            json={"farm_size_acres": -1, "annual_budget_rs": -5},
+        )
+
+    assert response.status_code == 422
+
+
+def test_invalid_content_length_header_is_rejected():
+    with TestClient(app) as client:
+        response = client.get("/health", headers={"content-length": "not-a-number"})
+
+    assert response.status_code == 400
+
+
 def test_cluster_review_rejects_invalid_action_before_mutation():
     with TestClient(app) as client:
         response = client.post(

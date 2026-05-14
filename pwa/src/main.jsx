@@ -29,6 +29,7 @@ import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Input } from './components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
+import { HoverRefreshIcon } from './components/icons/hover-refresh-icon';
 import './styles.css';
 
 const extensionTabs = [
@@ -49,6 +50,16 @@ const farmerTabs = [
 
 function dashboardCacheKey(farmerId = 'default') {
   return `agrimesh_farmer_dashboard_${farmerId}`;
+}
+
+function loadCachedDashboard(farmerId = 'default') {
+  try {
+    const cached = localStorage.getItem(dashboardCacheKey(farmerId || 'default'));
+    return cached ? JSON.parse(cached) : null;
+  } catch {
+    localStorage.removeItem(dashboardCacheKey(farmerId || 'default'));
+    return null;
+  }
 }
 
 async function api(path) {
@@ -82,8 +93,7 @@ function App() {
   const [sources, setSources] = useState([]);
   const [evalData, setEvalData] = useState(null);
   const [farmerDashboard, setFarmerDashboard] = useState(() => {
-    const cached = localStorage.getItem(dashboardCacheKey(farmerFromUrl || 'default'));
-    return cached ? JSON.parse(cached) : null;
+    return loadCachedDashboard(farmerFromUrl || 'default');
   });
   const [apiKey, setApiKey] = useState(localStorage.getItem('agrimesh_api_key') || '');
   const [farmerId, setFarmerId] = useState(farmerFromUrl);
@@ -178,26 +188,28 @@ function App() {
             <div className="brand-mark"><Leaf size={22} /></div>
             <div>
               <h1>{mode === 'farmer' ? 'My AgriMesh Farm' : 'AgriMesh V4.0'}</h1>
-              <p>{mode === 'farmer' ? farmerDashboard?.farmer?.name || 'Personal farm command center' : 'Evidence-first extension dashboard'}</p>
+              <p>{mode === 'farmer' ? farmerIdentity(farmerDashboard) : 'Evidence-first extension dashboard'}</p>
             </div>
           </div>
           <div className="operator-controls">
-            <Button variant={mode === 'farmer' ? 'default' : 'secondary'} onClick={() => setMode('farmer')}>
+            <Button title="Open the farmer dashboard: weather, fields, map, money, and memory" variant={mode === 'farmer' ? 'default' : 'secondary'} onClick={() => setMode('farmer')}>
               <Leaf size={16} />
               Farmer
             </Button>
-            <Button variant={mode === 'extension' ? 'default' : 'secondary'} onClick={() => setMode('extension')}>
+            <Button title="Open the extension console: clusters, memory summaries, impact graph, sources, and evals" variant={mode === 'extension' ? 'default' : 'secondary'} onClick={() => setMode('extension')}>
               <ShieldCheck size={16} />
               Extension
             </Button>
-            <Input
-              aria-label="API key"
-              placeholder="API key"
-              value={apiKey}
-              onChange={(event) => saveApiKey(event.target.value)}
-            />
-            <Button variant="secondary" onClick={loadDashboard} disabled={loading}>
-              <RefreshCw size={16} />
+            <label className="header-field">
+              <span>API key</span>
+              <Input
+                aria-label="API key"
+                value={apiKey}
+                onChange={(event) => saveApiKey(event.target.value)}
+              />
+            </label>
+            <Button title="Refresh all dashboard API calls from the server" variant="secondary" onClick={loadDashboard} disabled={loading}>
+              <HoverRefreshIcon size={16} />
               Refresh
             </Button>
           </div>
@@ -251,7 +263,7 @@ function FarmerShell({ dashboard, loading, activeTab, setActiveTab, saveProfileP
       <Tabs>
         <TabsList>
           {farmerTabs.map((tab) => (
-            <TabsTrigger key={tab.id} active={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
+            <TabsTrigger key={tab.id} title={`Open ${tab.label} view`} active={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
               <tab.icon size={16} />
               {tab.label}
             </TabsTrigger>
@@ -381,7 +393,7 @@ function ProfileCoach({ dashboard, saveProfilePatch }) {
             </label>
           ))}
         </div>
-        <Button onClick={submit} disabled={!Object.keys(draft).length}>
+        <Button title="Save these answers to the server profile and local dashboard cache" onClick={submit} disabled={!Object.keys(draft).length}>
           <CheckCircle2 size={16} />
           Save answers
         </Button>
@@ -443,12 +455,13 @@ function FarmerMapView({ dashboard }) {
           </div>
           <div className="cluster-map" role="img" aria-label="Farmer field and nearby alert clusters">
             <div className="map-grid" />
-            <button className="field-pin" style={{ left: '50%', top: '50%' }} onClick={() => setSelected({ own: true, ...mapData.own_field })}>
+            <button title="Your current selected field" className="field-pin" style={{ left: '50%', top: '50%' }} onClick={() => setSelected({ own: true, ...mapData.own_field })}>
               <Leaf size={14} />
             </button>
             {merged.map((cluster) => (
               <button
                 key={cluster.id}
+                title={`${cluster.level} cluster: ${cluster.farmer_count} farmers reporting ${cluster.issue_category}`}
                 className={`cluster-pin severity-${severityVariant(cluster.severity)}`}
                 style={{ left: `${cluster.x}%`, top: `${cluster.y}%`, width: pinSize(cluster), height: pinSize(cluster) }}
                 onClick={() => setSelected(cluster)}
@@ -593,7 +606,7 @@ function ExtensionShell({ stats, clusters, memory, impacts, sources, evalData, l
       <Tabs>
         <TabsList>
           {extensionTabs.map((tab) => (
-            <TabsTrigger key={tab.id} active={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
+            <TabsTrigger key={tab.id} title={`Open ${tab.label} view`} active={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
               <tab.icon size={16} />
               {tab.label}
             </TabsTrigger>
@@ -725,21 +738,23 @@ function ClusterView({ clusters, reviewCluster }) {
             <CardDescription>{cluster.district} / {cluster.tehsil || 'unknown tehsil'} · {cluster.crop_name} · {cluster.farmer_count} farmers</CardDescription>
           </CardHeader>
           <CardContent>
-            <Input
-              placeholder="Broadcast message in Hindi or English"
-              value={broadcasts[cluster.id] || ''}
-              onChange={(event) => setBroadcasts({ ...broadcasts, [cluster.id]: event.target.value })}
-            />
+            <label className="question-row">
+              <span>Broadcast message</span>
+              <Input
+                value={broadcasts[cluster.id] || ''}
+                onChange={(event) => setBroadcasts({ ...broadcasts, [cluster.id]: event.target.value })}
+              />
+            </label>
             <div className="action-row">
-              <Button onClick={() => reviewCluster(cluster.id, 'approve_broadcast', broadcasts[cluster.id] || `Alert: ${cluster.issue_category} in ${cluster.crop_name}. Check your crop today.`)}>
+              <Button title="Approve this cluster and send the broadcast message" onClick={() => reviewCluster(cluster.id, 'approve_broadcast', broadcasts[cluster.id] || `Alert: ${cluster.issue_category} in ${cluster.crop_name}. Check your crop today.`)}>
                 <ShieldCheck size={16} />
                 Approve
               </Button>
-              <Button variant="ghost" onClick={() => reviewCluster(cluster.id, 'reviewed')}>
+              <Button title="Mark the cluster reviewed without broadcasting" variant="ghost" onClick={() => reviewCluster(cluster.id, 'reviewed')}>
                 <CheckCircle2 size={16} />
                 Reviewed
               </Button>
-              <Button variant="destructive" onClick={() => reviewCluster(cluster.id, 'dismiss')}>Dismiss</Button>
+              <Button title="Dismiss this cluster as not actionable" variant="destructive" onClick={() => reviewCluster(cluster.id, 'dismiss')}>Dismiss</Button>
             </div>
           </CardContent>
         </Card>
@@ -886,6 +901,14 @@ function buildReadiness(stats, sources, memory, clusters) {
     { label: 'Cluster review', ok: Array.isArray(clusters), icon: ShieldCheck },
     { label: 'Satellite/field data', ok: (stats?.memory_atoms || 0) > 0, icon: Satellite },
   ];
+}
+
+function farmerIdentity(dashboard) {
+  const farmer = dashboard?.farmer;
+  if (!farmer) return 'Personal farm command center';
+  const place = [farmer.village, farmer.district].filter(Boolean).join(', ');
+  const sync = dashboard?.sync?.offline_ready ? 'offline-ready' : 'server-only';
+  return [farmer.name, place, sync].filter(Boolean).join(' · ');
 }
 
 function mergeClusters(clusters, zoom) {

@@ -280,7 +280,7 @@ class AgentOrchestrator:
         latency_ms = int((time.perf_counter() - t0) * 1000)
 
         # Build evidence cards for display
-        evidence_cards = self._build_evidence_cards(evidence, vision_result, tool_results)
+        evidence_cards = self._build_evidence_cards(evidence, vision_result)
 
         return AgentResponse(
             advisory_id=advisory_id,
@@ -499,7 +499,7 @@ class AgentOrchestrator:
         return "\n".join(lines)
 
     def _build_evidence_cards(
-        self, evidence: EvidenceBundle, vision: dict | None, tools: dict
+        self, evidence: EvidenceBundle, vision: dict | None
     ) -> list[dict]:
         cards = []
         if vision:

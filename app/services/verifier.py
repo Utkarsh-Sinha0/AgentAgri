@@ -200,19 +200,36 @@ class VerifierService:
         if rec.risk_level == "ESCALATE" and len(rec.selected_action_indices) == 0:
             return False
         if rec.risk_level == "NORMAL" and len(rec.selected_action_indices) > 3:
-            # Suspicious: too many actions for a normal situation
-            pass  # Not a hard fail, just note it
+            logger.info("NORMAL risk advisory includes multiple actions; allowed but worth monitoring")
         return True
 
     def _check_memory_contradiction(self, rec: Recommendation, ev: EvidenceBundle) -> bool:
         """Check if advice contradicts recent memory."""
-        # This is a heuristic stub — full contradiction detection needs temporal reasoning
-        if ev.memory_context and "already applied" in ev.memory_context:
-            for _action in rec.actions_text:
-                # Check if we're recommending something that was already done
-                # (simplistic check; production would use embeddings)
-                pass
-        return True  # Stub: always pass unless we build full contradiction detection
+        memory = ev.memory_context.lower()
+        if not memory:
+            return True
+
+        done_markers = (
+            "already applied",
+            "already done",
+            "already used",
+            "done earlier",
+            "used earlier",
+            "पहले",
+            "कर चुके",
+            "लगा चुके",
+        )
+        if not any(marker in memory for marker in done_markers):
+            return True
+
+        action_terms = _important_terms(" ".join(rec.actions_text))
+        overlapping_terms = [term for term in action_terms if term in memory]
+        if overlapping_terms:
+            logger.warning(
+                f"Recommendation may repeat an already recorded action: {overlapping_terms[:5]}"
+            )
+            return False
+        return True
 
     # ── Calibration check ────────────────────────────────────────
 
@@ -223,12 +240,6 @@ class VerifierService:
         if rec.confidence == "HIGH" and article_count < 3:
             logger.warning(f"HIGH confidence with only {article_count} evidence articles")
             return False
-        if rec.confidence == "HIGH" and not ev.weather_data and not ev.mandi_data:
-            # Acceptable if wiki evidence is strong
-            pass
-        if rec.confidence == "LOW" and article_count >= 5:
-            # Inverted: lots of evidence but low confidence
-            pass  # Not a fail — could be genuinely ambiguous
 
         return True
 
@@ -258,3 +269,28 @@ def get_verifier() -> VerifierService:
     if _verifier is None:
         _verifier = VerifierService()
     return _verifier
+
+
+def _important_terms(text: str) -> list[str]:
+    """Extract coarse action terms for deterministic memory contradiction checks."""
+    stopwords = {
+        "about",
+        "after",
+        "apply",
+        "before",
+        "check",
+        "consult",
+        "field",
+        "follow",
+        "label",
+        "monitor",
+        "spray",
+        "today",
+        "with",
+        "your",
+    }
+    terms = []
+    for term in re.findall(r"[a-zA-Z][a-zA-Z_-]{3,}", text.lower()):
+        if term not in stopwords and term not in terms:
+            terms.append(term)
+    return terms

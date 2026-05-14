@@ -17,7 +17,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from pydantic import Field as PydanticField
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,26 +40,33 @@ class ClusterReviewRequest(BaseModel):
 
 
 class FarmerProfileUpdate(BaseModel):
-    farm_size_acres: float | None = None
-    irrigation_source: str | None = None
-    water_reliability: str | None = None
-    soil_test_status: str | None = None
-    primary_soil_type: str | None = None
+    farm_size_acres: float | None = PydanticField(default=None, ge=0, le=100000)
+    irrigation_source: str | None = PydanticField(default=None, max_length=80)
+    water_reliability: str | None = PydanticField(default=None, max_length=80)
+    soil_test_status: str | None = PydanticField(default=None, max_length=80)
+    primary_soil_type: str | None = PydanticField(default=None, max_length=80)
     equipment_access: list[str] | str | None = None
-    labor_availability: str | None = None
-    storage_access: str | None = None
-    transport_access: str | None = None
-    annual_budget_rs: int | None = None
-    risk_tolerance: str | None = None
-    credit_access: str | None = None
-    insurance_status: str | None = None
+    labor_availability: str | None = PydanticField(default=None, max_length=80)
+    storage_access: str | None = PydanticField(default=None, max_length=80)
+    transport_access: str | None = PydanticField(default=None, max_length=80)
+    annual_budget_rs: int | None = PydanticField(default=None, ge=0, le=1_000_000_000)
+    risk_tolerance: str | None = PydanticField(default=None, max_length=80)
+    credit_access: str | None = PydanticField(default=None, max_length=80)
+    insurance_status: str | None = PydanticField(default=None, max_length=80)
     organic_preference: bool | None = None
     preferred_mandis: list[str] | str | None = None
-    nearest_mandi_km: float | None = None
+    nearest_mandi_km: float | None = PydanticField(default=None, ge=0, le=2000)
     pm_kisan_enrolled: bool | None = None
     pmfby_enrolled: bool | None = None
     kcc_holder: bool | None = None
     soil_health_card: bool | None = None
+
+    @field_validator("equipment_access", "preferred_mandis")
+    @staticmethod
+    def _bounded_list_or_csv(value):
+        if value is None or isinstance(value, str):
+            return value
+        return [str(item).strip()[:80] for item in value[:20] if str(item).strip()]
 
 
 # ─── Lifespan ─────────────────────────────────────────────────────────
@@ -80,7 +87,7 @@ async def lifespan(app: FastAPI):
         return
 
     # Start Telegram bot in background (if token configured)
-    if settings.telegram_bot_token and settings.telegram_bot_token != "your_bot_token_here":
+    if settings.telegram_bot_token.strip():
         from app.bot.telegram_bot import run_bot
         bot_task = asyncio.create_task(run_bot())
         logger.info("Telegram bot started.")
@@ -142,7 +149,14 @@ app.add_middleware(
 async def request_guardrails(request: Request, call_next):
     """Apply low-cost request limits and browser security headers."""
     content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > settings.max_request_bytes:
+    try:
+        request_bytes = int(content_length) if content_length else 0
+    except ValueError:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"detail": "Invalid Content-Length header"},
+        )
+    if request_bytes > settings.max_request_bytes:
         return JSONResponse(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             content={"detail": "Request body too large"},
@@ -320,6 +334,12 @@ async def current_farmer_dashboard(
 ):
     """Complete farmer-facing dashboard payload for the PWA."""
     from app.services.farmer_dashboard import get_farmer_dashboard
+
+    if settings.api_key_required and not (farmer_id or phone):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="farmer_id or phone is required when API key protection is enabled",
+        )
 
     data = await get_farmer_dashboard(db, farmer_id=farmer_id, phone=phone)
     if data.get("error") == "farmer_not_found":

@@ -363,7 +363,9 @@ async def keyword_retrieve(
     limit: int = 5,
 ) -> list[dict]:
     """Fast keyword-based retrieval using PostgreSQL full-text or simple ILIKE."""
-    keywords = query.lower().split()
+    keywords = [kw for kw in query.lower().split() if kw.strip()]
+    if not keywords:
+        return []
     conditions = []
     for kw in keywords[:5]:  # Top 5 keywords
         conditions.append(WikiArticle.content.ilike(f"%{kw}%"))
