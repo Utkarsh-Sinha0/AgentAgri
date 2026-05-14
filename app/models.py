@@ -5,7 +5,6 @@ Crop-agnostic, region-agnostic. V4.0 scope cut from V3.0's 29 tables.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
     JSON,
@@ -22,6 +21,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils.time import utc_now
 
 # ─── Enums ────────────────────────────────────────────────────────────
 
@@ -68,7 +68,7 @@ class Farmer(Base):
     district = Column(String(80), index=True)
     tehsil = Column(String(80))
     village = Column(String(120))
-    registration_date = Column(DateTime, default=datetime.utcnow)
+    registration_date = Column(DateTime, default=utc_now)
     is_active = Column(Boolean, default=True)
 
     # relationships
@@ -103,7 +103,7 @@ class Field(Base):
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)
     irrigation_type = Column(String(40))  # canal, borewell, rainfed, drip
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     farmer = relationship("Farmer", back_populates="fields")
     crop_cycles = relationship("CropCycle", back_populates="field", lazy="selectin")
@@ -122,7 +122,7 @@ class CropCycle(Base):
     current_stage = Column(String(30), default=CropStage.PRE_SOWING)
     is_active = Column(Boolean, default=True)
     is_template = Column(Boolean, default=False)  # true → reusable crop calendar template
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     field = relationship("Field", back_populates="crop_cycles")
     tasks = relationship("CropCalendarTask", back_populates="cycle", lazy="selectin")
@@ -173,7 +173,7 @@ class Observation(Base):
     outcome_rating = Column(Integer, nullable=True)  # 1–5 farmer feedback
     outcome_logged_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     farmer = relationship("Farmer", back_populates="observations")
     crop_cycle = relationship("CropCycle", back_populates="observations")
@@ -216,7 +216,7 @@ class Advisory(Base):
     previous_observation_id = Column(String(36), nullable=True)
 
     # Audit
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     farmer_feedback = Column(Integer, nullable=True)
     feedback_text = Column(Text, nullable=True)
 
@@ -250,7 +250,7 @@ class VerifierReport(Base):
     confidence_calibrated_to_evidence = Column(Boolean, default=False)
 
     details = Column(JSON, default=dict)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     advisory = relationship("Advisory", back_populates="verifier_report")
 
@@ -292,7 +292,7 @@ class WikiArticle(Base):
 
     # Metadata
     source_url = Column(String(300), nullable=True)
-    last_reviewed = Column(DateTime, default=datetime.utcnow)
+    last_reviewed = Column(DateTime, default=utc_now)
     review_status = Column(String(20), default="published")  # draft, published, deprecated
     confidence_score = Column(Float, default=0.85)
 
@@ -319,7 +319,7 @@ class AlertCluster(Base):
     broadcast_message = Column(Text, nullable=True)
     broadcast_at = Column(DateTime, nullable=True)
     farmers_notified = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     extension_worker = relationship("ExtensionWorker")
 
@@ -336,7 +336,7 @@ class FinanceEntry(Base):
     category = Column(String(40))  # seed, fertilizer, pesticide, labour, irrigation, harvest_sale
     amount = Column(Float, nullable=False)
     description = Column(Text)
-    recorded_at = Column(DateTime, default=datetime.utcnow)
+    recorded_at = Column(DateTime, default=utc_now)
 
 
 # ─── NDVI / Satellite Seed Data ───────────────────────────────────────

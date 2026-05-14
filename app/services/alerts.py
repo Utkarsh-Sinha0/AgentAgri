@@ -5,7 +5,7 @@ Full lifecycle: INTERNAL_WATCH → FARMER_WATCH → EXTENSION_REVIEW → APPROVE
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from loguru import logger
 from sqlalchemy import select
@@ -19,6 +19,7 @@ from app.models import (
     Farmer,
     Observation,
 )
+from app.utils.time import utc_now
 
 # ─── Similarity Scoring (§14.1) ───────────────────────────────────────
 
@@ -108,7 +109,7 @@ async def find_or_create_cluster(
     After each observation: check similarity with recent observations,
     create or update alert clusters.
     """
-    cutoff = datetime.utcnow() - timedelta(hours=72)
+    cutoff = utc_now() - timedelta(hours=72)
 
     # Get farmer info
     farmer_result = await db.execute(
@@ -213,7 +214,7 @@ async def transition_cluster(
     if by_worker_id:
         cluster.reviewed_by = by_worker_id
     if new_status == AlertStatus.BROADCAST:
-        cluster.broadcast_at = datetime.utcnow()
+        cluster.broadcast_at = utc_now()
         cluster.farmers_notified = cluster.farmer_count
 
     await db.commit()

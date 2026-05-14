@@ -6,7 +6,6 @@ Runs as a background async task. Checks every 30 minutes.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
 
 from loguru import logger
 from sqlalchemy import select
@@ -20,6 +19,7 @@ from app.models import (
     Farmer,
     Field,
 )
+from app.utils.time import utc_now
 
 
 async def check_weather_triggers(db: AsyncSession) -> list[dict]:
@@ -183,7 +183,7 @@ async def run_proactive_checks() -> dict:
         logger.info(f"PROACTIVE: [{alert['trigger']}] → farmer {alert.get('farmer_id', alert.get('trigger', 'N/A'))[:20]}")
 
     return {
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": utc_now().isoformat(),
         "total_alerts": len(all_alerts),
         "by_trigger": {},
         "alerts": all_alerts[:20],

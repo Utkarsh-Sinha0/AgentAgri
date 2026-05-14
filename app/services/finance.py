@@ -4,12 +4,11 @@ Track expenses, revenues, compute P&L per crop cycle.
 """
 from __future__ import annotations
 
-from datetime import datetime
-
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import FinanceEntry
+from app.utils.time import utc_now
 
 
 async def log_expense(
@@ -30,7 +29,7 @@ async def log_expense(
         category=category,
         amount=amount,
         description=description,
-        recorded_at=datetime.utcnow(),
+        recorded_at=utc_now(),
     )
     db.add(entry)
     await db.commit()
@@ -61,7 +60,7 @@ async def log_revenue(
         category=category,
         amount=amount,
         description=description,
-        recorded_at=datetime.utcnow(),
+        recorded_at=utc_now(),
     )
     db.add(entry)
     await db.commit()
@@ -132,5 +131,5 @@ async def compute_pnl(
         "profit_margin_pct": round((net_pnl / total_revenue * 100), 1) if total_revenue > 0 else 0,
         "expenses_by_category": expenses_by_category,
         "entry_count": entry_count,
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": utc_now().isoformat(),
     }

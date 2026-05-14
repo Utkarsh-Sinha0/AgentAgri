@@ -5,7 +5,7 @@ Seeded data with real API shape.
 """
 from __future__ import annotations
 
-from datetime import datetime
+from app.utils.time import utc_now
 
 # ─── Scheme Definitions ───────────────────────────────────────────────
 
@@ -123,7 +123,7 @@ async def match_schemes(
         "schemes": matched,
         "source": "seeded — PM-KISAN/PMFBY/KCC/SHC official eligibility criteria",
         "note": "Actual eligibility verified by local agriculture department",
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": utc_now().isoformat(),
     }
 
 

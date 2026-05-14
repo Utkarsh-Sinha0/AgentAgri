@@ -6,13 +6,13 @@ existing advisories, observations, evidence article IDs, and memory atoms.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Advisory, WikiArticle
 from app.models_memory import ActionImpact, ConversationThread, ConversationTurn
+from app.utils.time import utc_now
 
 FOLLOWUP_MARKERS = {
     "hi": ["अब", "फिर", "उसके बाद", "पहले", "वही", "और", "क्या करूं", "दवा", "कल"],
@@ -184,7 +184,7 @@ async def record_turn(
         risk_level,
         confidence,
     )
-    thread.updated_at = datetime.utcnow()
+    thread.updated_at = utc_now()
     await db.flush()
     return turn
 

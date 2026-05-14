@@ -7,7 +7,6 @@ SourceDocument/SourceCitation: evidence provenance tracking
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 
 from sqlalchemy import (
     JSON,
@@ -24,6 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.utils.time import utc_now
 
 # ─── Memory Primitives ────────────────────────────────────────────────
 
@@ -63,7 +63,7 @@ class MemoryAtom(Base):
 
     # Temporal
     event_at = Column(DateTime, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     is_private = Column(Boolean, default=True)  # True = only visible at field scale
 
     # Relationships
@@ -100,8 +100,8 @@ class MemorySummary(Base):
     # Temporal
     period_start = Column(DateTime, nullable=True)
     period_end = Column(DateTime, nullable=True)
-    generated_at = Column(DateTime, default=datetime.utcnow)
-    last_updated = Column(DateTime, default=datetime.utcnow)
+    generated_at = Column(DateTime, default=utc_now)
+    last_updated = Column(DateTime, default=utc_now)
 
     # Privacy
     is_public = Column(Boolean, default=False)
@@ -152,7 +152,7 @@ class SourceCitation(Base):
     relevance_score = Column(Float, default=0.8)            # How relevant this source is to the advisory
     citation_context = Column(String(200), nullable=True)   # e.g. "Weather humidity data", "Wiki action #3"
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     source_document = relationship("SourceDocument", back_populates="citations")
     memory_atoms = relationship(
@@ -206,7 +206,7 @@ class FarmerProfile(Base):
 
     # Metadata
     profile_completeness = Column(Float, default=0.0)        # 0.0 to 1.0
-    last_updated = Column(DateTime, default=datetime.utcnow)
+    last_updated = Column(DateTime, default=utc_now)
 
 
 # ─── Conversation Continuity ──────────────────────────────────────────
@@ -233,8 +233,8 @@ class ConversationThread(Base):
     turn_count = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now)
 
     turns = relationship("ConversationTurn", back_populates="thread", lazy="selectin")
 
@@ -259,7 +259,7 @@ class ConversationTurn(Base):
     retrieval_path = Column(String(10), nullable=True)
     evidence_article_ids = Column(JSON, default=list)
     memory_snapshot = Column(Text, default="")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
     thread = relationship("ConversationThread", back_populates="turns")
 
@@ -287,7 +287,7 @@ class ActionImpact(Base):
     metrics_delta = Column(JSON, default=dict)
     affects_previous_suggestions = Column(JSON, default=list)
     evidence_article_ids = Column(JSON, default=list)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
 
 
 # ─── Indexes ──────────────────────────────────────────────────────────

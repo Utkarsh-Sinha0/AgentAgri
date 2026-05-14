@@ -90,6 +90,9 @@ Date: 2026-05-14
 - `app/database.py`
   - SQLite additive schema repair is now called during startup instead of existing as unused helper code
 
+- `app/utils/time.py`
+  - shared `utc_now()` helper removes Python 3.13 legacy UTC timestamp deprecation warnings while preserving naive UTC values for existing SQLAlchemy columns
+
 - `app/services/agent.py`
   - removed unused evidence-card parameter
 
@@ -152,7 +155,7 @@ Date: 2026-05-14
 | `venv\Scripts\python -m compileall -q app tests scripts` | Passed |
 | `venv\Scripts\python -m ruff check app tests` | Passed |
 | `venv\Scripts\python -m vulture app scripts tests --min-confidence 80` | Passed after removing unused variables and wiring SQLite schema sync |
-| Focused security/retrieval tests | Passed |
+| `venv\Scripts\python -m pytest -q` | 42 passed with no warning summary |
 | `npm run build` | Passed |
 | debt scan over app, pwa/src, scripts, tests, and docs | No stale marker, placeholder, or unused-code patterns found |
 

@@ -33,6 +33,7 @@ from app.services.verifier import (
 )
 from app.utils.ollama_client import get_ollama
 from app.utils.safety import SAFE_FALLBACK_HI
+from app.utils.time import utc_now
 
 
 @dataclass
@@ -549,7 +550,6 @@ class AgentOrchestrator:
     ) -> str | None:
         """Persist advisory and verifier report to database."""
         import uuid
-        from datetime import datetime
 
         advisory_id = str(uuid.uuid4())
         try:
@@ -574,7 +574,7 @@ class AgentOrchestrator:
                 scheme_data=evidence.scheme_data,
                 memory_reference=rec.memory_reference,
                 previous_observation_id=None,
-                created_at=datetime.utcnow(),
+                created_at=utc_now(),
             )
             db.add(advisory)
 
@@ -592,7 +592,7 @@ class AgentOrchestrator:
                     passes_llm_safety_check=verifier_report.passes_llm_safety_check,
                     confidence_calibrated_to_evidence=verifier_report.confidence_calibrated_to_evidence,
                     details=verifier_report.details,
-                    created_at=datetime.utcnow(),
+                    created_at=utc_now(),
                 )
                 db.add(vr)
 

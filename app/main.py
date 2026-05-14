@@ -31,6 +31,7 @@ from app.models import (
     WikiArticle,
 )
 from app.utils.security import get_api_limiter
+from app.utils.time import utc_now
 
 
 class ClusterReviewRequest(BaseModel):
@@ -578,13 +579,12 @@ async def source_registry(
     _: bool = Depends(require_api_key),
 ):
     """Return registered evidence sources and freshness metadata."""
-    from datetime import datetime
 
     from app.models_memory import SourceDocument
 
     result = await db.execute(select(SourceDocument).order_by(SourceDocument.trust_level, SourceDocument.source_name))
     sources = result.scalars().all()
-    now = datetime.utcnow()
+    now = utc_now()
     return {
         "count": len(sources),
         "sources": [

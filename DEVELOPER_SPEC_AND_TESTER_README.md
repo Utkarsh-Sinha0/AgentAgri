@@ -104,6 +104,7 @@ app/
   database.py                     Async DB engine and local schema repair
   models.py                       Farmer, field, crop, advisory, cluster, finance, NDVI
   models_memory.py                profile, source, memory, conversation, impact tables
+  utils/time.py                   Shared UTC timestamp helper
   bot/telegram_bot.py             Telegram commands and dashboard URL buttons
   services/
     agent.py                      advisory generation and context injection
@@ -413,6 +414,7 @@ Current verified controls:
 | Static lint | Ruff passes for `app` and `tests` | `venv\Scripts\python -m ruff check app tests` |
 | Static unused-code scan | Vulture passes at 80% confidence for app/scripts/tests | `venv\Scripts\python -m vulture app scripts tests --min-confidence 80` |
 | Syntax/import health | Python compile check passes | `venv\Scripts\python -m compileall -q app tests scripts` |
+| Timestamp hygiene | Deprecated legacy UTC calls removed from app/scripts/tests | marker scan + warning-free pytest summary |
 | Request safety | Invalid `Content-Length` returns `400`, oversized bodies return `413` | `tests/test_api_security.py` |
 | Auth | Protected APIs require `X-AgriMesh-API-Key` when enabled | `tests/test_api_security.py` |
 | Farmer privacy | Protected dashboard requires explicit `farmer_id` or `phone` | `tests/test_api_security.py` |

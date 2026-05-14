@@ -5,9 +5,9 @@ Seeded forecast data with real API shape (ready for OpenWeatherMap / IMD swap).
 from __future__ import annotations
 
 import json
-from datetime import datetime
 
 from app.config import settings
+from app.utils.time import utc_now
 
 # ─── Seed Data ────────────────────────────────────────────────────────
 
@@ -69,7 +69,7 @@ async def get_forecast(field_id: str | None = None, days: int = 5) -> dict:
         "district": field_data.get("district", "Unknown"),
         "forecast": forecast,
         "source": "seeded",
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": utc_now().isoformat(),
     }
 
 
@@ -88,5 +88,5 @@ async def get_historical_weather(field_id: str | None = None, days: int = 7) -> 
         "total_rainfall_30d_mm": historical.get("total_rainfall_30d_mm", 0),
         "avg_temp_30d": historical.get("avg_temp_30d", 0),
         "source": "seeded",
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": utc_now().isoformat(),
     }

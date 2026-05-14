@@ -5,9 +5,9 @@ Seeded APMC prices with real API shape (ready for agmarknet.gov.in / data.gov.in
 from __future__ import annotations
 
 import json
-from datetime import datetime
 
 from app.config import settings
+from app.utils.time import utc_now
 
 # ─── Seed Data ────────────────────────────────────────────────────────
 
@@ -106,7 +106,7 @@ async def get_mandi_prices(crop: str, district: str = "Munger", days: int = 7) -
         "msp": msp,
         "last_updated": _seed.get("last_updated", "2026-05-12"),
         "source": "seeded — agmarknet.gov.in format",
-        "generated_at": datetime.utcnow().isoformat(),
+        "generated_at": utc_now().isoformat(),
     }
 
 

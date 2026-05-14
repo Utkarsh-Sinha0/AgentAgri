@@ -6,7 +6,7 @@ profile, fields, crops, weather, NDVI, finance, advisories, conversations, and c
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any
 
 from sqlalchemy import desc, func, select
@@ -31,6 +31,7 @@ from app.models_memory import (
 )
 from app.services.mandi import get_mandi_prices
 from app.services.weather import get_forecast, get_historical_weather
+from app.utils.time import utc_now
 
 
 async def get_farmer_dashboard(
@@ -84,7 +85,7 @@ async def get_farmer_dashboard(
         "clusters": clusters,
         "memory": memory,
         "sync": {
-            "server_generated_at": datetime.utcnow().isoformat(),
+            "server_generated_at": utc_now().isoformat(),
             "local_cache_key": f"agrimesh_farmer_dashboard_{farmer.id}",
             "offline_ready": True,
         },
@@ -137,7 +138,7 @@ async def upsert_farmer_profile(
             setattr(profile, key, _clean_profile_list(value))
 
     profile.profile_completeness = _profile_completeness(profile)
-    profile.last_updated = datetime.utcnow()
+    profile.last_updated = utc_now()
     await db.commit()
     return {"profile": _serialize_profile(profile)}
 
@@ -504,7 +505,7 @@ def _serialize_cycle(cycle: CropCycle | None) -> dict[str, Any] | None:
         return None
     days_after_sowing = None
     if cycle.sowing_date:
-        days_after_sowing = max(0, (datetime.utcnow() - cycle.sowing_date).days)
+        days_after_sowing = max(0, (utc_now() - cycle.sowing_date).days)
     return {
         "id": cycle.id,
         "crop_name": cycle.crop_name,
@@ -548,7 +549,7 @@ def _weather_skin(weather: dict[str, Any]) -> dict[str, Any]:
     forecast = weather.get("forecast", [])
     current = forecast[0] if forecast else {}
     condition = current.get("condition", "sunny")
-    ist_now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    ist_now = utc_now() + timedelta(hours=5, minutes=30)
     is_night = ist_now.hour < 6 or ist_now.hour >= 18
     rainfall = float(current.get("rainfall_mm") or 0)
     humidity = float(current.get("humidity") or 0)

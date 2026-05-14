@@ -5,13 +5,12 @@ Every advisory must cite at least one source with freshness tracking.
 """
 from __future__ import annotations
 
-from datetime import datetime
-
 from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models_memory import SourceCitation, SourceDocument
+from app.utils.time import utc_now
 
 # ═══════════════════════════════════════════════════════════════════════
 # OFFICIAL SOURCE REGISTRY
@@ -187,7 +186,7 @@ async def seed_source_registry(db: AsyncSession) -> int:
             trust_level=src.get("trust_level", "medium"),
             is_official=src.get("is_official", False),
             freshness_ttl_hours=src.get("freshness_ttl_hours", 24),
-            last_fetched=datetime.utcnow(),
+            last_fetched=utc_now(),
         )
         db.add(doc)
         count += 1
@@ -224,7 +223,7 @@ async def create_citation(
             trust_level="low",
             is_official=False,
             freshness_ttl_hours=24,
-            last_fetched=datetime.utcnow(),
+            last_fetched=utc_now(),
         )
         db.add(source)
         await db.flush()
@@ -353,7 +352,7 @@ async def check_source_freshness(source_name: str) -> dict:
         if not source or not source.last_fetched:
             return {"source": source_name, "fresh": False, "reason": "Source not found or never fetched"}
 
-        age_hours = (datetime.utcnow() - source.last_fetched).total_seconds() / 3600
+        age_hours = (utc_now() - source.last_fetched).total_seconds() / 3600
         is_fresh = age_hours <= source.freshness_ttl_hours
         return {
             "source": source_name,

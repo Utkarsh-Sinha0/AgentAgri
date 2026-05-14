@@ -9,7 +9,6 @@ from __future__ import annotations
 # We use python-telegram-bot v21+ (async)
 import asyncio
 import re
-from datetime import datetime
 from pathlib import Path
 
 from loguru import logger
@@ -39,6 +38,7 @@ from app.models import (
 from app.services.agent import AgentContext, get_agent
 from app.services.demo_seed import seed_demo_memory_palace
 from app.utils.security import hash_password
+from app.utils.time import utc_now
 
 # ─── Session storage (in-memory for demo; Redis in production) ────────
 
@@ -195,7 +195,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo_file = await update.message.photo[-1].get_file()
     photo_dir = Path(settings.data_dir) / "photos"
     photo_dir.mkdir(parents=True, exist_ok=True)
-    photo_path = photo_dir / f"{user_id}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.jpg"
+    photo_path = photo_dir / f"{user_id}_{utc_now().strftime('%Y%m%d_%H%M%S')}.jpg"
     await photo_file.download_to_drive(str(photo_path))
 
     caption = update.message.caption or ""
@@ -490,7 +490,7 @@ async def _persist_crop_stage_from_callback(query, user_id: str, stage: str, sta
             id=str(uuid.uuid4()),
             field_id=field.id,
             crop_name=state["data"].get("crop_name", "rice"),
-            sowing_date=datetime.utcnow(),
+            sowing_date=utc_now(),
             current_stage=stage,
             is_active=True,
         )
@@ -541,7 +541,7 @@ async def _handle_crop_stage(update, user_id: str, stage: str, state: dict):
             id=str(uuid.uuid4()),
             field_id=field.id,
             crop_name=state["data"]["crop_name"],
-            sowing_date=datetime.utcnow(),
+            sowing_date=utc_now(),
             current_stage=stage,
             is_active=True,
         )
@@ -1359,7 +1359,7 @@ async def newcycle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             field_id=state.get("field_id", ""),
             crop_name=crop_name,
             variety=variety,
-            sowing_date=datetime.utcnow(),
+            sowing_date=utc_now(),
             current_stage=stage,
             is_active=True,
         )

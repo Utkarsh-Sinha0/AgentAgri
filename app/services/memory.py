@@ -8,7 +8,6 @@ Three operators:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
 
 from loguru import logger
 from sqlalchemy import desc, or_, select
@@ -27,6 +26,7 @@ from app.models_memory import (
     MemoryAtom,
     MemorySummary,
 )
+from app.utils.time import utc_now
 
 # ═══════════════════════════════════════════════════════════════════════
 # OPERATOR 1: EXTRACTION
@@ -82,7 +82,7 @@ async def extract_from_observation(
         tehsil=farmer.tehsil,
         district=farmer.district,
         state="Bihar",
-        event_at=observation.created_at or datetime.utcnow(),
+        event_at=observation.created_at or utc_now(),
         is_private=True,
     )
     atoms.append(atom)
@@ -115,7 +115,7 @@ async def extract_from_observation(
             village=farmer.village,
             tehsil=farmer.tehsil,
             district=farmer.district,
-            event_at=advisory.created_at or datetime.utcnow(),
+            event_at=advisory.created_at or utc_now(),
             is_private=True,
         )
         atoms.append(atom)
@@ -140,7 +140,7 @@ async def extract_from_observation(
             village=farmer.village,
             tehsil=farmer.tehsil,
             district=farmer.district,
-            event_at=observation.created_at or datetime.utcnow(),
+            event_at=observation.created_at or utc_now(),
             is_private=True,
         )
         atoms.append(atom)
@@ -186,7 +186,7 @@ async def extract_from_finance(
         village=farmer.village,
         tehsil=farmer.tehsil,
         district=farmer.district,
-        event_at=entry.recorded_at or datetime.utcnow(),
+        event_at=entry.recorded_at or utc_now(),
         is_private=True,
     )
     db.add(atom)
@@ -208,7 +208,7 @@ async def extract_from_ndvi(
         confidence=0.85,
         source_type="ndvi",
         source_id=ndvi_record.id,
-        event_at=ndvi_record.date or datetime.utcnow(),
+        event_at=ndvi_record.date or utc_now(),
         is_private=True,
     )
     db.add(atom)
@@ -241,7 +241,7 @@ async def extract_from_task_completion(
         village=farmer.village,
         tehsil=farmer.tehsil,
         district=farmer.district,
-        event_at=task.completed_at or datetime.utcnow(),
+        event_at=task.completed_at or utc_now(),
         is_private=True,
     )
     db.add(atom)
@@ -309,7 +309,7 @@ async def coarsen_field_memory(
         summary.stats = {"atom_types": type_counts}
         summary.atom_count = len(atoms)
         summary.confidence = min(0.95, 0.40 + (len(atoms) * 0.02))
-        summary.last_updated = datetime.utcnow()
+        summary.last_updated = utc_now()
     else:
         summary = MemorySummary(
             id=str(uuid.uuid4()),
@@ -385,7 +385,7 @@ async def coarsen_village_memory(
         summary.atom_count = len(atoms)
         summary.farmer_count = len(farmer_ids)
         summary.field_count = len(field_ids)
-        summary.last_updated = datetime.utcnow()
+        summary.last_updated = utc_now()
         summary.confidence = min(0.90, 0.30 + (len(atoms) * 0.01))
     else:
         summary = MemorySummary(

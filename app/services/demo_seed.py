@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +29,7 @@ from app.models import (
     SatelliteNDVI,
 )
 from app.utils.security import hash_password
+from app.utils.time import utc_now
 
 DEFAULT_MEMORY_SEED = settings.seed_dir / "memory_palace.json"
 DEMO_SOURCE = "seeded-demo-memory"
@@ -150,7 +151,7 @@ async def _upsert_cycle(db: AsyncSession, field: Field, profile: dict[str, Any])
         )
     )
     cycle = result.scalar_one_or_none()
-    sowing_date = datetime.utcnow() - timedelta(days=int(profile["days_after_sowing"]))
+    sowing_date = utc_now() - timedelta(days=int(profile["days_after_sowing"]))
     harvest_date = sowing_date + timedelta(days=120)
     if cycle:
         cycle.variety = profile["variety"]
@@ -230,7 +231,7 @@ async def _seed_observations(
     observations: list[Observation] = []
     advisories: list[Advisory] = []
     for item in data["observations"]:
-        created_at = datetime.utcnow() - timedelta(days=int(item["days_ago"]))
+        created_at = utc_now() - timedelta(days=int(item["days_ago"]))
         observation = Observation(
             id=str(uuid.uuid4()),
             farmer_id=farmer.id,
@@ -298,7 +299,7 @@ async def _seed_finance(
                 category=entry["category"],
                 amount=float(entry["amount"]),
                 description=entry["description"],
-                recorded_at=datetime.utcnow() - timedelta(days=int(entry["days_ago"])),
+                recorded_at=utc_now() - timedelta(days=int(entry["days_ago"])),
             )
         )
     return len(data["finance_entries"])
@@ -319,7 +320,7 @@ async def _seed_ndvi(db: AsyncSession, field: Field, data: dict[str, Any]) -> in
             SatelliteNDVI(
                 id=str(uuid.uuid4()),
                 field_id=field.id,
-                date=datetime.utcnow() - timedelta(weeks=int(point["weeks_ago"])),
+                date=utc_now() - timedelta(weeks=int(point["weeks_ago"])),
                 ndvi_value=float(point["ndvi"]),
                 source=DEMO_SOURCE,
                 cloud_cover_pct=float(point["cloud_cover_pct"]),

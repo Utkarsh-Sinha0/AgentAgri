@@ -30,6 +30,7 @@ from app.models import (
 )
 from app.services.demo_seed import seed_demo_memory_palace
 from app.utils.security import hash_password
+from app.utils.time import utc_now
 
 
 async def load_wiki_articles():
@@ -133,8 +134,8 @@ async def seed_demo_data():
             field_id=field_id,
             crop_name="rice",
             variety="Swarna",
-            sowing_date=datetime.utcnow() - timedelta(days=45),
-            expected_harvest_date=datetime.utcnow() + timedelta(days=75),
+            sowing_date=utc_now() - timedelta(days=45),
+            expected_harvest_date=utc_now() + timedelta(days=75),
             current_stage="vegetative",
             is_active=True,
         )

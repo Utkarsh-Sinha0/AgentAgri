@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from loguru import logger
 from sqlalchemy import select
@@ -22,6 +22,7 @@ from app.models import (
     Observation,
     WikiArticle,
 )
+from app.utils.time import utc_now
 
 
 async def discover_patterns(db: AsyncSession) -> dict:
@@ -35,7 +36,7 @@ async def discover_patterns(db: AsyncSession) -> dict:
     results = {"new_clusters": 0, "new_graph_edges": 0, "insights": []}
 
     # ── 1. Find emerging clusters ────────────────────────────────
-    cutoff = datetime.utcnow() - timedelta(hours=72)
+    cutoff = utc_now() - timedelta(hours=72)
 
     # Get recent observations with advisories
     result = await db.execute(

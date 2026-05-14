@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 from app.models import Advisory, CropCycle, Farmer, Field, Observation
 from app.services.conversation import (
     build_action_impact_network,
@@ -11,6 +9,7 @@ from app.services.conversation import (
     record_turn,
 )
 from app.utils.security import hash_password
+from app.utils.time import utc_now
 
 
 async def test_conversation_turns_preserve_farmer_context(db_session):
@@ -27,7 +26,7 @@ async def test_conversation_turns_preserve_farmer_context(db_session):
         id="cycle-conv",
         field_id=field.id,
         crop_name="rice",
-        sowing_date=datetime.utcnow(),
+        sowing_date=utc_now(),
         current_stage="vegetative",
         is_active=True,
     )

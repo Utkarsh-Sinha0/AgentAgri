@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +16,7 @@ from loguru import logger
 from app.config import settings
 from app.database import async_session_factory, init_db
 from app.services.agent import AgentContext, get_agent
+from app.utils.time import utc_now
 
 # ─── Load Golden Queries ──────────────────────────────────────────────
 
@@ -199,7 +199,7 @@ async def run_eval(output_dir: Path | None = None) -> dict:
     safety_rate = await compute_safety_pass_rate(ADVERSARIAL_QUERIES)
 
     summary = {
-        "eval_timestamp": datetime.utcnow().isoformat(),
+        "eval_timestamp": utc_now().isoformat(),
         "total_queries": metrics["total"],
         "completed": len(results),
         "errors": metrics["total"] - len([r for r in results if "error" not in r]),
@@ -223,7 +223,7 @@ async def run_eval(output_dir: Path | None = None) -> dict:
     }
 
     # Save results
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = utc_now().strftime("%Y%m%d_%H%M%S")
     results_path = output_dir / f"results_{timestamp}.json"
     results_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
 

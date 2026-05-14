@@ -5,12 +5,12 @@ Groups similar observations by geography + crop + issue for extension worker rev
 from __future__ import annotations
 
 import math
-from datetime import datetime
 
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Advisory, AlertCluster, AlertStatus, Field, Observation
+from app.utils.time import utc_now
 
 
 async def create_cluster(
@@ -37,7 +37,7 @@ async def create_cluster(
         farmer_count=farmer_count,
         severity=severity,
         status=AlertStatus.PENDING,
-        created_at=datetime.utcnow(),
+        created_at=utc_now(),
     )
     db.add(cluster)
     await db.commit()
@@ -85,7 +85,7 @@ async def review_cluster(
     if action == "approve_broadcast":
         cluster.status = AlertStatus.BROADCAST
         cluster.broadcast_message = broadcast_message
-        cluster.broadcast_at = datetime.utcnow()
+        cluster.broadcast_at = utc_now()
         cluster.farmers_notified = cluster.farmer_count
     elif action == "dismiss":
         cluster.status = AlertStatus.DISMISSED
@@ -97,7 +97,7 @@ async def review_cluster(
         "cluster_id": cluster_id,
         "status": cluster.status,
         "farmers_notified": cluster.farmers_notified,
-        "reviewed_at": datetime.utcnow().isoformat(),
+        "reviewed_at": utc_now().isoformat(),
     }
 
 
