@@ -306,7 +306,7 @@ class AgentOrchestrator:
             "pest": ["कीट", "insect", "pest", "caterpillar", "aphid", "borer", "सूंडी", "कीड़ा"],
             "nutrient_deficiency": ["पीला", "yellow", "nitrogen", "phosphorus", "potash", "zinc", "नाइट्रोजन", "यूरिया"],
             "water_management": ["पानी", "water", "drainage", "irrigation", "flood", "सिंचाई", "जलभराव"],
-            "weather_damage": ["rain", "बारिश", "hail", "frost", "heat", "cold", "frost", "पाला"],
+            "weather_damage": ["rain", "बारिश", "hail", "frost", "heat", "cold", "पाला"],
         }
         combined = message.lower()
         if vision_result:

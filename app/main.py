@@ -13,6 +13,7 @@ from typing import Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -134,6 +135,9 @@ app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=settings.allowed_hosts,
 )
+
+# H9: compress JSON dashboard payloads on slow rural links (5-10x typical).
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 app.add_middleware(
     CORSMiddleware,

@@ -5,6 +5,7 @@ Seeded forecast data with real API shape (ready for OpenWeatherMap / IMD swap).
 from __future__ import annotations
 
 import json
+from datetime import timedelta
 
 from app.config import settings
 from app.utils.time import utc_now
@@ -20,7 +21,25 @@ def _load_seed_weather() -> dict:
 
 
 def _builtin_seed() -> dict:
-    """Built-in seed data for Bihar region (demo)."""
+    """Built-in seed data for Bihar region (demo). Dates anchored to utcnow() so
+    the demo never goes stale (H18)."""
+    today = utc_now().date()
+    forecast_rows = [
+        {"offset": 0, "temp_max": 38, "temp_min": 26, "humidity": 65, "rainfall_mm": 0, "wind_kmh": 12, "condition": "sunny"},
+        {"offset": 1, "temp_max": 37, "temp_min": 25, "humidity": 70, "rainfall_mm": 2.5, "wind_kmh": 15, "condition": "partly_cloudy"},
+        {"offset": 2, "temp_max": 35, "temp_min": 24, "humidity": 80, "rainfall_mm": 15.0, "wind_kmh": 20, "condition": "rain"},
+        {"offset": 3, "temp_max": 33, "temp_min": 24, "humidity": 85, "rainfall_mm": 8.0, "wind_kmh": 18, "condition": "rain"},
+        {"offset": 4, "temp_max": 36, "temp_min": 25, "humidity": 72, "rainfall_mm": 0.5, "wind_kmh": 10, "condition": "partly_cloudy"},
+    ]
+    historical_rows = [
+        {"offset": -7, "temp_max": 39, "temp_min": 27, "rainfall_mm": 0},
+        {"offset": -6, "temp_max": 40, "temp_min": 28, "rainfall_mm": 0},
+        {"offset": -5, "temp_max": 41, "temp_min": 28, "rainfall_mm": 0},
+        {"offset": -4, "temp_max": 39, "temp_min": 27, "rainfall_mm": 0},
+        {"offset": -3, "temp_max": 40, "temp_min": 27, "rainfall_mm": 0},
+        {"offset": -2, "temp_max": 38, "temp_min": 26, "rainfall_mm": 1.2},
+        {"offset": -1, "temp_max": 37, "temp_min": 25, "rainfall_mm": 3.8},
+    ]
     return {
         "default_field": {
             "lat": 25.38,
@@ -28,21 +47,15 @@ def _builtin_seed() -> dict:
             "district": "Munger",
             "state": "Bihar",
             "forecast": [
-                {"date": "2026-05-12", "temp_max": 38, "temp_min": 26, "humidity": 65, "rainfall_mm": 0, "wind_kmh": 12, "condition": "sunny"},
-                {"date": "2026-05-13", "temp_max": 37, "temp_min": 25, "humidity": 70, "rainfall_mm": 2.5, "wind_kmh": 15, "condition": "partly_cloudy"},
-                {"date": "2026-05-14", "temp_max": 35, "temp_min": 24, "humidity": 80, "rainfall_mm": 15.0, "wind_kmh": 20, "condition": "rain"},
-                {"date": "2026-05-15", "temp_max": 33, "temp_min": 24, "humidity": 85, "rainfall_mm": 8.0, "wind_kmh": 18, "condition": "rain"},
-                {"date": "2026-05-16", "temp_max": 36, "temp_min": 25, "humidity": 72, "rainfall_mm": 0.5, "wind_kmh": 10, "condition": "partly_cloudy"},
+                {**{k: v for k, v in row.items() if k != "offset"},
+                 "date": (today + timedelta(days=row["offset"])).isoformat()}
+                for row in forecast_rows
             ],
             "historical": {
                 "last_7_days": [
-                    {"date": "2026-05-05", "temp_max": 39, "temp_min": 27, "rainfall_mm": 0},
-                    {"date": "2026-05-06", "temp_max": 40, "temp_min": 28, "rainfall_mm": 0},
-                    {"date": "2026-05-07", "temp_max": 41, "temp_min": 28, "rainfall_mm": 0},
-                    {"date": "2026-05-08", "temp_max": 39, "temp_min": 27, "rainfall_mm": 0},
-                    {"date": "2026-05-09", "temp_max": 40, "temp_min": 27, "rainfall_mm": 0},
-                    {"date": "2026-05-10", "temp_max": 38, "temp_min": 26, "rainfall_mm": 1.2},
-                    {"date": "2026-05-11", "temp_max": 37, "temp_min": 25, "rainfall_mm": 3.8},
+                    {**{k: v for k, v in row.items() if k != "offset"},
+                     "date": (today + timedelta(days=row["offset"])).isoformat()}
+                    for row in historical_rows
                 ],
                 "total_rainfall_30d_mm": 45.2,
                 "avg_temp_30d": 36.8,

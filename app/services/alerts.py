@@ -119,6 +119,15 @@ async def find_or_create_cluster(
     if not farmer:
         return None
 
+    # H16: resolve the current observation's crop from CropCycle (not from
+    # advisory.actions_text which holds action sentences, not crop names).
+    current_crop_name: str | None = None
+    if observation.crop_cycle_id:
+        cc_result = await db.execute(
+            select(CropCycle.crop_name).where(CropCycle.id == observation.crop_cycle_id)
+        )
+        current_crop_name = cc_result.scalar_one_or_none()
+
     # Get recent observations in same district
     recent = await db.execute(
         select(Observation, Farmer, CropCycle)
@@ -138,7 +147,7 @@ async def find_or_create_cluster(
 
     # Build observation dicts for scoring
     current_obs_dict = {
-        "crop_name": advisory.actions_text[0] if advisory and advisory.actions_text else None,
+        "crop_name": current_crop_name,
         "stage": observation.reported_stage,
         "symptom_tags": _extract_symptom_tags(observation.text_content),
         "created_at": observation.created_at,
@@ -166,7 +175,7 @@ async def find_or_create_cluster(
         district=farmer.district,
         tehsil=farmer.tehsil or "",
         village=farmer.village,
-        crop_name=advisory.actions_text[0] if advisory and advisory.actions_text else "unknown",
+        crop_name=current_crop_name or "unknown",
         issue_category=advisory.risk_level if advisory else "UNKNOWN",
         observation_ids=[observation.id] + [o.id for o, _ in similar],
         advisory_ids=[advisory.id] if advisory else [],

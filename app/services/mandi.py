@@ -5,6 +5,7 @@ Seeded APMC prices with real API shape (ready for agmarknet.gov.in / data.gov.in
 from __future__ import annotations
 
 import json
+from datetime import timedelta
 
 from app.config import settings
 from app.utils.time import utc_now
@@ -39,7 +40,7 @@ def _builtin_seed() -> dict:
             "msp_2025_26_moong": 8682,
             "msp_2025_26_arhar": 7550,
         },
-        "last_updated": "2026-05-12",
+        "last_updated": utc_now().date().isoformat(),
         "source": "seeded — agmarknet.gov.in compatible format",
         "mandis_tracked": ["Munger", "Bhagalpur", "Patna", "Begusarai", "Khagaria"],
     }
@@ -77,6 +78,7 @@ async def get_mandi_prices(crop: str, district: str = "Munger", days: int = 7) -
     import random
     random.seed(hash(crop_key + district) % 2**31)
 
+    today = utc_now().date()
     price_entries = []
     for grain_type, prices in crop_data.items():
         if grain_type.startswith("msp_"):
@@ -87,7 +89,7 @@ async def get_mandi_prices(crop: str, district: str = "Munger", days: int = 7) -
             for d in range(days):
                 variation = random.uniform(-0.05, 0.05)
                 entries.append({
-                    "date": f"2026-05-{12-d:02d}",
+                    "date": (today - timedelta(days=d)).isoformat(),
                     "min": int(prices["min"] * (1 + variation)),
                     "max": int(prices["max"] * (1 + variation)),
                     "modal": int(base * (1 + variation)),
@@ -104,7 +106,7 @@ async def get_mandi_prices(crop: str, district: str = "Munger", days: int = 7) -
         "district": district,
         "prices": price_entries,
         "msp": msp,
-        "last_updated": _seed.get("last_updated", "2026-05-12"),
+        "last_updated": _seed.get("last_updated", utc_now().date().isoformat()),
         "source": "seeded — agmarknet.gov.in format",
         "generated_at": utc_now().isoformat(),
     }
