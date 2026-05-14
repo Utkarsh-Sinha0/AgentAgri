@@ -31,7 +31,22 @@ from app.models import WikiArticle
 _embedder = None
 _reranker = None
 
-def _get_embedder():
+
+def _get_embedding_semaphore() -> asyncio.Semaphore:
+    """Return a Semaphore bound to the running event loop.
+
+    Stored on the loop itself so each event loop (including the fresh one pytest
+    spins up per test) gets an independent Semaphore.
+    """
+    loop = asyncio.get_running_loop()
+    sem = getattr(loop, "_agrimesh_embedding_semaphore", None)
+    if sem is None:
+        sem = asyncio.Semaphore(settings.embedding_max_concurrency)
+        loop._agrimesh_embedding_semaphore = sem  # type: ignore[attr-defined]
+    return sem
+
+
+def get_embedder():
     """Lazy-load BGE-M3. First call downloads ~500 MB."""
     global _embedder
     if _embedder is None:
@@ -45,7 +60,7 @@ def _get_embedder():
     return _embedder
 
 
-def _get_reranker():
+def get_reranker():
     """Lazy-load bge-reranker-v2-m3. First call downloads ~400 MB."""
     global _reranker
     if _reranker is None:
@@ -58,6 +73,10 @@ def _get_reranker():
         )
         logger.info("Reranker ready.")
     return _reranker
+
+
+_get_embedder = get_embedder
+_get_reranker = get_reranker
 
 
 # ─── Adaptive Router ──────────────────────────────────────────────────
@@ -135,14 +154,24 @@ async def _sql_metadata_filter(
 
 # ─── Dense Retrieval (BGE-M3) ─────────────────────────────────────────
 
-def _embed_query(query: str) -> np.ndarray:
-    embedder = _get_embedder()
-    return embedder.encode(query, normalize_embeddings=True)
+async def _embed_query(query: str) -> np.ndarray:
+    async with _get_embedding_semaphore():
+        embedder = get_embedder()
+        return await asyncio.to_thread(
+            embedder.encode,
+            query,
+            normalize_embeddings=True,
+        )
 
 
-def _embed_documents(texts: list[str]) -> np.ndarray:
-    embedder = _get_embedder()
-    return embedder.encode(texts, normalize_embeddings=True)
+async def _embed_documents(texts: list[str]) -> np.ndarray:
+    async with _get_embedding_semaphore():
+        embedder = get_embedder()
+        return await asyncio.to_thread(
+            embedder.encode,
+            texts,
+            normalize_embeddings=True,
+        )
 
 
 async def _dense_retrieve(
@@ -158,9 +187,9 @@ async def _dense_retrieve(
     if not candidates:
         return []
 
-    query_vec = _embed_query(query)
+    query_vec = await _embed_query(query)
     summaries = [c["summary"] or c["title"] for c in candidates]
-    doc_vecs = _embed_documents(summaries)
+    doc_vecs = await _embed_documents(summaries)
 
     # Cosine similarity (vectors are already normalized)
     scores = np.dot(doc_vecs, query_vec)
@@ -192,11 +221,12 @@ async def _rerank(
             c["_rerank_score"] = c.get("_score", 0.0)
         return candidates[:top_k]
 
-    reranker = _get_reranker()
     pairs = [[query, c.get("summary", "") or c.get("title", "")] for c in candidates]
 
     # Batch compute scores
-    scores = reranker.compute_score(pairs)
+    async with _get_embedding_semaphore():
+        reranker = get_reranker()
+        scores = await asyncio.to_thread(reranker.compute_score, pairs)
     if isinstance(scores, float):
         scores = [scores]
 

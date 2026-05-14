@@ -23,6 +23,7 @@ from pydantic import Field as PydanticField
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.auth import router as auth_router
 from app.config import settings
 from app.database import async_session_factory, get_db, init_db
 from app.models import (
@@ -84,6 +85,16 @@ async def lifespan(app: FastAPI):
     async with async_session_factory() as db:
         await seed_source_registry(db)
 
+    if settings.app_env != "test":
+        try:
+            from app.services.retrieval import get_embedder, get_reranker
+
+            await asyncio.to_thread(get_embedder)
+            await asyncio.to_thread(get_reranker)
+            logger.info("Retrieval models preloaded.")
+        except Exception as exc:
+            logger.error(f"Retrieval model preload failed: {exc}")
+
     if settings.app_env.lower() == "test":
         yield
         return
@@ -142,10 +153,12 @@ app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
-    allow_credentials=False,
+    allow_credentials=settings.allowed_origins != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router, prefix="/api")
 
 
 # ─── Production Safety Middleware ─────────────────────────────────────
@@ -180,6 +193,19 @@ async def request_guardrails(request: Request, call_next):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers.setdefault("Referrer-Policy", "no-referrer")
+    response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+    response.headers.setdefault("Cross-Origin-Resource-Policy", "same-origin")
+    response.headers.setdefault("Cross-Origin-Embedder-Policy", "require-corp")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+        "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+    )
+    if settings.app_env in {"demo", "production"}:
+        response.headers.setdefault(
+            "Strict-Transport-Security",
+            "max-age=31536000; includeSubDomains",
+        )
     response.headers.setdefault(
         "Permissions-Policy",
         "camera=(), microphone=(), geolocation=()",
@@ -201,6 +227,22 @@ async def require_api_key(
     if not x_agrimesh_api_key or not secrets.compare_digest(x_agrimesh_api_key, settings.api_key):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API key")
     return True
+
+
+async def require_api_key_or_eval_token(
+    request: Request,
+    x_agrimesh_api_key: str | None = Header(default=None),
+    x_eval_public_token: str | None = Header(default=None, alias="X-Eval-Public-Token"),
+) -> bool:
+    """Allow public judge eval reads via a narrow token while keeping API auth closed."""
+    if settings.eval_public_token:
+        provided_eval_token = x_eval_public_token or request.query_params.get("eval_token")
+        if provided_eval_token and secrets.compare_digest(
+            provided_eval_token,
+            settings.eval_public_token,
+        ):
+            return True
+    return await require_api_key(x_agrimesh_api_key)
 
 
 # ─── Health ───────────────────────────────────────────────────────────
@@ -471,7 +513,7 @@ async def latest_impact_network(
 # ─── Eval Dashboard API ───────────────────────────────────────────────
 
 @app.get("/api/eval/latest")
-async def latest_eval(_: bool = Depends(require_api_key)):
+async def latest_eval(_: bool = Depends(require_api_key_or_eval_token)):
     """Return latest eval run results."""
     eval_path = Path(settings.eval_dir) / "latest_results.json"
     if not eval_path.exists():
@@ -481,7 +523,7 @@ async def latest_eval(_: bool = Depends(require_api_key)):
 
 
 @app.get("/api/eval/history")
-async def eval_history(_: bool = Depends(require_api_key)):
+async def eval_history(_: bool = Depends(require_api_key_or_eval_token)):
     """Return eval run history."""
     eval_dir = Path(settings.eval_dir)
     results = []

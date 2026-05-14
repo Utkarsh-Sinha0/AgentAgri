@@ -17,8 +17,9 @@ httpx==0.28.1
 
 # Retrieval (BGE-M3, reranker — via llama.cpp Python bindings OR sentence-transformers)
 sentence-transformers==5.5.0
-FlagEmbedding==1.3.4
-transformers==5.8.0
+FlagEmbedding==1.4.0
+transformers==5.8.1
+torch==2.12.0
 lxml==6.1.0
 
 # MCP (Model Context Protocol)

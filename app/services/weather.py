@@ -5,6 +5,7 @@ Seeded forecast data with real API shape (ready for OpenWeatherMap / IMD swap).
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from datetime import timedelta
 
 from app.config import settings
@@ -15,9 +16,24 @@ from app.utils.time import utc_now
 def _load_seed_weather() -> dict:
     seed_path = settings.seed_dir / "weather.json"
     if seed_path.exists():
-        return json.loads(seed_path.read_text(encoding="utf-8"))
+        return _normalize_seed_dates(json.loads(seed_path.read_text(encoding="utf-8")))
     # Built-in seed for demo
     return _builtin_seed()
+
+
+def _normalize_seed_dates(seed: dict) -> dict:
+    """Shift checked-in demo weather dates around utcnow() without mutating the file."""
+    normalized = deepcopy(seed)
+    today = utc_now().date()
+    for field_data in normalized.values():
+        forecast = field_data.get("forecast") or []
+        for index, row in enumerate(forecast):
+            row["date"] = (today + timedelta(days=index)).isoformat()
+        historical = field_data.get("historical", {}).get("last_7_days") or []
+        start_offset = -len(historical)
+        for index, row in enumerate(historical):
+            row["date"] = (today + timedelta(days=start_offset + index)).isoformat()
+    return normalized
 
 
 def _builtin_seed() -> dict:

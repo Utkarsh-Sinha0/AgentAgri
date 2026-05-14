@@ -102,3 +102,26 @@ def test_degradation_health_endpoint_shape(monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["level_name"] == "DETERMINISTIC"
+
+
+def test_eval_public_token_can_read_eval_without_api_key(monkeypatch):
+    old_require = settings.require_api_key
+    old_key = settings.api_key
+    old_eval_token = settings.eval_public_token
+    settings.require_api_key = True
+    settings.api_key = "test-secret"
+    settings.eval_public_token = "judge-token"
+    try:
+        with TestClient(app) as client:
+            missing = client.get("/api/eval/latest")
+            allowed = client.get(
+                "/api/eval/latest",
+                headers={"X-Eval-Public-Token": "judge-token"},
+            )
+
+        assert missing.status_code == 401
+        assert allowed.status_code == 200
+    finally:
+        settings.require_api_key = old_require
+        settings.api_key = old_key
+        settings.eval_public_token = old_eval_token

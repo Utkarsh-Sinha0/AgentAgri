@@ -106,7 +106,7 @@ async def get_mandi_prices(crop: str, district: str = "Munger", days: int = 7) -
         "district": district,
         "prices": price_entries,
         "msp": msp,
-        "last_updated": _seed.get("last_updated", utc_now().date().isoformat()),
+        "last_updated": utc_now().date().isoformat(),
         "source": "seeded — agmarknet.gov.in format",
         "generated_at": utc_now().isoformat(),
     }

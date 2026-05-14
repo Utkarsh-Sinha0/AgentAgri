@@ -1,0 +1,11 @@
+{
+  "name": "AgriMesh Farm Dashboard",
+  "short_name": "AgriMesh",
+  "description": "Offline-ready farmer and extension dashboard for AgriMesh.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f1",
+  "theme_color": "#2f6f4f",
+  "icons": []
+}

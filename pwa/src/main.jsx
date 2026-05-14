@@ -65,7 +65,7 @@ function loadCachedDashboard(farmerId = 'default') {
 async function api(path) {
   const apiKey = localStorage.getItem('agrimesh_api_key');
   const headers = apiKey ? { 'X-AgriMesh-API-Key': apiKey } : {};
-  const res = await fetch(path, { headers });
+  const res = await fetch(path, { headers, credentials: 'include' });
   if (!res.ok) throw new Error(`${path}: ${res.status}`);
   return res.json();
 }
@@ -74,7 +74,7 @@ async function apiPost(path, body, method = 'POST') {
   const apiKey = localStorage.getItem('agrimesh_api_key');
   const headers = { 'Content-Type': 'application/json' };
   if (apiKey) headers['X-AgriMesh-API-Key'] = apiKey;
-  const res = await fetch(path, { method, headers, body: JSON.stringify(body) });
+  const res = await fetch(path, { method, headers, body: JSON.stringify(body), credentials: 'include' });
   if (!res.ok) throw new Error(`${path}: ${res.status}`);
   return res.json();
 }
@@ -991,3 +991,9 @@ function formatMetric(value) {
 }
 
 createRoot(document.getElementById('root')).render(<App />);
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}

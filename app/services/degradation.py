@@ -77,16 +77,17 @@ class CircuitBreaker:
                 self._check_ollama(),
                 self._check_db(),
                 self._check_wiki(),
+                self._check_tools(),
                 return_exceptions=True,
             )
 
-            ollama_result, db_result, wiki_result = checks
+            ollama_result, db_result, wiki_result, tools_result = checks
 
             self.status.ollama_healthy = not isinstance(ollama_result, Exception) and ollama_result
             self.status.db_healthy = not isinstance(db_result, Exception) and db_result
             self.status.wiki_available = not isinstance(wiki_result, Exception) and wiki_result
             self.status.vision_healthy = self.status.ollama_healthy  # Vision needs Ollama
-            self.status.tools_healthy = True  # MCP tools use seeded data
+            self.status.tools_healthy = not isinstance(tools_result, Exception) and tools_result
             self.status.latency_ms = int((time.perf_counter() - t0) * 1000)
             self.status.last_checked = time.time()
 
@@ -136,6 +137,16 @@ class CircuitBreaker:
             async with async_session_factory() as db:
                 count = (await db.execute(select(func.count(WikiArticle.id)))).scalar()
             return count > 0
+        except Exception:
+            return False
+
+    async def _check_tools(self) -> bool:
+        """Run one lightweight MCP-backed tool path instead of assuming tools are healthy."""
+        try:
+            from app.services.weather import get_forecast
+
+            result = await asyncio.wait_for(get_forecast(field_id="default", days=1), timeout=2.0)
+            return bool(result.get("forecast"))
         except Exception:
             return False
 
