@@ -35,9 +35,9 @@ class MemoryAtom(Base):
     __tablename__ = "memory_atoms"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
-    field_id = Column(String(36), ForeignKey("fields.id"), nullable=True, index=True)
-    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id", ondelete="SET NULL"), nullable=True, index=True)
+    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id", ondelete="SET NULL"), nullable=True)
 
     # What happened
     atom_type = Column(String(40), nullable=False, index=True)
@@ -53,7 +53,7 @@ class MemoryAtom(Base):
     # Source tracking
     source_type = Column(String(30))  # observation, advisory, weather_tool, mandi_tool, finance, ndvi, manual
     source_id = Column(String(36))    # FK to the source record
-    source_citation_id = Column(String(36), ForeignKey("source_citations.id"), nullable=True)
+    source_citation_id = Column(String(36), ForeignKey("source_citations.id", ondelete="SET NULL"), nullable=True)
 
     # Location context (denormalized for fast queries)
     village = Column(String(120), nullable=True)
@@ -132,9 +132,13 @@ class SourceDocument(Base):
     is_official = Column(Boolean, default=False)
 
     # For wiki: which article
-    wiki_article_id = Column(String(36), ForeignKey("wiki_articles.id"), nullable=True)
+    wiki_article_id = Column(String(36), ForeignKey("wiki_articles.id", ondelete="SET NULL"), nullable=True)
 
-    citations = relationship("SourceCitation", back_populates="source_document")
+    citations = relationship(
+        "SourceCitation",
+        back_populates="source_document",
+        cascade="all, delete-orphan",
+    )
 
 
 class SourceCitation(Base):
@@ -144,8 +148,8 @@ class SourceCitation(Base):
     __tablename__ = "source_citations"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    advisory_id = Column(String(36), ForeignKey("advisories.id"), nullable=False, index=True)
-    source_document_id = Column(String(36), ForeignKey("source_documents.id"), nullable=False)
+    advisory_id = Column(String(36), ForeignKey("advisories.id", ondelete="CASCADE"), nullable=False, index=True)
+    source_document_id = Column(String(36), ForeignKey("source_documents.id", ondelete="CASCADE"), nullable=False)
 
     # What was cited
     evidence_snapshot = Column(Text, nullable=True)         # The specific text/claim being cited
@@ -172,7 +176,7 @@ class FarmerProfile(Base):
     __tablename__ = "farmer_profiles"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, unique=True, index=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
 
     # Farm characteristics
     farm_size_acres = Column(Float, nullable=True)
@@ -219,9 +223,9 @@ class ConversationThread(Base):
     __tablename__ = "conversation_threads"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
-    field_id = Column(String(36), ForeignKey("fields.id"), nullable=True, index=True)
-    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=True, index=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id", ondelete="SET NULL"), nullable=True, index=True)
+    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id", ondelete="SET NULL"), nullable=True, index=True)
     channel = Column(String(30), default="telegram")
 
     title = Column(String(200), nullable=True)
@@ -236,7 +240,12 @@ class ConversationThread(Base):
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now)
 
-    turns = relationship("ConversationTurn", back_populates="thread", lazy="selectin")
+    turns = relationship(
+        "ConversationTurn",
+        back_populates="thread",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
 
 class ConversationTurn(Base):
@@ -244,12 +253,12 @@ class ConversationTurn(Base):
     __tablename__ = "conversation_turns"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    thread_id = Column(String(36), ForeignKey("conversation_threads.id"), nullable=False, index=True)
-    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
-    field_id = Column(String(36), ForeignKey("fields.id"), nullable=True, index=True)
-    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=True)
-    observation_id = Column(String(36), ForeignKey("observations.id"), nullable=True)
-    advisory_id = Column(String(36), ForeignKey("advisories.id"), nullable=True)
+    thread_id = Column(String(36), ForeignKey("conversation_threads.id", ondelete="CASCADE"), nullable=False, index=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id", ondelete="SET NULL"), nullable=True, index=True)
+    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id", ondelete="SET NULL"), nullable=True)
+    observation_id = Column(String(36), ForeignKey("observations.id", ondelete="SET NULL"), nullable=True)
+    advisory_id = Column(String(36), ForeignKey("advisories.id", ondelete="SET NULL"), nullable=True)
 
     user_message = Column(Text, default="")
     agent_response = Column(Text, default="")
@@ -272,10 +281,10 @@ class ActionImpact(Base):
     __tablename__ = "action_impacts"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    advisory_id = Column(String(36), ForeignKey("advisories.id"), nullable=False, index=True)
-    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
-    field_id = Column(String(36), ForeignKey("fields.id"), nullable=True, index=True)
-    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=True)
+    advisory_id = Column(String(36), ForeignKey("advisories.id", ondelete="CASCADE"), nullable=False, index=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id", ondelete="SET NULL"), nullable=True, index=True)
+    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id", ondelete="SET NULL"), nullable=True)
 
     action_index = Column(Integer, default=0)
     action_text = Column(Text, nullable=False)
@@ -295,8 +304,15 @@ class ActionImpact(Base):
 Index("ix_memory_atoms_farmer_event", MemoryAtom.farmer_id, MemoryAtom.event_at)
 Index("ix_memory_atoms_field_type", MemoryAtom.field_id, MemoryAtom.atom_type)
 Index("ix_memory_atoms_district", MemoryAtom.district, MemoryAtom.atom_type)
+Index("ix_memory_atoms_source", MemoryAtom.source_type, MemoryAtom.source_id)
 Index("ix_memory_summaries_scale_lookup", MemorySummary.scale, MemorySummary.scale_id)
+Index("ix_memory_summaries_updated", MemorySummary.last_updated)
+Index("ix_source_documents_trust_name", SourceDocument.trust_level, SourceDocument.source_name)
+Index("ix_source_documents_wiki_article_id", SourceDocument.wiki_article_id)
 Index("ix_source_citations_advisory", SourceCitation.advisory_id)
+Index("ix_source_citations_source_document_id", SourceCitation.source_document_id)
 Index("ix_conversation_thread_scope", ConversationThread.farmer_id, ConversationThread.field_id, ConversationThread.crop_cycle_id)
+Index("ix_conversation_threads_farmer_updated", ConversationThread.farmer_id, ConversationThread.updated_at)
 Index("ix_conversation_turns_thread_created", ConversationTurn.thread_id, ConversationTurn.created_at)
 Index("ix_action_impacts_advisory_action", ActionImpact.advisory_id, ActionImpact.action_index)
+Index("ix_action_impacts_created_at", ActionImpact.created_at)

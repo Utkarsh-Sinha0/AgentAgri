@@ -72,8 +72,18 @@ class Farmer(Base):
     is_active = Column(Boolean, default=True)
 
     # relationships
-    fields = relationship("Field", back_populates="farmer", lazy="selectin")
-    observations = relationship("Observation", back_populates="farmer", lazy="selectin")
+    fields = relationship(
+        "Field",
+        back_populates="farmer",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    observations = relationship(
+        "Observation",
+        back_populates="farmer",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
 
 class ExtensionWorker(Base):
@@ -95,7 +105,7 @@ class Field(Base):
     __tablename__ = "fields"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(80))
     area_acres = Column(Float)
     soil_type = Column(String(60))  # clay_loam, sandy_loam, black_cotton, etc.
@@ -106,7 +116,12 @@ class Field(Base):
     created_at = Column(DateTime, default=utc_now)
 
     farmer = relationship("Farmer", back_populates="fields")
-    crop_cycles = relationship("CropCycle", back_populates="field", lazy="selectin")
+    crop_cycles = relationship(
+        "CropCycle",
+        back_populates="field",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
 
 class CropCycle(Base):
@@ -114,7 +129,7 @@ class CropCycle(Base):
     __tablename__ = "crop_cycles"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    field_id = Column(String(36), ForeignKey("fields.id"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id", ondelete="CASCADE"), nullable=False, index=True)
     crop_name = Column(String(60), nullable=False)  # rice, wheat, maize, etc.
     variety = Column(String(60), nullable=True)
     sowing_date = Column(DateTime)
@@ -125,8 +140,18 @@ class CropCycle(Base):
     created_at = Column(DateTime, default=utc_now)
 
     field = relationship("Field", back_populates="crop_cycles")
-    tasks = relationship("CropCalendarTask", back_populates="cycle", lazy="selectin")
-    observations = relationship("Observation", back_populates="crop_cycle", lazy="selectin")
+    tasks = relationship(
+        "CropCalendarTask",
+        back_populates="cycle",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
+    observations = relationship(
+        "Observation",
+        back_populates="crop_cycle",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
 
 class CropCalendarTask(Base):
@@ -134,7 +159,7 @@ class CropCalendarTask(Base):
     __tablename__ = "crop_calendar_tasks"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=False, index=True)
+    cycle_id = Column(String(36), ForeignKey("crop_cycles.id", ondelete="CASCADE"), nullable=False, index=True)
     stage = Column(String(30), nullable=False)
     task_name = Column(String(120), nullable=False)
     description = Column(Text)
@@ -152,9 +177,9 @@ class Observation(Base):
     __tablename__ = "observations"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
-    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=False, index=True)
-    field_id = Column(String(36), ForeignKey("fields.id"), nullable=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False, index=True)
+    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id", ondelete="CASCADE"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id", ondelete="SET NULL"), nullable=True)
 
     observation_type = Column(String(30))  # photo, text, voice
     text_content = Column(Text, nullable=True)  # transcribed or typed
@@ -177,7 +202,13 @@ class Observation(Base):
 
     farmer = relationship("Farmer", back_populates="observations")
     crop_cycle = relationship("CropCycle", back_populates="observations")
-    advisory = relationship("Advisory", back_populates="observation", uselist=False, lazy="selectin")
+    advisory = relationship(
+        "Advisory",
+        back_populates="observation",
+        uselist=False,
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
 
 # ─── Advisory & Verifier ──────────────────────────────────────────────
@@ -187,8 +218,8 @@ class Advisory(Base):
     __tablename__ = "advisories"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    observation_id = Column(String(36), ForeignKey("observations.id"), nullable=False, unique=True, index=True)
-    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
+    observation_id = Column(String(36), ForeignKey("observations.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Agent output
     risk_level = Column(String(30))  # RiskLevel enum
@@ -221,7 +252,13 @@ class Advisory(Base):
     feedback_text = Column(Text, nullable=True)
 
     observation = relationship("Observation", back_populates="advisory")
-    verifier_report = relationship("VerifierReport", back_populates="advisory", uselist=False, lazy="selectin")
+    verifier_report = relationship(
+        "VerifierReport",
+        back_populates="advisory",
+        uselist=False,
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
 
 
 class VerifierReport(Base):
@@ -229,7 +266,7 @@ class VerifierReport(Base):
     __tablename__ = "verifier_reports"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    advisory_id = Column(String(36), ForeignKey("advisories.id"), nullable=False, unique=True, index=True)
+    advisory_id = Column(String(36), ForeignKey("advisories.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
 
     passes_all = Column(Boolean, default=False)
 
@@ -315,7 +352,7 @@ class AlertCluster(Base):
     farmer_count = Column(Integer, default=0)
     severity = Column(Float, default=0.0)  # aggregated severity score
     status = Column(String(20), default=AlertStatus.PENDING)
-    reviewed_by = Column(String(36), ForeignKey("extension_workers.id"), nullable=True)
+    reviewed_by = Column(String(36), ForeignKey("extension_workers.id", ondelete="SET NULL"), nullable=True)
     broadcast_message = Column(Text, nullable=True)
     broadcast_at = Column(DateTime, nullable=True)
     farmers_notified = Column(Integer, default=0)
@@ -330,8 +367,8 @@ class FinanceEntry(Base):
     __tablename__ = "finance_entries"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    farmer_id = Column(String(36), ForeignKey("farmers.id"), nullable=False, index=True)
-    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id"), nullable=True)
+    farmer_id = Column(String(36), ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False, index=True)
+    crop_cycle_id = Column(String(36), ForeignKey("crop_cycles.id", ondelete="SET NULL"), nullable=True)
     entry_type = Column(String(20))  # expense, revenue, loan
     category = Column(String(40))  # seed, fertilizer, pesticide, labour, irrigation, harvest_sale
     amount = Column(Float, nullable=False)
@@ -346,7 +383,7 @@ class SatelliteNDVI(Base):
     __tablename__ = "satellite_ndvi"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    field_id = Column(String(36), ForeignKey("fields.id"), nullable=False, index=True)
+    field_id = Column(String(36), ForeignKey("fields.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(DateTime, nullable=False)
     ndvi_value = Column(Float, nullable=False)
     source = Column(String(30), default="seeded")  # seeded, sentinel2
@@ -356,7 +393,15 @@ class SatelliteNDVI(Base):
 # ─── Indexes ──────────────────────────────────────────────────────────
 
 Index("ix_observations_farmer_cycle", Observation.farmer_id, Observation.crop_cycle_id)
+Index("ix_observations_field_created", Observation.field_id, Observation.created_at)
+Index("ix_observations_created_at", Observation.created_at)
 Index("ix_advisories_farmer_created", Advisory.farmer_id, Advisory.created_at)
+Index("ix_crop_cycles_active_field_created", CropCycle.field_id, CropCycle.is_active, CropCycle.created_at)
+Index("ix_satellite_ndvi_field_date", SatelliteNDVI.field_id, SatelliteNDVI.date)
 Index("ix_clusters_district_crop", AlertCluster.district, AlertCluster.crop_name)
 Index("ix_clusters_status", AlertCluster.status)
+Index("ix_alert_clusters_status_severity", AlertCluster.status, AlertCluster.severity)
+Index("ix_alert_clusters_district_severity", AlertCluster.district, AlertCluster.severity)
 Index("ix_finance_farmer_cycle", FinanceEntry.farmer_id, FinanceEntry.crop_cycle_id)
+Index("ix_finance_farmer_cycle_type", FinanceEntry.farmer_id, FinanceEntry.crop_cycle_id, FinanceEntry.entry_type)
+Index("ix_finance_entries_recorded_at", FinanceEntry.recorded_at)

@@ -6,8 +6,27 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-42%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-75%20passed-brightgreen)](tests/)
 [![Kaggle](https://img.shields.io/badge/kaggle-gemma--4--good--hackathon-orange)](https://kaggle.com)
+
+---
+
+## Production Quickstart
+
+```powershell
+copy .env.example .env
+docker-compose build
+docker-compose up
+```
+
+Open `http://localhost:8000`.
+
+Primary docs:
+
+- [Setup](docs/SETUP.md)
+- [Features](docs/FEATURES.md)
+- [API](docs/API.md)
+- [Maturity plan](docs/MATURITY_PLAN.md)
 
 ---
 
@@ -39,6 +58,9 @@
 
 Detailed handoff documents:
 
+- [Setup guide](docs/SETUP.md)
+- [Feature guide](docs/FEATURES.md)
+- [API reference](docs/API.md)
 - [Product pitch and use cases](PRODUCT_PITCH_AND_USE_CASES.md)
 - [Developer spec and tester README](DEVELOPER_SPEC_AND_TESTER_README.md)
 

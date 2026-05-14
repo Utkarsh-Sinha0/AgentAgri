@@ -1,21 +1,21 @@
 """0001_baseline
 
 Revision ID: 0001
-Revises: 
+Revises:
 Create Date: 2026-05-14 21:29:56.148182
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 
 # revision identifiers, used by Alembic.
 revision: str = '0001'
-down_revision: Union[str, Sequence[str], None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -72,6 +72,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_memory_summaries_scale'), 'memory_summaries', ['scale'], unique=False)
     op.create_index(op.f('ix_memory_summaries_scale_id'), 'memory_summaries', ['scale_id'], unique=False)
     op.create_index('ix_memory_summaries_scale_lookup', 'memory_summaries', ['scale', 'scale_id'], unique=False)
+    op.create_index('ix_memory_summaries_updated', 'memory_summaries', ['last_updated'], unique=False)
     op.create_table('wiki_articles',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('title', sa.String(length=200), nullable=False),
@@ -118,12 +119,14 @@ def upgrade() -> None:
     sa.Column('broadcast_at', sa.DateTime(), nullable=True),
     sa.Column('farmers_notified', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['reviewed_by'], ['extension_workers.id'], ),
+    sa.ForeignKeyConstraint(['reviewed_by'], ['extension_workers.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_alert_clusters_crop_name'), 'alert_clusters', ['crop_name'], unique=False)
     op.create_index(op.f('ix_alert_clusters_district'), 'alert_clusters', ['district'], unique=False)
+    op.create_index('ix_alert_clusters_district_severity', 'alert_clusters', ['district', 'severity'], unique=False)
     op.create_index(op.f('ix_alert_clusters_tehsil'), 'alert_clusters', ['tehsil'], unique=False)
+    op.create_index('ix_alert_clusters_status_severity', 'alert_clusters', ['status', 'severity'], unique=False)
     op.create_index('ix_clusters_district_crop', 'alert_clusters', ['district', 'crop_name'], unique=False)
     op.create_index('ix_clusters_status', 'alert_clusters', ['status'], unique=False)
     op.create_table('farmer_profiles',
@@ -151,7 +154,7 @@ def upgrade() -> None:
     sa.Column('soil_health_card', sa.Boolean(), nullable=True),
     sa.Column('profile_completeness', sa.Float(), nullable=True),
     sa.Column('last_updated', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ),
+    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_farmer_profiles_farmer_id'), 'farmer_profiles', ['farmer_id'], unique=True)
@@ -166,7 +169,7 @@ def upgrade() -> None:
     sa.Column('lng', sa.Float(), nullable=True),
     sa.Column('irrigation_type', sa.String(length=40), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ),
+    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_fields_farmer_id'), 'fields', ['farmer_id'], unique=False)
@@ -181,10 +184,12 @@ def upgrade() -> None:
     sa.Column('trust_level', sa.String(length=20), nullable=True),
     sa.Column('is_official', sa.Boolean(), nullable=True),
     sa.Column('wiki_article_id', sa.String(length=36), nullable=True),
-    sa.ForeignKeyConstraint(['wiki_article_id'], ['wiki_articles.id'], ),
+    sa.ForeignKeyConstraint(['wiki_article_id'], ['wiki_articles.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_source_documents_source_type'), 'source_documents', ['source_type'], unique=False)
+    op.create_index('ix_source_documents_trust_name', 'source_documents', ['trust_level', 'source_name'], unique=False)
+    op.create_index('ix_source_documents_wiki_article_id', 'source_documents', ['wiki_article_id'], unique=False)
     op.create_table('crop_cycles',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('field_id', sa.String(length=36), nullable=False),
@@ -196,10 +201,11 @@ def upgrade() -> None:
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('is_template', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ),
+    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_crop_cycles_field_id'), 'crop_cycles', ['field_id'], unique=False)
+    op.create_index('ix_crop_cycles_active_field_created', 'crop_cycles', ['field_id', 'is_active', 'created_at'], unique=False)
     op.create_table('satellite_ndvi',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('field_id', sa.String(length=36), nullable=False),
@@ -207,10 +213,11 @@ def upgrade() -> None:
     sa.Column('ndvi_value', sa.Float(), nullable=False),
     sa.Column('source', sa.String(length=30), nullable=True),
     sa.Column('cloud_cover_pct', sa.Float(), nullable=True),
-    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ),
+    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_satellite_ndvi_field_id'), 'satellite_ndvi', ['field_id'], unique=False)
+    op.create_index('ix_satellite_ndvi_field_date', 'satellite_ndvi', ['field_id', 'date'], unique=False)
     op.create_table('conversation_threads',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('farmer_id', sa.String(length=36), nullable=False),
@@ -227,12 +234,13 @@ def upgrade() -> None:
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ),
-    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ),
-    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ),
+    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_conversation_thread_scope', 'conversation_threads', ['farmer_id', 'field_id', 'crop_cycle_id'], unique=False)
+    op.create_index('ix_conversation_threads_farmer_updated', 'conversation_threads', ['farmer_id', 'updated_at'], unique=False)
     op.create_index(op.f('ix_conversation_threads_crop_cycle_id'), 'conversation_threads', ['crop_cycle_id'], unique=False)
     op.create_index(op.f('ix_conversation_threads_farmer_id'), 'conversation_threads', ['farmer_id'], unique=False)
     op.create_index(op.f('ix_conversation_threads_field_id'), 'conversation_threads', ['field_id'], unique=False)
@@ -245,7 +253,7 @@ def upgrade() -> None:
     sa.Column('days_from_sowing', sa.Integer(), nullable=True),
     sa.Column('completed', sa.Boolean(), nullable=True),
     sa.Column('completed_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['cycle_id'], ['crop_cycles.id'], ),
+    sa.ForeignKeyConstraint(['cycle_id'], ['crop_cycles.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_crop_calendar_tasks_cycle_id'), 'crop_calendar_tasks', ['cycle_id'], unique=False)
@@ -258,12 +266,14 @@ def upgrade() -> None:
     sa.Column('amount', sa.Float(), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('recorded_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ),
-    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ),
+    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_finance_entries_farmer_id'), 'finance_entries', ['farmer_id'], unique=False)
+    op.create_index('ix_finance_entries_recorded_at', 'finance_entries', ['recorded_at'], unique=False)
     op.create_index('ix_finance_farmer_cycle', 'finance_entries', ['farmer_id', 'crop_cycle_id'], unique=False)
+    op.create_index('ix_finance_farmer_cycle_type', 'finance_entries', ['farmer_id', 'crop_cycle_id', 'entry_type'], unique=False)
     op.create_table('observations',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('farmer_id', sa.String(length=36), nullable=False),
@@ -280,14 +290,16 @@ def upgrade() -> None:
     sa.Column('outcome_rating', sa.Integer(), nullable=True),
     sa.Column('outcome_logged_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ),
-    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ),
-    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ),
+    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_observations_crop_cycle_id'), 'observations', ['crop_cycle_id'], unique=False)
+    op.create_index('ix_observations_created_at', 'observations', ['created_at'], unique=False)
     op.create_index('ix_observations_farmer_cycle', 'observations', ['farmer_id', 'crop_cycle_id'], unique=False)
     op.create_index(op.f('ix_observations_farmer_id'), 'observations', ['farmer_id'], unique=False)
+    op.create_index('ix_observations_field_created', 'observations', ['field_id', 'created_at'], unique=False)
     op.create_table('advisories',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('observation_id', sa.String(length=36), nullable=False),
@@ -312,8 +324,8 @@ def upgrade() -> None:
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('farmer_feedback', sa.Integer(), nullable=True),
     sa.Column('feedback_text', sa.Text(), nullable=True),
-    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ),
-    sa.ForeignKeyConstraint(['observation_id'], ['observations.id'], ),
+    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['observation_id'], ['observations.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_advisories_farmer_created', 'advisories', ['farmer_id', 'created_at'], unique=False)
@@ -336,14 +348,15 @@ def upgrade() -> None:
     sa.Column('affects_previous_suggestions', sa.JSON(), nullable=True),
     sa.Column('evidence_article_ids', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['advisory_id'], ['advisories.id'], ),
-    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ),
-    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ),
-    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ),
+    sa.ForeignKeyConstraint(['advisory_id'], ['advisories.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_action_impacts_advisory_action', 'action_impacts', ['advisory_id', 'action_index'], unique=False)
     op.create_index(op.f('ix_action_impacts_advisory_id'), 'action_impacts', ['advisory_id'], unique=False)
+    op.create_index('ix_action_impacts_created_at', 'action_impacts', ['created_at'], unique=False)
     op.create_index(op.f('ix_action_impacts_farmer_id'), 'action_impacts', ['farmer_id'], unique=False)
     op.create_index(op.f('ix_action_impacts_field_id'), 'action_impacts', ['field_id'], unique=False)
     op.create_table('conversation_turns',
@@ -363,12 +376,12 @@ def upgrade() -> None:
     sa.Column('evidence_article_ids', sa.JSON(), nullable=True),
     sa.Column('memory_snapshot', sa.Text(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['advisory_id'], ['advisories.id'], ),
-    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ),
-    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ),
-    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ),
-    sa.ForeignKeyConstraint(['observation_id'], ['observations.id'], ),
-    sa.ForeignKeyConstraint(['thread_id'], ['conversation_threads.id'], ),
+    sa.ForeignKeyConstraint(['advisory_id'], ['advisories.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['observation_id'], ['observations.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['thread_id'], ['conversation_threads.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_conversation_turns_farmer_id'), 'conversation_turns', ['farmer_id'], unique=False)
@@ -383,12 +396,13 @@ def upgrade() -> None:
     sa.Column('relevance_score', sa.Float(), nullable=True),
     sa.Column('citation_context', sa.String(length=200), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['advisory_id'], ['advisories.id'], ),
-    sa.ForeignKeyConstraint(['source_document_id'], ['source_documents.id'], ),
+    sa.ForeignKeyConstraint(['advisory_id'], ['advisories.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['source_document_id'], ['source_documents.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_source_citations_advisory', 'source_citations', ['advisory_id'], unique=False)
     op.create_index(op.f('ix_source_citations_advisory_id'), 'source_citations', ['advisory_id'], unique=False)
+    op.create_index('ix_source_citations_source_document_id', 'source_citations', ['source_document_id'], unique=False)
     op.create_table('verifier_reports',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('advisory_id', sa.String(length=36), nullable=False),
@@ -403,7 +417,7 @@ def upgrade() -> None:
     sa.Column('confidence_calibrated_to_evidence', sa.Boolean(), nullable=True),
     sa.Column('details', sa.JSON(), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['advisory_id'], ['advisories.id'], ),
+    sa.ForeignKeyConstraint(['advisory_id'], ['advisories.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_verifier_reports_advisory_id'), 'verifier_reports', ['advisory_id'], unique=True)
@@ -426,10 +440,10 @@ def upgrade() -> None:
     sa.Column('event_at', sa.DateTime(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('is_private', sa.Boolean(), nullable=True),
-    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ),
-    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ),
-    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ),
-    sa.ForeignKeyConstraint(['source_citation_id'], ['source_citations.id'], ),
+    sa.ForeignKeyConstraint(['crop_cycle_id'], ['crop_cycles.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['farmer_id'], ['farmers.id'], ondelete='CASCADE'),
+    sa.ForeignKeyConstraint(['field_id'], ['fields.id'], ondelete='SET NULL'),
+    sa.ForeignKeyConstraint(['source_citation_id'], ['source_citations.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_memory_atoms_atom_type'), 'memory_atoms', ['atom_type'], unique=False)
@@ -439,12 +453,14 @@ def upgrade() -> None:
     op.create_index(op.f('ix_memory_atoms_farmer_id'), 'memory_atoms', ['farmer_id'], unique=False)
     op.create_index(op.f('ix_memory_atoms_field_id'), 'memory_atoms', ['field_id'], unique=False)
     op.create_index('ix_memory_atoms_field_type', 'memory_atoms', ['field_id', 'atom_type'], unique=False)
+    op.create_index('ix_memory_atoms_source', 'memory_atoms', ['source_type', 'source_id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index('ix_memory_atoms_source', table_name='memory_atoms')
     op.drop_index('ix_memory_atoms_field_type', table_name='memory_atoms')
     op.drop_index(op.f('ix_memory_atoms_field_id'), table_name='memory_atoms')
     op.drop_index(op.f('ix_memory_atoms_farmer_id'), table_name='memory_atoms')
@@ -455,6 +471,7 @@ def downgrade() -> None:
     op.drop_table('memory_atoms')
     op.drop_index(op.f('ix_verifier_reports_advisory_id'), table_name='verifier_reports')
     op.drop_table('verifier_reports')
+    op.drop_index('ix_source_citations_source_document_id', table_name='source_citations')
     op.drop_index(op.f('ix_source_citations_advisory_id'), table_name='source_citations')
     op.drop_index('ix_source_citations_advisory', table_name='source_citations')
     op.drop_table('source_citations')
@@ -466,30 +483,40 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_action_impacts_field_id'), table_name='action_impacts')
     op.drop_index(op.f('ix_action_impacts_farmer_id'), table_name='action_impacts')
     op.drop_index(op.f('ix_action_impacts_advisory_id'), table_name='action_impacts')
+    op.drop_index('ix_action_impacts_created_at', table_name='action_impacts')
     op.drop_index('ix_action_impacts_advisory_action', table_name='action_impacts')
     op.drop_table('action_impacts')
     op.drop_index(op.f('ix_advisories_observation_id'), table_name='advisories')
     op.drop_index(op.f('ix_advisories_farmer_id'), table_name='advisories')
     op.drop_index('ix_advisories_farmer_created', table_name='advisories')
     op.drop_table('advisories')
+    op.drop_index('ix_observations_field_created', table_name='observations')
     op.drop_index(op.f('ix_observations_farmer_id'), table_name='observations')
     op.drop_index('ix_observations_farmer_cycle', table_name='observations')
+    op.drop_index('ix_observations_created_at', table_name='observations')
     op.drop_index(op.f('ix_observations_crop_cycle_id'), table_name='observations')
     op.drop_table('observations')
+    op.drop_index('ix_finance_farmer_cycle_type', table_name='finance_entries')
     op.drop_index('ix_finance_farmer_cycle', table_name='finance_entries')
+    op.drop_index('ix_finance_entries_recorded_at', table_name='finance_entries')
     op.drop_index(op.f('ix_finance_entries_farmer_id'), table_name='finance_entries')
     op.drop_table('finance_entries')
     op.drop_index(op.f('ix_crop_calendar_tasks_cycle_id'), table_name='crop_calendar_tasks')
     op.drop_table('crop_calendar_tasks')
+    op.drop_index('ix_conversation_threads_farmer_updated', table_name='conversation_threads')
     op.drop_index(op.f('ix_conversation_threads_field_id'), table_name='conversation_threads')
     op.drop_index(op.f('ix_conversation_threads_farmer_id'), table_name='conversation_threads')
     op.drop_index(op.f('ix_conversation_threads_crop_cycle_id'), table_name='conversation_threads')
     op.drop_index('ix_conversation_thread_scope', table_name='conversation_threads')
     op.drop_table('conversation_threads')
+    op.drop_index('ix_satellite_ndvi_field_date', table_name='satellite_ndvi')
     op.drop_index(op.f('ix_satellite_ndvi_field_id'), table_name='satellite_ndvi')
     op.drop_table('satellite_ndvi')
+    op.drop_index('ix_crop_cycles_active_field_created', table_name='crop_cycles')
     op.drop_index(op.f('ix_crop_cycles_field_id'), table_name='crop_cycles')
     op.drop_table('crop_cycles')
+    op.drop_index('ix_source_documents_wiki_article_id', table_name='source_documents')
+    op.drop_index('ix_source_documents_trust_name', table_name='source_documents')
     op.drop_index(op.f('ix_source_documents_source_type'), table_name='source_documents')
     op.drop_table('source_documents')
     op.drop_index(op.f('ix_fields_farmer_id'), table_name='fields')
@@ -498,11 +525,14 @@ def downgrade() -> None:
     op.drop_table('farmer_profiles')
     op.drop_index('ix_clusters_status', table_name='alert_clusters')
     op.drop_index('ix_clusters_district_crop', table_name='alert_clusters')
+    op.drop_index('ix_alert_clusters_status_severity', table_name='alert_clusters')
     op.drop_index(op.f('ix_alert_clusters_tehsil'), table_name='alert_clusters')
+    op.drop_index('ix_alert_clusters_district_severity', table_name='alert_clusters')
     op.drop_index(op.f('ix_alert_clusters_district'), table_name='alert_clusters')
     op.drop_index(op.f('ix_alert_clusters_crop_name'), table_name='alert_clusters')
     op.drop_table('alert_clusters')
     op.drop_table('wiki_articles')
+    op.drop_index('ix_memory_summaries_updated', table_name='memory_summaries')
     op.drop_index('ix_memory_summaries_scale_lookup', table_name='memory_summaries')
     op.drop_index(op.f('ix_memory_summaries_scale_id'), table_name='memory_summaries')
     op.drop_index(op.f('ix_memory_summaries_scale'), table_name='memory_summaries')

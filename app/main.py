@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -78,6 +79,9 @@ class FarmerProfileUpdate(BaseModel):
 async def lifespan(app: FastAPI):
     """Startup/shutdown events."""
     logger.info("🌾 AgriMesh V4.0 starting up...")
+    startup_errors = settings.startup_errors()
+    if startup_errors:
+        raise RuntimeError("Invalid AgriMesh configuration: " + "; ".join(startup_errors))
     await init_db()
     logger.info("Database initialized.")
 
@@ -159,6 +163,53 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/api")
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(_: Request, exc: HTTPException) -> JSONResponse:
+    """Keep API failures in one predictable JSON envelope."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail,
+            "error": {
+                "code": "http_error",
+                "message": exc.detail,
+                "status_code": exc.status_code,
+            }
+        },
+        headers=exc.headers,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "validation_error",
+                "message": "Request validation failed",
+                "status_code": 422,
+                "details": exc.errors(),
+            }
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+    logger.exception(f"Unhandled API error: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": {
+                "code": "internal_server_error",
+                "message": "Internal server error",
+                "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+            }
+        },
+    )
 
 
 # ─── Production Safety Middleware ─────────────────────────────────────
@@ -581,6 +632,151 @@ async def system_stats(
     }
 
 
+@app.get("/api/models")
+async def model_options(_: bool = Depends(require_api_key)):
+    """Return configured Gemma/Ollama model choices for the frontend model toggle."""
+    return {
+        "current": settings.ollama_model,
+        "fallback": settings.ollama_fallback_model,
+        "options": [
+            {
+                "id": settings.ollama_model,
+                "label": settings.ollama_model.replace(":", " "),
+                "role": "primary",
+            },
+            {
+                "id": settings.ollama_fallback_model,
+                "label": settings.ollama_fallback_model.replace(":", " "),
+                "role": "fallback",
+            },
+        ],
+        "grammar_decoding": settings.use_grammar_decoding,
+        "timeout_seconds": settings.ollama_timeout_seconds,
+    }
+
+
+@app.get("/api/weather/forecast")
+async def weather_forecast(
+    field_id: str | None = None,
+    days: int = 5,
+    _: bool = Depends(require_api_key),
+):
+    """Return seeded weather forecast data in the same shape used by the agent tools."""
+    from app.services.weather import get_forecast, get_historical_weather
+
+    bounded_days = min(max(days, 1), 10)
+    forecast = await get_forecast(field_id=field_id, days=bounded_days)
+    history = await get_historical_weather(field_id=field_id, days=min(bounded_days, 7))
+    return {"forecast": forecast, "history": history}
+
+
+@app.get("/api/market-prices")
+async def market_prices(
+    crop: str = "rice",
+    district: str | None = None,
+    days: int = 7,
+    _: bool = Depends(require_api_key),
+):
+    """Return seeded mandi price data for a crop/district."""
+    from app.services.mandi import get_mandi_prices, get_msp
+
+    bounded_days = min(max(days, 1), 30)
+    prices = await get_mandi_prices(crop=crop, district=district, days=bounded_days)
+    msp = await get_msp(crop=crop)
+    return {"crop": crop, "district": district, "days": bounded_days, "prices": prices, "msp": msp}
+
+
+@app.get("/api/ai/showcase")
+async def ai_showcase(
+    farmer_id: str | None = None,
+    limit: int = 5,
+    db: AsyncSession = Depends(get_db),
+    _: bool = Depends(require_api_key),
+):
+    """Return latest advisory, vision, tool-call, citation, and model metadata for demo pages."""
+    from app.models import Observation
+    from app.models_memory import SourceCitation, SourceDocument
+
+    bounded_limit = min(max(limit, 1), 20)
+    query = select(Advisory).order_by(desc(Advisory.created_at)).limit(bounded_limit)
+    if farmer_id:
+        query = query.where(Advisory.farmer_id == farmer_id)
+    result = await db.execute(query)
+    advisories = result.scalars().all()
+    latest = advisories[0] if advisories else None
+
+    observation = None
+    citations = []
+    if latest:
+        observation = await db.scalar(select(Observation).where(Observation.id == latest.observation_id))
+        citation_result = await db.execute(
+            select(SourceCitation, SourceDocument)
+            .join(SourceDocument, SourceDocument.id == SourceCitation.source_document_id)
+            .where(SourceCitation.advisory_id == latest.id)
+            .order_by(SourceCitation.created_at.desc())
+            .limit(10)
+        )
+        citations = [
+            {
+                "id": citation.id,
+                "source_name": source.source_name,
+                "source_type": source.source_type,
+                "url": source.url,
+                "trust_level": source.trust_level,
+                "is_official": source.is_official,
+                "relevance_score": citation.relevance_score,
+                "context": citation.citation_context,
+                "snapshot": citation.evidence_snapshot,
+            }
+            for citation, source in citation_result.all()
+        ]
+
+    tool_calls = []
+    if latest:
+        for tool_name, payload in [
+            ("get_forecast", latest.weather_data),
+            ("get_mandi_prices", latest.mandi_data),
+            ("match_schemes", latest.scheme_data),
+        ]:
+            if payload:
+                tool_calls.append({"tool_name": tool_name, "status": "used", "result_preview": payload})
+
+    reasoning_trace = []
+    if latest:
+        reasoning_trace = [
+            {
+                "step": "Evidence retrieval",
+                "summary": f"{len(latest.evidence_article_ids or [])} evidence articles selected via {latest.retrieval_path or 'unknown'} retrieval.",
+            },
+            {
+                "step": "Tool grounding",
+                "summary": f"{len(tool_calls)} agent tools contributed live or seeded context.",
+            },
+            {
+                "step": "Safety verification",
+                "summary": "Verifier passed all checks." if latest.verifier_report and latest.verifier_report.passes_all else "Verifier required a conservative fallback or has no report yet.",
+            },
+        ]
+
+    return {
+        "models": {
+            "current": settings.ollama_model,
+            "fallback": settings.ollama_fallback_model,
+            "options": [settings.ollama_model, settings.ollama_fallback_model],
+        },
+        "latest_advisory": _serialize_advisory_for_showcase(latest) if latest else None,
+        "vision": {
+            "image_path": observation.image_path if observation else None,
+            "analysis": observation.vision_analysis if observation else None,
+            "confidence": observation.vision_confidence if observation else None,
+        } if observation else None,
+        "reasoning_trace": reasoning_trace,
+        "tool_calls": tool_calls,
+        "citations": citations,
+        "history": [_serialize_advisory_for_showcase(item) for item in advisories],
+    }
+
+
 @app.get("/api/memory/summaries")
 async def memory_summaries(
     scale: str | None = None,
@@ -668,6 +864,25 @@ def _serialize_impact(item) -> dict:
         "risks": item.risks or [],
         "metrics_delta": item.metrics_delta or {},
         "affects_previous_suggestions": item.affects_previous_suggestions or [],
+        "evidence_article_ids": item.evidence_article_ids or [],
+        "created_at": item.created_at.isoformat() if item.created_at else None,
+    }
+
+
+def _serialize_advisory_for_showcase(item: Advisory | None) -> dict | None:
+    if not item:
+        return None
+    return {
+        "id": item.id,
+        "risk_level": item.risk_level,
+        "confidence": item.confidence,
+        "contextualization": item.contextualization,
+        "actions_text": item.actions_text or [],
+        "warnings_text": item.warnings_text or [],
+        "thinking_enabled": item.thinking_enabled,
+        "model_used": item.model_used,
+        "retrieval_path": item.retrieval_path,
+        "latency_ms": item.latency_ms,
         "evidence_article_ids": item.evidence_article_ids or [],
         "created_at": item.created_at.isoformat() if item.created_at else None,
     }

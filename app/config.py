@@ -7,6 +7,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings
@@ -127,10 +128,56 @@ class Settings(BaseSettings):
             "test",
             "dev",
         }
+        errors = self.startup_errors(placeholders=placeholders)
+        if errors:
+            raise ValueError("; ".join(errors))
+
+        if (
+            self.app_env == "demo"
+            and self.enable_demo_sessions
+            and len(self.bot_demo_secret_current) < 32
+        ):
+            raise ValueError(
+                "BOT_DEMO_SECRET_CURRENT must be at least 32 chars when demo sessions are enabled"
+            )
+        return self
+
+    def startup_errors(self, placeholders: set[str] | None = None) -> list[str]:
+        """Return actionable configuration errors before the API starts serving traffic."""
+        placeholders = placeholders or {
+            "",
+            "changeme",
+            "change-me",
+            "placeholder",
+            "replace-me",
+            "your-api-key",
+            "your-secret",
+            "secret",
+            "test",
+            "dev",
+        }
+        errors: list[str] = []
         api_key = self.api_key.strip()
         telegram_token = self.telegram_bot_token.strip()
+        parsed_db = urlparse(self.database_url)
+        parsed_ollama = urlparse(self.ollama_host)
+
+        if not parsed_db.scheme:
+            errors.append("DATABASE_URL must include a SQLAlchemy scheme")
+        if self.max_request_bytes < 1024:
+            errors.append("MAX_REQUEST_BYTES must be at least 1024")
+        if self.ollama_timeout_seconds <= 0:
+            errors.append("OLLAMA_TIMEOUT_SECONDS must be greater than 0")
+        if self.ollama_max_concurrency < 1:
+            errors.append("OLLAMA_MAX_CONCURRENCY must be at least 1")
+        if parsed_ollama.scheme not in {"http", "https"} or not parsed_ollama.netloc:
+            errors.append("OLLAMA_HOST must be an http(s) URL, for example http://localhost:11434")
+        if self.retrieval_top_k < 1:
+            errors.append("RETRIEVAL_TOP_K must be at least 1")
+        if self.reranker_top_k < 1:
+            errors.append("RERANKER_TOP_K must be at least 1")
+
         if self.app_env == "production":
-            errors = []
             if len(api_key) < 32 or api_key.lower() in placeholders:
                 errors.append("AGRIMESH_API_KEY must be a non-placeholder value of at least 32 chars")
             if self.allowed_origins == ["*"]:
@@ -151,18 +198,8 @@ class Settings(BaseSettings):
                 errors.append("BOT_DEMO_SECRET_CURRENT must be empty in production")
             if self.bot_demo_secret_previous:
                 errors.append("BOT_DEMO_SECRET_PREVIOUS must be empty in production")
-            if errors:
-                raise ValueError("; ".join(errors))
 
-        if (
-            self.app_env == "demo"
-            and self.enable_demo_sessions
-            and len(self.bot_demo_secret_current) < 32
-        ):
-            raise ValueError(
-                "BOT_DEMO_SECRET_CURRENT must be at least 32 chars when demo sessions are enabled"
-            )
-        return self
+        return errors
 
     @property
     def is_production(self) -> bool:

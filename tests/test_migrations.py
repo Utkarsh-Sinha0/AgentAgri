@@ -44,13 +44,17 @@ def test_alembic_baseline_matches_create_all_schema():
     metadata_engine = create_engine("sqlite:///:memory:")
     alembic_cfg = Config("alembic.ini")
 
-    with alembic_engine.begin() as alembic_conn:
-        alembic_cfg.attributes["connection"] = alembic_conn
-        command.upgrade(alembic_cfg, "head")
-        alembic_schema = _schema_signature(alembic_conn)
+    try:
+        with alembic_engine.begin() as alembic_conn:
+            alembic_cfg.attributes["connection"] = alembic_conn
+            command.upgrade(alembic_cfg, "head")
+            alembic_schema = _schema_signature(alembic_conn)
 
-    with metadata_engine.begin() as metadata_conn:
-        Base.metadata.create_all(metadata_conn)
-        metadata_schema = _schema_signature(metadata_conn)
+        with metadata_engine.begin() as metadata_conn:
+            Base.metadata.create_all(metadata_conn)
+            metadata_schema = _schema_signature(metadata_conn)
+    finally:
+        alembic_engine.dispose()
+        metadata_engine.dispose()
 
     assert alembic_schema == metadata_schema

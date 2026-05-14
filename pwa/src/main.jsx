@@ -1,115 +1,97 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Component, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import {
   Activity,
   AlertTriangle,
   BarChart3,
-  BookOpen,
+  Bot,
   CheckCircle2,
   CloudRain,
   Database,
-  Droplets,
   FileSearch,
   GitBranch,
+  History,
   IndianRupee,
   Leaf,
-  MapPinned,
   MessageSquareText,
-  Moon,
   RefreshCw,
-  Satellite,
+  Settings,
   ShieldCheck,
   Sprout,
-  Sun,
-  Users,
 } from 'lucide-react';
 
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import { Input } from './components/ui/input';
-import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
-import { HoverRefreshIcon } from './components/icons/hover-refresh-icon';
 import './styles.css';
 
-const extensionTabs = [
-  { id: 'clusters', label: 'Clusters', icon: AlertTriangle },
-  { id: 'memory', label: 'Memory', icon: BookOpen },
-  { id: 'impact', label: 'Impact', icon: GitBranch },
-  { id: 'sources', label: 'Sources', icon: FileSearch },
-  { id: 'eval', label: 'Eval', icon: BarChart3 },
+const routes = [
+  { path: '/', label: 'Dashboard', icon: Leaf, page: DashboardPage },
+  { path: '/crop-analysis', label: 'Crop Analysis', icon: Sprout, page: CropAnalysisPage },
+  { path: '/market-prices', label: 'Market Prices', icon: IndianRupee, page: MarketPricesPage },
+  { path: '/weather', label: 'Weather', icon: CloudRain, page: WeatherPage },
+  { path: '/ai-advisor', label: 'AI Advisor', icon: Bot, page: AIAdvisorPage },
+  { path: '/history', label: 'History', icon: History, page: HistoryPage },
+  { path: '/settings', label: 'Settings', icon: Settings, page: SettingsPage },
 ];
 
-const farmerTabs = [
-  { id: 'overview', label: 'Overview', icon: Leaf },
-  { id: 'fields', label: 'Fields', icon: Sprout },
-  { id: 'map', label: 'Map', icon: MapPinned },
-  { id: 'money', label: 'Money', icon: IndianRupee },
-  { id: 'memory', label: 'Memory', icon: MessageSquareText },
-];
+const defaultState = {
+  dashboard: null,
+  stats: null,
+  clusters: [],
+  memory: [],
+  impacts: [],
+  sources: [],
+  evalData: null,
+  models: null,
+  showcase: null,
+  weather: null,
+  market: null,
+  health: null,
+};
 
-function dashboardCacheKey(farmerId = 'default') {
-  return `agrimesh_farmer_dashboard_${farmerId}`;
-}
-
-function loadCachedDashboard(farmerId = 'default') {
-  try {
-    const cached = localStorage.getItem(dashboardCacheKey(farmerId || 'default'));
-    return cached ? JSON.parse(cached) : null;
-  } catch {
-    localStorage.removeItem(dashboardCacheKey(farmerId || 'default'));
-    return null;
-  }
+function apiHeaders() {
+  const apiKey = localStorage.getItem('agrimesh_api_key');
+  return apiKey ? { 'X-AgriMesh-API-Key': apiKey } : {};
 }
 
 async function api(path) {
-  const apiKey = localStorage.getItem('agrimesh_api_key');
-  const headers = apiKey ? { 'X-AgriMesh-API-Key': apiKey } : {};
-  const res = await fetch(path, { headers, credentials: 'include' });
-  if (!res.ok) throw new Error(`${path}: ${res.status}`);
-  return res.json();
+  const res = await fetch(path, { headers: apiHeaders(), credentials: 'include' });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body?.error?.message || body?.detail || `${path}: ${res.status}`);
+  }
+  return body;
 }
 
-async function apiPost(path, body, method = 'POST') {
-  const apiKey = localStorage.getItem('agrimesh_api_key');
-  const headers = { 'Content-Type': 'application/json' };
-  if (apiKey) headers['X-AgriMesh-API-Key'] = apiKey;
-  const res = await fetch(path, { method, headers, body: JSON.stringify(body), credentials: 'include' });
-  if (!res.ok) throw new Error(`${path}: ${res.status}`);
-  return res.json();
-}
-
-function App() {
-  const params = new URLSearchParams(window.location.search);
-  const farmerFromUrl = params.get('farmer_id') || localStorage.getItem('agrimesh_farmer_id') || '';
-  const phoneFromUrl = params.get('phone') || '';
-  const [mode, setMode] = useState(params.get('mode') === 'extension' ? 'extension' : 'farmer');
-  const [farmerTab, setFarmerTab] = useState('overview');
-  const [activeTab, setActiveTab] = useState('clusters');
-  const [stats, setStats] = useState(null);
-  const [clusters, setClusters] = useState([]);
-  const [memory, setMemory] = useState([]);
-  const [impacts, setImpacts] = useState([]);
-  const [sources, setSources] = useState([]);
-  const [evalData, setEvalData] = useState(null);
-  const [farmerDashboard, setFarmerDashboard] = useState(() => {
-    return loadCachedDashboard(farmerFromUrl || 'default');
-  });
-  const [apiKey, setApiKey] = useState(localStorage.getItem('agrimesh_api_key') || '');
-  const [farmerId, setFarmerId] = useState(farmerFromUrl);
+function useAppData() {
+  const [state, setState] = useState(defaultState);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [apiKey, setApiKeyState] = useState(localStorage.getItem('agrimesh_api_key') || '');
+  const [farmerId, setFarmerId] = useState(localStorage.getItem('agrimesh_farmer_id') || '');
 
-  async function loadDashboard() {
+  async function refresh() {
     setLoading(true);
     setError('');
+    const farmerQuery = farmerId ? `?farmer_id=${encodeURIComponent(farmerId)}` : '';
     try {
-      const farmerQuery = farmerId
-        ? `?farmer_id=${encodeURIComponent(farmerId)}`
-        : phoneFromUrl
-          ? `?phone=${encodeURIComponent(phoneFromUrl)}`
-          : '';
-      const [farmerData, statsData, clusterData, memoryData, impactData, sourceData, evalResult] = await Promise.all([
+      const [
+        dashboard,
+        stats,
+        clusters,
+        memory,
+        impacts,
+        sources,
+        evalData,
+        models,
+        showcase,
+        weather,
+        market,
+        health,
+      ] = await Promise.all([
         api(`/api/farmer-dashboard${farmerQuery}`).catch((err) => ({ error: err.message })),
         api('/api/stats').catch((err) => ({ error: err.message })),
         api('/api/clusters').catch(() => ({ clusters: [] })),
@@ -117,20 +99,32 @@ function App() {
         api('/api/impact-network').catch(() => ({ impacts: [] })),
         api('/api/sources').catch(() => ({ sources: [] })),
         api('/api/eval/latest').catch(() => null),
+        api('/api/models').catch(() => null),
+        api(`/api/ai/showcase${farmerQuery}`).catch(() => null),
+        api('/api/weather/forecast').catch(() => null),
+        api('/api/market-prices?crop=rice').catch(() => null),
+        api('/health').catch(() => null),
       ]);
-      if (statsData?.error) setError(statsData.error);
-      if (!farmerData?.error) {
-        setFarmerDashboard(farmerData);
-        setFarmerId(farmerData.farmer?.id || farmerId);
-        localStorage.setItem('agrimesh_farmer_id', farmerData.farmer?.id || farmerId);
-        localStorage.setItem(dashboardCacheKey(farmerData.farmer?.id || 'default'), JSON.stringify(farmerData));
+
+      if (dashboard?.farmer?.id) {
+        localStorage.setItem('agrimesh_farmer_id', dashboard.farmer.id);
+        setFarmerId(dashboard.farmer.id);
       }
-      setStats(statsData?.error ? null : statsData);
-      setClusters(clusterData?.clusters || []);
-      setMemory(memoryData?.summaries || []);
-      setImpacts(impactData?.impacts || []);
-      setSources(sourceData?.sources || []);
-      setEvalData(evalResult);
+      setState({
+        dashboard: dashboard?.error ? null : dashboard,
+        stats: stats?.error ? null : stats,
+        clusters: clusters?.clusters || [],
+        memory: memory?.summaries || [],
+        impacts: impacts?.impacts || [],
+        sources: sources?.sources || [],
+        evalData,
+        models,
+        showcase,
+        weather,
+        market,
+        health,
+      });
+      setError(dashboard?.error || stats?.error || '');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -138,489 +132,317 @@ function App() {
     }
   }
 
+  function setApiKey(value) {
+    setApiKeyState(value);
+    if (value.trim()) localStorage.setItem('agrimesh_api_key', value.trim());
+    else localStorage.removeItem('agrimesh_api_key');
+  }
+
   useEffect(() => {
-    loadDashboard();
+    refresh();
   }, []);
 
-  function saveApiKey(value) {
-    setApiKey(value);
-    if (value.trim()) {
-      localStorage.setItem('agrimesh_api_key', value.trim());
-    } else {
-      localStorage.removeItem('agrimesh_api_key');
+  return { ...state, loading, error, refresh, apiKey, setApiKey, farmerId, setFarmerId };
+}
+
+class PageErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.locationKey !== this.props.locationKey && this.state.error) {
+      this.setState({ error: null });
     }
   }
 
-  async function reviewCluster(id, action, msg = '') {
-    await apiPost(`/api/clusters/${id}/review`, {
-      action,
-      extension_worker_id: 'demo_extension_worker',
-      broadcast_message: msg,
-    });
-    setClusters((current) => current.filter((cluster) => cluster.id !== id));
+  render() {
+    if (this.state.error) {
+      return <EmptyState icon={AlertTriangle} text={this.state.error.message || 'Page failed to render'} />;
+    }
+    return this.props.children;
   }
+}
 
-  async function saveProfilePatch(patch) {
-    if (!farmerDashboard?.farmer?.id) return;
-    const optimistic = {
-      ...farmerDashboard,
-      profile: { ...farmerDashboard.profile, ...patch },
-    };
-    setFarmerDashboard(optimistic);
-    localStorage.setItem(dashboardCacheKey(farmerDashboard.farmer.id), JSON.stringify(optimistic));
-    const result = await apiPost(`/api/farmers/${farmerDashboard.farmer.id}/profile`, patch, 'PUT');
-    setFarmerDashboard((current) => ({ ...current, profile: result.profile }));
-  }
+function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
+    </BrowserRouter>
+  );
+}
 
-  const weatherMood = farmerDashboard?.weather_skin?.mood || 'sunny';
-  const readiness = useMemo(() => buildReadiness(stats, sources, memory, clusters), [stats, sources, memory, clusters]);
+function AppShell() {
+  const data = useAppData();
+  const location = useLocation();
 
   return (
-    <main className={`app-shell weather-${weatherMood}`}>
-      <div className="weather-canvas" aria-hidden="true">
-        <span className="cloud cloud-a" />
-        <span className="cloud cloud-b" />
-        <span className="rain-layer" />
-      </div>
-      <section className="shell">
-        <header className="topbar">
-          <div className="brand-block">
+    <main className="app-shell weather-sunny">
+      <section className="shell app-grid">
+        <aside className="side-nav">
+          <div className="brand-block nav-brand">
             <div className="brand-mark"><Leaf size={22} /></div>
             <div>
-              <h1>{mode === 'farmer' ? 'My AgriMesh Farm' : 'AgriMesh V4.0'}</h1>
-              <p>{mode === 'farmer' ? farmerIdentity(farmerDashboard) : 'Evidence-first extension dashboard'}</p>
+              <h1>AgentAgri</h1>
+              <p>{data.dashboard?.farmer?.name || data.health?.model || 'Gemma farm advisor'}</p>
             </div>
           </div>
-          <div className="operator-controls">
-            <Button title="Open the farmer dashboard: weather, fields, map, money, and memory" variant={mode === 'farmer' ? 'default' : 'secondary'} onClick={() => setMode('farmer')}>
-              <Leaf size={16} />
-              Farmer
-            </Button>
-            <Button title="Open the extension console: clusters, memory summaries, impact graph, sources, and evals" variant={mode === 'extension' ? 'default' : 'secondary'} onClick={() => setMode('extension')}>
-              <ShieldCheck size={16} />
-              Extension
-            </Button>
-            <label className="header-field">
-              <span>API key</span>
-              <Input
-                aria-label="API key"
-                value={apiKey}
-                onChange={(event) => saveApiKey(event.target.value)}
-              />
-            </label>
-            <Button title="Refresh all dashboard API calls from the server" variant="secondary" onClick={loadDashboard} disabled={loading}>
-              <HoverRefreshIcon size={16} />
-              Refresh
-            </Button>
-          </div>
-        </header>
+          <nav>
+            {routes.map((item) => (
+              <NavLink key={item.path} to={item.path} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <item.icon size={17} />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
 
-        {error && (
-          <Card className="notice-card">
-            <CardContent>
-              <AlertTriangle size={18} />
-              <span>{error}. Add the API key if production auth is enabled.</span>
-            </CardContent>
-          </Card>
-        )}
+        <section className="page-panel">
+          <header className="topbar route-topbar">
+            <div>
+              <p className="eyebrow">{currentRouteLabel(location.pathname)}</p>
+              <h2>{farmerTitle(data.dashboard)}</h2>
+            </div>
+            <div className="operator-controls">
+              <label className="header-field">
+                <span>API key</span>
+                <Input value={data.apiKey} onChange={(event) => data.setApiKey(event.target.value)} />
+              </label>
+              <Button title="Refresh API-backed page data" variant="secondary" onClick={data.refresh} disabled={data.loading}>
+                <RefreshCw className={data.loading ? 'spin' : ''} size={16} />
+                Refresh
+              </Button>
+            </div>
+          </header>
 
-        {mode === 'farmer' ? (
-          <FarmerShell
-            dashboard={farmerDashboard}
-            loading={loading}
-            activeTab={farmerTab}
-            setActiveTab={setFarmerTab}
-            saveProfilePatch={saveProfilePatch}
-          />
-        ) : (
-          <ExtensionShell
-            stats={stats}
-            clusters={clusters}
-            memory={memory}
-            impacts={impacts}
-            sources={sources}
-            evalData={evalData}
-            loading={loading}
-            readiness={readiness}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            reviewCluster={reviewCluster}
-          />
-        )}
+          {data.error && (
+            <Card className="notice-card">
+              <CardContent>
+                <AlertTriangle size={18} />
+                <span>{data.error}</span>
+              </CardContent>
+            </Card>
+          )}
+
+          <PageErrorBoundary locationKey={location.pathname}>
+            <Routes>
+              {routes.map((item) => <Route key={item.path} path={item.path} element={<item.page data={data} />} />)}
+              <Route path="*" element={<DashboardPage data={data} />} />
+            </Routes>
+          </PageErrorBoundary>
+        </section>
       </section>
     </main>
   );
 }
 
-function FarmerShell({ dashboard, loading, activeTab, setActiveTab, saveProfilePatch }) {
-  if (loading && !dashboard) return <LoadingState />;
-  if (!dashboard) return <EmptyMessage icon={Users} text="No farmer profile found. Start with /demo or /register in Telegram." />;
-
+function DashboardPage({ data }) {
+  const dashboard = data.dashboard;
+  const latest = dashboard?.advisories?.[0] || data.showcase?.latest_advisory;
   return (
-    <>
-      <WeatherHero dashboard={dashboard} />
-      <FarmerQuickStats dashboard={dashboard} />
-      <Tabs>
-        <TabsList>
-          {farmerTabs.map((tab) => (
-            <TabsTrigger key={tab.id} title={`Open ${tab.label} view`} active={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
-              <tab.icon size={16} />
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-      {activeTab === 'overview' && <FarmerOverview dashboard={dashboard} saveProfilePatch={saveProfilePatch} />}
-      {activeTab === 'fields' && <FieldView dashboard={dashboard} />}
-      {activeTab === 'map' && <FarmerMapView dashboard={dashboard} />}
-      {activeTab === 'money' && <MoneyView dashboard={dashboard} />}
-      {activeTab === 'memory' && <FarmerMemoryView dashboard={dashboard} />}
-    </>
+    <Page title="Farm Command" loading={data.loading && !dashboard}>
+      <section className="metric-grid">
+        <Metric icon={Leaf} label="Farmers" value={data.stats?.farmers ?? 0} />
+        <Metric icon={Sprout} label="Active crop" value={dashboard?.fields?.[0]?.active_crop?.crop_name || 'n/a'} />
+        <Metric icon={AlertTriangle} label="Risk" value={latest?.risk_level || 'n/a'} />
+        <Metric icon={Activity} label="Confidence" value={latest?.confidence || 'n/a'} />
+        <Metric icon={Database} label="Sources" value={data.sources.length} />
+        <Metric icon={GitBranch} label="Impact nodes" value={data.impacts.length} />
+      </section>
+      <section className="farmer-overview-grid">
+        <AdvisoryCard advisory={latest} citations={data.showcase?.citations || []} />
+        <SystemReadiness data={data} />
+      </section>
+    </Page>
   );
 }
 
-function WeatherHero({ dashboard }) {
-  const skin = dashboard.weather_skin || {};
-  const today = dashboard.weather?.forecast?.[0] || {};
-  const Icon = skin.is_night ? Moon : today.rainfall_mm > 0 ? CloudRain : Sun;
+function CropAnalysisPage({ data }) {
+  const field = data.dashboard?.fields?.[0];
+  const latest = data.showcase?.latest_advisory || data.dashboard?.advisories?.[0];
   return (
-    <section className="weather-hero">
-      <div>
-        <span className="eyebrow">{dashboard.farmer?.village || dashboard.farmer?.district} · {skin.is_night ? 'Night field view' : 'Day field view'}</span>
-        <h2>{today.condition || 'field weather'} · {today.temp_max || '?'}° / {today.temp_min || '?'}°C</h2>
-        <p>Humidity {today.humidity || 0}% · Rain {today.rainfall_mm || 0} mm · Wind {today.wind_kmh || 0} km/h</p>
-      </div>
-      <div className="hero-weather-icon">
-        <Icon size={38} />
-      </div>
-    </section>
-  );
-}
-
-function FarmerQuickStats({ dashboard }) {
-  const activeField = dashboard.fields?.[0];
-  const crop = activeField?.active_crop;
-  return (
-    <section className="metric-grid farmer-metrics" aria-label="Farmer overview">
-      <Metric icon={Sprout} label="Active crop" value={crop?.crop_name || 'n/a'} />
-      <Metric icon={Leaf} label="Stage" value={crop?.current_stage || 'n/a'} />
-      <Metric icon={Satellite} label="NDVI" value={formatMetric(activeField?.ndvi_trend?.latest)} />
-      <Metric icon={IndianRupee} label="Net P&L" value={`₹${Math.round(dashboard.finance?.net || 0).toLocaleString()}`} />
-      <Metric icon={AlertTriangle} label="Nearby alerts" value={dashboard.clusters?.clusters?.length || 0} />
-    </section>
-  );
-}
-
-function FarmerOverview({ dashboard, saveProfilePatch }) {
-  const advisories = dashboard.advisories || [];
-  const latest = advisories[0];
-  return (
-    <section className="farmer-overview-grid">
-      <Card className="wide-card">
-        <CardHeader>
-          <div className="row-between">
-            <CardTitle>Next Best Actions</CardTitle>
-            <Badge variant={riskVariant(latest?.risk_level)}>{latest?.risk_level || 'no advisory'}</Badge>
-          </div>
-          <CardDescription>{latest?.contextualization || 'Ask the Telegram agent about your field to generate a verified advisory.'}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ActionList items={latest?.actions_text || []} />
-          <WarningList items={latest?.warnings_text || []} />
-        </CardContent>
-      </Card>
-      <ProfileCoach dashboard={dashboard} saveProfilePatch={saveProfilePatch} />
-      <Card>
-        <CardHeader>
-          <CardTitle>Weather Plan</CardTitle>
-          <CardDescription>Five-day field forecast</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ForecastStrip forecast={dashboard.weather?.forecast || []} />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Market Signal</CardTitle>
-          <CardDescription>{dashboard.mandi?.district} · {dashboard.mandi?.source}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <MarketRows mandi={dashboard.mandi} />
-        </CardContent>
-      </Card>
-    </section>
-  );
-}
-
-function ProfileCoach({ dashboard, saveProfilePatch }) {
-  const questions = dashboard.profile_questions || [];
-  const missing = questions.filter((q) => q.is_missing).slice(0, 5);
-  const profile = dashboard.profile || {};
-  const [draft, setDraft] = useState({});
-  const completeness = Math.round((profile.profile_completeness || 0) * 100);
-
-  async function submit() {
-    await saveProfilePatch(draft);
-    setDraft({});
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="row-between">
-          <CardTitle>Profile Coach</CardTitle>
-          <Badge variant={completeness > 70 ? 'success' : 'warning'}>{completeness}%</Badge>
-        </div>
-        <CardDescription>Answers sync to server and stay cached on this device.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="question-stack">
-          {(missing.length ? missing : questions.slice(0, 4)).map((q) => (
-            <label key={q.id} className="question-row">
-              <span>{q.label}</span>
-              {q.options?.length ? (
-                <select value={draft[q.id] ?? q.value ?? ''} onChange={(event) => setDraft({ ...draft, [q.id]: event.target.value })}>
-                  <option value="">Select</option>
-                  {q.options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                </select>
-              ) : (
-                <Input
-                  type={q.input_type === 'number' ? 'number' : 'text'}
-                  value={draft[q.id] ?? q.value ?? ''}
-                  onChange={(event) => setDraft({ ...draft, [q.id]: q.input_type === 'number' ? Number(event.target.value) : event.target.value })}
-                />
-              )}
-            </label>
-          ))}
-        </div>
-        <Button title="Save these answers to the server profile and local dashboard cache" onClick={submit} disabled={!Object.keys(draft).length}>
-          <CheckCircle2 size={16} />
-          Save answers
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
-
-function FieldView({ dashboard }) {
-  return (
-    <section className="list-grid">
-      {dashboard.fields?.map((field) => (
-        <Card key={field.id}>
+    <Page title="Crop Analysis" loading={data.loading && !field}>
+      <section className="farmer-overview-grid">
+        <Card>
           <CardHeader>
-            <div className="row-between">
-              <CardTitle>{field.name || 'Field'}</CardTitle>
-              <Badge variant={ndviVariant(field.ndvi_trend?.status)}>{field.ndvi_trend?.status || 'unknown'}</Badge>
-            </div>
-            <CardDescription>{field.area_acres} acres · {field.soil_type || 'soil unknown'} · {field.irrigation_type || 'water unknown'}</CardDescription>
+            <CardTitle>{field?.active_crop?.crop_name || 'No active crop'}</CardTitle>
+            <CardDescription>{field?.name || 'Field data loads from /api/farmer-dashboard'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <MiniChart points={(field.ndvi || []).map((item) => item.ndvi)} />
-            <div className="task-list">
-              {(field.tasks || []).slice(0, 5).map((task) => (
-                <div className="task-row" key={task.id}>
-                  <span>{task.completed ? 'Done' : 'Pending'}</span>
-                  <strong>{task.task_name}</strong>
-                </div>
-              ))}
-            </div>
+            <MiniChart points={(field?.ndvi || []).map((item) => item.ndvi)} />
+            <MetricLine label="Stage" value={field?.active_crop?.current_stage || 'n/a'} />
+            <MetricLine label="NDVI status" value={field?.ndvi_trend?.status || 'n/a'} />
+            <MetricLine label="Area" value={field?.area_acres ? `${field.area_acres} acres` : 'n/a'} />
           </CardContent>
         </Card>
-      ))}
-    </section>
-  );
-}
-
-function FarmerMapView({ dashboard }) {
-  const [zoom, setZoom] = useState(12);
-  const [selected, setSelected] = useState(null);
-  const mapData = dashboard.clusters || {};
-  const merged = useMemo(() => mergeClusters(mapData.clusters || [], zoom), [mapData, zoom]);
-
-  return (
-    <section className="map-layout">
-      <Card className="map-card">
-        <CardHeader>
-          <div className="row-between">
-            <CardTitle>Cluster Map</CardTitle>
-            <Badge>{clusterLevel(zoom)}</Badge>
-          </div>
-          <CardDescription>Zoom out to merge field alerts into village, tehsil, district, and state clusters.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="zoom-row">
-            <span>Zoom</span>
-            <input type="range" min="4" max="16" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} />
-            <strong>{zoom}</strong>
-          </div>
-          <div className="cluster-map" role="img" aria-label="Farmer field and nearby alert clusters">
-            <div className="map-grid" />
-            <button title="Your current selected field" className="field-pin" style={{ left: '50%', top: '50%' }} onClick={() => setSelected({ own: true, ...mapData.own_field })}>
-              <Leaf size={14} />
-            </button>
-            {merged.map((cluster) => (
-              <button
-                key={cluster.id}
-                title={`${cluster.level} cluster: ${cluster.farmer_count} farmers reporting ${cluster.issue_category}`}
-                className={`cluster-pin severity-${severityVariant(cluster.severity)}`}
-                style={{ left: `${cluster.x}%`, top: `${cluster.y}%`, width: pinSize(cluster), height: pinSize(cluster) }}
-                onClick={() => setSelected(cluster)}
-              >
-                {cluster.farmer_count}
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      <ClusterInsightPanel selected={selected} dashboard={dashboard} />
-    </section>
-  );
-}
-
-function ClusterInsightPanel({ selected, dashboard }) {
-  if (!selected) {
-    return <EmptyMessage icon={MapPinned} text="Tap your field or a cluster to see farmer-specific local insight." />;
-  }
-  if (selected.own) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{selected.name || 'Your field'}</CardTitle>
-          <CardDescription>{selected.soil_type || 'soil unknown'} · {selected.area_acres || '?'} acres</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="body-copy">This is your active field. Nearby cluster warnings are interpreted relative to this crop, soil, water source, and current stage.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-  const activeCrop = dashboard.fields?.[0]?.active_crop?.crop_name || selected.crop_name;
-  return (
-    <Card>
-      <CardHeader>
-        <div className="row-between">
-          <CardTitle>{selected.issue_category}</CardTitle>
-          <Badge variant={severityVariant(selected.severity)}>{severityLabel(selected.severity)}</Badge>
-        </div>
-        <CardDescription>{selected.level} cluster · {selected.farmer_count} farmers · {selected.crop_name}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="body-copy">Relevant to your {activeCrop} field if symptoms match. Check leaves, water level, and weather before acting.</p>
-        <ActionList items={selected.recommendations || [selected.broadcast_message, 'Compare your field symptoms before copying another farmer action.'].filter(Boolean)} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function MoneyView({ dashboard }) {
-  const finance = dashboard.finance || {};
-  const categories = Object.entries(finance.by_category || {});
-  return (
-    <section className="farmer-overview-grid">
-      <Card>
-        <CardHeader>
-          <CardTitle>Season P&L</CardTitle>
-          <CardDescription>{finance.entries || 0} synced finance entries</CardDescription>
-        </CardHeader>
-        <CardContent className="money-stack">
-          <MetricLine label="Revenue" value={`₹${Math.round(finance.revenue || 0).toLocaleString()}`} />
-          <MetricLine label="Expenses" value={`₹${Math.round(finance.expenses || 0).toLocaleString()}`} />
-          <MetricLine label="Net" value={`₹${Math.round(finance.net || 0).toLocaleString()}`} strong />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Category Flow</CardTitle>
-          <CardDescription>Revenue is positive, expenses are negative</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {categories.map(([key, value]) => (
-            <div className="bar-row" key={key}>
-              <span>{key}</span>
-              <div><i style={{ width: `${Math.min(100, Math.abs(value) / 300)}%` }} /></div>
-              <strong>{Math.round(value).toLocaleString()}</strong>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    </section>
-  );
-}
-
-function FarmerMemoryView({ dashboard }) {
-  return (
-    <section className="list-grid">
-      <Card>
-        <CardHeader>
-          <CardTitle>Conversation Continuity</CardTitle>
-          <CardDescription>{dashboard.conversations?.length || 0} field conversations saved</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {(dashboard.conversations || []).map((thread) => (
-            <div className="memory-item" key={thread.id}>
-              <strong>{thread.title || 'Field conversation'} · {thread.turn_count} turns</strong>
-              <span>{thread.running_summary || 'No summary yet'}</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Living Memory</CardTitle>
-          <CardDescription>{dashboard.memory?.atom_count || 0} remembered farm events</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {(dashboard.memory?.recent || []).map((item) => (
-            <div className="memory-item" key={`${item.type}-${item.event_at}`}>
-              <strong>{item.type}</strong>
-              <span>{item.summary}</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-      <ImpactView impacts={dashboard.impacts || []} stats={{ conversations: dashboard.conversations?.length || 0 }} />
-    </section>
-  );
-}
-
-function ExtensionShell({ stats, clusters, memory, impacts, sources, evalData, loading, readiness, activeTab, setActiveTab, reviewCluster }) {
-  return (
-    <>
-      <section className="metric-grid" aria-label="System overview">
-        <Metric icon={Users} label="Farmers" value={stats?.farmers ?? 0} />
-        <Metric icon={BookOpen} label="Advisories" value={stats?.advisories ?? 0} />
-        <Metric icon={MessageSquareText} label="Conversations" value={stats?.conversations ?? 0} />
-        <Metric icon={GitBranch} label="Action impacts" value={stats?.action_impacts ?? impacts.length} />
-        <Metric icon={FileSearch} label="Sources" value={stats?.sources ?? sources.length} />
-        <Metric icon={Database} label="Wiki articles" value={stats?.wiki_articles ?? 0} />
+        <VisionPanel vision={data.showcase?.vision} advisory={latest} />
       </section>
-      <section className="readiness-strip">
-        {readiness.map((item) => (
-          <div className="readiness-item" key={item.label}>
-            <item.icon size={16} />
-            <span>{item.label}</span>
-            <Badge variant={item.ok ? 'success' : 'warning'}>{item.ok ? 'ready' : 'check'}</Badge>
-          </div>
+      <section className="list-grid">
+        {(field?.tasks || []).map((task) => (
+          <Card key={task.id}>
+            <CardContent className="metric-card">
+              <CheckCircle2 size={18} />
+              <div>
+                <span>{task.stage}</span>
+                <strong>{task.task_name}</strong>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </section>
-      <Tabs>
-        <TabsList>
-          {extensionTabs.map((tab) => (
-            <TabsTrigger key={tab.id} title={`Open ${tab.label} view`} active={activeTab === tab.id} onClick={() => setActiveTab(tab.id)}>
-              <tab.icon size={16} />
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-      {loading && <LoadingState />}
-      {!loading && activeTab === 'clusters' && <ClusterView clusters={clusters} reviewCluster={reviewCluster} />}
-      {!loading && activeTab === 'memory' && <MemoryView memory={memory} stats={stats} />}
-      {!loading && activeTab === 'impact' && <ImpactView impacts={impacts} stats={stats} />}
-      {!loading && activeTab === 'sources' && <SourceView sources={sources} />}
-      {!loading && activeTab === 'eval' && <EvalView evalData={evalData} />}
-    </>
+    </Page>
   );
+}
+
+function MarketPricesPage({ data }) {
+  const market = data.market?.prices || data.dashboard?.mandi;
+  const rows = market?.prices || [];
+  return (
+    <Page title="Market Prices" loading={data.loading && !market}>
+      <section className="list-grid">
+        {rows.map((row) => (
+          <Card key={row.type}>
+            <CardHeader>
+              <CardTitle>{row.type}</CardTitle>
+              <CardDescription>{market.district || data.market?.district || 'district from API'} · {row.unit}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(row.history || []).slice(0, 5).map((entry) => (
+                <MetricLine key={entry.date} label={entry.date} value={`Rs ${entry.modal}`} />
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+        {!rows.length && <EmptyState icon={IndianRupee} text="No market rows returned by the API." />}
+      </section>
+    </Page>
+  );
+}
+
+function WeatherPage({ data }) {
+  const weather = data.weather || data.dashboard?.weather;
+  const forecast = weather?.forecast || [];
+  return (
+    <Page title="Weather" loading={data.loading && !weather}>
+      <section className="eval-grid">
+        {forecast.map((day) => (
+          <Card key={day.date}>
+            <CardContent className="metric-card">
+              <CloudRain size={18} />
+              <div>
+                <span>{day.date}</span>
+                <strong>{day.condition || `${day.rainfall_mm || 0} mm rain`}</strong>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {!forecast.length && <EmptyState icon={CloudRain} text="No forecast rows returned by the API." />}
+      </section>
+    </Page>
+  );
+}
+
+function AIAdvisorPage({ data }) {
+  const showcase = data.showcase || {};
+  const models = data.models || showcase.models;
+  const [selectedModel, setSelectedModel] = useState(models?.current || '');
+  const latest = showcase.latest_advisory;
+
+  useEffect(() => {
+    if (models?.current && !selectedModel) setSelectedModel(models.current);
+  }, [models, selectedModel]);
+
+  return (
+    <Page title="AI Advisor" loading={data.loading && !showcase}>
+      <section className="farmer-overview-grid">
+        <Card>
+          <CardHeader>
+            <div className="row-between">
+              <CardTitle>Model Toggle</CardTitle>
+              <Badge>{latest?.latency_ms ? `${latest.latency_ms} ms` : 'no latency yet'}</Badge>
+            </div>
+            <CardDescription>{latest?.model_used || models?.current || 'Model metadata loads from /api/models'}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="segmented-row">
+              {(models?.options || showcase.models?.options || []).map((model) => {
+                const id = typeof model === 'string' ? model : model.id;
+                const label = typeof model === 'string' ? model : model.label;
+                return (
+                  <Button key={id} variant={selectedModel === id ? 'default' : 'secondary'} onClick={() => setSelectedModel(id)}>
+                    <Bot size={16} />
+                    {label}
+                  </Button>
+                );
+              })}
+            </div>
+            <MetricLine label="Selected model" value={selectedModel || 'n/a'} />
+            <MetricLine label="Confidence" value={latest?.confidence || 'n/a'} />
+            <MetricLine label="Retrieval path" value={latest?.retrieval_path || 'n/a'} />
+          </CardContent>
+        </Card>
+        <ReasoningPanel trace={showcase.reasoning_trace || []} />
+      </section>
+      <section className="farmer-overview-grid">
+        <ToolCallPanel tools={showcase.tool_calls || []} />
+        <CitationPanel citations={showcase.citations || []} />
+      </section>
+    </Page>
+  );
+}
+
+function HistoryPage({ data }) {
+  const advisories = data.showcase?.history || data.dashboard?.advisories || [];
+  return (
+    <Page title="History" loading={data.loading && !advisories.length}>
+      <section className="list-grid">
+        {advisories.map((advisory) => <AdvisoryCard key={advisory.id} advisory={advisory} compact />)}
+        {!advisories.length && <EmptyState icon={History} text="No advisory history returned by the API." />}
+      </section>
+    </Page>
+  );
+}
+
+function SettingsPage({ data }) {
+  return (
+    <Page title="Settings" loading={false}>
+      <section className="farmer-overview-grid">
+        <Card>
+          <CardHeader>
+            <CardTitle>Runtime</CardTitle>
+            <CardDescription>Read-only configuration exposed by API health and model endpoints.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MetricLine label="Environment" value={data.health?.environment || 'n/a'} />
+            <MetricLine label="Health" value={data.health?.status || 'n/a'} />
+            <MetricLine label="Primary model" value={data.models?.current || 'n/a'} />
+            <MetricLine label="Fallback model" value={data.models?.fallback || 'n/a'} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Evidence Registry</CardTitle>
+            <CardDescription>{data.sources.length} sources available to citations.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {data.sources.slice(0, 6).map((source) => (
+              <MetricLine key={source.id} label={source.source_name} value={source.is_official ? 'official' : source.trust_level} />
+            ))}
+          </CardContent>
+        </Card>
+      </section>
+    </Page>
+  );
+}
+
+function Page({ title, loading, children }) {
+  if (loading) return <LoadingState title={title} />;
+  return <section className="page-stack">{children}</section>;
 }
 
 function Metric({ icon: Icon, label, value }) {
@@ -637,18 +459,151 @@ function Metric({ icon: Icon, label, value }) {
   );
 }
 
-function LoadingState() {
+function AdvisoryCard({ advisory, citations = [], compact = false }) {
+  if (!advisory) return <EmptyState icon={MessageSquareText} text="No advisory returned by the API." />;
   return (
-    <Card>
-      <CardContent className="empty-state">
-        <RefreshCw className="spin" size={22} />
-        <span>Loading live AgriMesh state</span>
+    <Card className={compact ? '' : 'wide-card'}>
+      <CardHeader>
+        <div className="row-between">
+          <CardTitle>{advisory.risk_level || 'Advisory'}</CardTitle>
+          <Badge variant={riskVariant(advisory.risk_level)}>{advisory.confidence || 'n/a'}</Badge>
+        </div>
+        <CardDescription>{advisory.contextualization || advisory.created_at || 'Verified advisory details'}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ActionList items={advisory.actions_text || []} />
+        <WarningList items={advisory.warnings_text || []} />
+        {!!citations.length && (
+          <div className="citation-strip">
+            {citations.slice(0, 4).map((citation) => (
+              <Badge key={citation.id} variant={citation.is_official ? 'success' : 'outline'}>
+                {citation.source_name}
+              </Badge>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-function EmptyMessage({ icon: Icon, text }) {
+function SystemReadiness({ data }) {
+  const checks = [
+    ['API health', Boolean(data.health), Activity],
+    ['Farmer data', Boolean(data.dashboard?.farmer), Leaf],
+    ['Evidence', data.sources.length > 0, FileSearch],
+    ['Memory', data.memory.length > 0 || (data.stats?.memory_atoms || 0) > 0, Database],
+    ['Impact graph', data.impacts.length > 0 || (data.stats?.action_impacts || 0) >= 0, GitBranch],
+    ['Safety eval', Boolean(data.evalData), ShieldCheck],
+  ];
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Readiness</CardTitle>
+        <CardDescription>Derived from live API responses.</CardDescription>
+      </CardHeader>
+      <CardContent className="readiness-list">
+        {checks.map(([label, ok, Icon]) => (
+          <div className="readiness-item" key={label}>
+            <Icon size={16} />
+            <span>{label}</span>
+            <Badge variant={ok ? 'success' : 'warning'}>{ok ? 'ready' : 'check'}</Badge>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function VisionPanel({ vision, advisory }) {
+  const imageSrc = normalizeImagePath(vision?.image_path);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Vision Analysis</CardTitle>
+        <CardDescription>{vision?.confidence ? `${Math.round(vision.confidence * 100)}% confidence` : advisory?.confidence || 'No photo confidence yet'}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {imageSrc && <img className="image-thumb" src={imageSrc} alt="Crop observation thumbnail" />}
+        <p className="body-copy">{vision?.analysis ? JSON.stringify(vision.analysis) : 'Photo analysis appears here when observations include an image.'}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ReasoningPanel({ trace }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Reasoning Summary</CardTitle>
+        <CardDescription>Decision trace without exposing hidden model chain-of-thought.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {(trace.length ? trace : [{ step: 'No advisory yet', summary: 'Run an advisory to populate the model trace.' }]).map((item) => (
+          <div className="memory-item" key={item.step}>
+            <strong>{item.step}</strong>
+            <span>{item.summary}</span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ToolCallPanel({ tools }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Tool Calls</CardTitle>
+        <CardDescription>{tools.length} tools invoked for the latest advisory.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {(tools.length ? tools : [{ tool_name: 'no_tool', status: 'not used' }]).map((tool) => (
+          <div className="tool-node" key={tool.tool_name}>
+            <Bot size={16} />
+            <strong>{tool.tool_name}</strong>
+            <Badge variant={tool.status === 'used' ? 'success' : 'outline'}>{tool.status}</Badge>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CitationPanel({ citations }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Inline Citations</CardTitle>
+        <CardDescription>Sources attached to the latest advisory.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {(citations.length ? citations : [{ id: 'none', source_name: 'No citations yet', trust_level: 'n/a' }]).map((citation) => (
+          <div className="source-row compact-source" key={citation.id}>
+            <div>
+              <strong>{citation.source_name}</strong>
+              <span>{citation.context || citation.snapshot || citation.source_type || 'No citation context'}</span>
+            </div>
+            <Badge variant={citation.is_official ? 'success' : 'outline'}>{citation.trust_level || 'n/a'}</Badge>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LoadingState({ title }) {
+  return (
+    <Card>
+      <CardContent className="empty-state">
+        <RefreshCw className="spin" size={22} />
+        <span>{title ? `Loading ${title}` : 'Loading live AgentAgri state'}</span>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmptyState({ icon: Icon, text }) {
   return (
     <Card>
       <CardContent className="empty-state">
@@ -661,53 +616,16 @@ function EmptyMessage({ icon: Icon, text }) {
 
 function ActionList({ items = [] }) {
   if (!items.length) return null;
-  return (
-    <ol className="action-list">
-      {items.slice(0, 5).map((item) => <li key={item}>{item}</li>)}
-    </ol>
-  );
+  return <ol className="action-list">{items.slice(0, 5).map((item) => <li key={item}>{item}</li>)}</ol>;
 }
 
 function WarningList({ items = [] }) {
   if (!items.length) return null;
-  return (
-    <ul className="warning-list">
-      {items.slice(0, 4).map((item) => <li key={item}>{item}</li>)}
-    </ul>
-  );
-}
-
-function ForecastStrip({ forecast }) {
-  return (
-    <div className="forecast-strip">
-      {forecast.map((day) => (
-        <div key={day.date}>
-          <strong>{day.date?.slice(5)}</strong>
-          <span>{day.condition}</span>
-          <b>{day.rainfall_mm} mm</b>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function MarketRows({ mandi }) {
-  const rows = mandi?.prices || [];
-  if (!rows.length) return <p className="body-copy">No market data for this crop yet.</p>;
-  return rows.map((row) => {
-    const latest = row.history?.[0] || {};
-    return (
-      <div className="market-row" key={row.type}>
-        <span>{row.type}</span>
-        <strong>₹{latest.modal}</strong>
-        <Badge variant={latest.modal >= (mandi.msp || 0) ? 'success' : 'warning'}>MSP ₹{mandi.msp || 'n/a'}</Badge>
-      </div>
-    );
-  });
+  return <ul className="warning-list">{items.slice(0, 4).map((item) => <li key={item}>{item}</li>)}</ul>;
 }
 
 function MiniChart({ points }) {
-  const safe = points?.length ? points : [0.4, 0.45, 0.5, 0.52];
+  const safe = points?.length ? points : [0.4, 0.42, 0.44, 0.45];
   const max = Math.max(...safe);
   const min = Math.min(...safe);
   const range = max - min || 1;
@@ -716,230 +634,21 @@ function MiniChart({ points }) {
     const y = 90 - ((point - min) / range) * 70;
     return `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
   }).join(' ');
-  return (
-    <svg className="mini-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <path d={path} />
-    </svg>
-  );
+  return <svg className="mini-chart" viewBox="0 0 100 100" preserveAspectRatio="none"><path d={path} /></svg>;
 }
 
-function ClusterView({ clusters, reviewCluster }) {
-  const [broadcasts, setBroadcasts] = useState({});
-  if (!clusters.length) return <EmptyMessage icon={CheckCircle2} text="No pending clusters. The review queue is clear." />;
-  return (
-    <section className="list-grid">
-      {clusters.map((cluster) => (
-        <Card key={cluster.id}>
-          <CardHeader>
-            <div className="row-between">
-              <CardTitle>{cluster.issue_category || 'Unclassified issue'}</CardTitle>
-              <Badge variant={severityVariant(cluster.severity)}>{severityLabel(cluster.severity)}</Badge>
-            </div>
-            <CardDescription>{cluster.district} / {cluster.tehsil || 'unknown tehsil'} · {cluster.crop_name} · {cluster.farmer_count} farmers</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <label className="question-row">
-              <span>Broadcast message</span>
-              <Input
-                value={broadcasts[cluster.id] || ''}
-                onChange={(event) => setBroadcasts({ ...broadcasts, [cluster.id]: event.target.value })}
-              />
-            </label>
-            <div className="action-row">
-              <Button title="Approve this cluster and send the broadcast message" onClick={() => reviewCluster(cluster.id, 'approve_broadcast', broadcasts[cluster.id] || `Alert: ${cluster.issue_category} in ${cluster.crop_name}. Check your crop today.`)}>
-                <ShieldCheck size={16} />
-                Approve
-              </Button>
-              <Button title="Mark the cluster reviewed without broadcasting" variant="ghost" onClick={() => reviewCluster(cluster.id, 'reviewed')}>
-                <CheckCircle2 size={16} />
-                Reviewed
-              </Button>
-              <Button title="Dismiss this cluster as not actionable" variant="destructive" onClick={() => reviewCluster(cluster.id, 'dismiss')}>Dismiss</Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </section>
-  );
+function MetricLine({ label, value }) {
+  return <div className="metric-line"><span>{label}</span><strong>{value}</strong></div>;
 }
 
-function MemoryView({ memory, stats }) {
-  const scales = ['field', 'village', 'tehsil', 'district', 'state', 'national'];
-  const fallback = scales.map((scale) => ({
-    id: scale,
-    scale,
-    title: `${scale[0].toUpperCase()}${scale.slice(1)} memory`,
-    summary_text: scale === 'field'
-      ? 'Private field-level memory is active once observations, advisories, finance entries, and NDVI records are seeded.'
-      : 'Regional summary appears after the privacy threshold is met.',
-    key_patterns: [],
-    atom_count: scale === 'field' ? stats?.memory_atoms || 0 : 0,
-    farmer_count: scale === 'field' ? 1 : 0,
-    confidence: scale === 'field' ? 0.8 : 0.3,
-    is_public: scale !== 'field',
-  }));
-  const rows = memory.length ? memory : fallback;
-  return (
-    <section className="memory-grid">
-      {rows.map((item) => (
-        <Card key={item.id}>
-          <CardHeader>
-            <div className="row-between">
-              <CardTitle>{item.title || item.scale}</CardTitle>
-              <Badge variant={item.is_public ? 'outline' : 'default'}>{item.scale}</Badge>
-            </div>
-            <CardDescription>{item.atom_count} atoms · {item.farmer_count} farmers · {Math.round((item.confidence || 0) * 100)}% confidence</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="body-copy">{item.summary_text}</p>
-            {!!item.key_patterns?.length && (
-              <ul className="pattern-list">
-                {item.key_patterns.slice(0, 4).map((pattern) => <li key={pattern}>{pattern}</li>)}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </section>
-  );
+function currentRouteLabel(pathname) {
+  return routes.find((item) => item.path === pathname)?.label || 'Dashboard';
 }
 
-function ImpactView({ impacts, stats }) {
-  if (!impacts.length) return <EmptyMessage icon={GitBranch} text="No action impact nodes yet. They appear after verified advisories are generated." />;
-  return (
-    <section className="list-grid">
-      {impacts.map((impact) => (
-        <Card key={impact.id}>
-          <CardHeader>
-            <div className="row-between">
-              <CardTitle>Action Impact</CardTitle>
-              <Badge variant={impactVariant(impact.impact_level)}>{impact.impact_level}</Badge>
-            </div>
-            <CardDescription>{impact.time_horizon || 'time unknown'} · advisory {shortId(impact.advisory_id)}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="body-copy strong-copy">{impact.action_text}</p>
-            <p className="body-copy">{impact.expected_result}</p>
-            <div className="impact-columns">
-              <MiniList title="Needs" items={impact.dependencies} />
-              <MiniList title="Risks" items={impact.risks} />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-      <EmptyMessage icon={Database} text={`${stats?.conversations || 0} durable field conversations are available for follow-up context.`} />
-    </section>
-  );
-}
-
-function MiniList({ title, items = [] }) {
-  return (
-    <div>
-      <strong>{title}</strong>
-      <ul className="pattern-list">
-        {items.slice(0, 4).map((item) => <li key={item}>{item}</li>)}
-      </ul>
-    </div>
-  );
-}
-
-function SourceView({ sources }) {
-  if (!sources.length) return <EmptyMessage icon={FileSearch} text="No source registry rows found. Restart the API once to seed official sources." />;
-  return (
-    <section className="source-table" aria-label="Evidence sources">
-      {sources.map((source) => (
-        <div className="source-row" key={source.id}>
-          <div>
-            <strong>{source.source_name}</strong>
-            <span>{source.description || source.source_type}</span>
-          </div>
-          <Badge variant={source.is_official ? 'success' : 'outline'}>{source.is_official ? 'official' : source.trust_level}</Badge>
-          <Badge variant={source.age_hours === null || source.age_hours > source.freshness_ttl_hours ? 'warning' : 'default'}>
-            {source.age_hours === null ? 'unfetched' : `${source.age_hours}h old`}
-          </Badge>
-        </div>
-      ))}
-    </section>
-  );
-}
-
-function EvalView({ evalData }) {
-  if (!evalData || evalData.status === 'no_eval_yet') return <EmptyMessage icon={Activity} text="No eval run yet. Run the eval harness before final demo recording." />;
-  const metrics = [
-    ['Faithfulness', evalData.faithfulness_mean, 0.85, 'min'],
-    ['Relevancy', evalData.answer_relevancy_mean, 0.8, 'min'],
-    ['Schema validity', evalData.schema_validity_rate, 0.99, 'min'],
-    ['Safety pass', evalData.safety_pass_rate, 0.99, 'min'],
-    ['Latency p50', evalData.latency_p50_ms, 3500, 'max'],
-    ['Latency p95', evalData.latency_p95_ms, 6000, 'max'],
-  ];
-  return (
-    <section className="eval-grid">
-      {metrics.map(([name, value, target, direction]) => (
-        <Card key={name}>
-          <CardContent className="eval-card">
-            <span>{name}</span>
-            <strong>{formatMetric(value)}</strong>
-            <Badge variant={metricPass(value, target, direction) ? 'success' : 'warning'}>target {formatMetric(target)}</Badge>
-          </CardContent>
-        </Card>
-      ))}
-    </section>
-  );
-}
-
-function MetricLine({ label, value, strong }) {
-  return <div className={strong ? 'metric-line strong-copy' : 'metric-line'}><span>{label}</span><strong>{value}</strong></div>;
-}
-
-function buildReadiness(stats, sources, memory, clusters) {
-  return [
-    { label: 'Agent DB', ok: Boolean(stats), icon: Database },
-    { label: 'Evidence registry', ok: sources.length >= 6, icon: FileSearch },
-    { label: 'Living memory', ok: (stats?.memory_atoms || 0) > 0 || memory.length > 0, icon: BookOpen },
-    { label: 'Conversation graph', ok: (stats?.conversations || 0) >= 0, icon: GitBranch },
-    { label: 'Cluster review', ok: Array.isArray(clusters), icon: ShieldCheck },
-    { label: 'Satellite/field data', ok: (stats?.memory_atoms || 0) > 0, icon: Satellite },
-  ];
-}
-
-function farmerIdentity(dashboard) {
+function farmerTitle(dashboard) {
   const farmer = dashboard?.farmer;
-  if (!farmer) return 'Personal farm command center';
-  const place = [farmer.village, farmer.district].filter(Boolean).join(', ');
-  const sync = dashboard?.sync?.offline_ready ? 'offline-ready' : 'server-only';
-  return [farmer.name, place, sync].filter(Boolean).join(' · ');
-}
-
-function mergeClusters(clusters, zoom) {
-  const level = clusterLevel(zoom);
-  const buckets = new Map();
-  clusters.forEach((cluster) => {
-    const key = cluster.merge_keys?.[level] || cluster.id;
-    const existing = buckets.get(key) || { ...cluster, id: key, farmer_count: 0, severity: 0, items: [], level };
-    existing.items.push(cluster);
-    existing.farmer_count += cluster.farmer_count || 0;
-    existing.severity = Math.max(existing.severity || 0, cluster.severity || 0);
-    existing.lat = existing.items.reduce((sum, item) => sum + item.lat, 0) / existing.items.length;
-    existing.lng = existing.items.reduce((sum, item) => sum + item.lng, 0) / existing.items.length;
-    existing.x = Math.max(8, Math.min(92, 50 + (existing.lng - clusters[0].lng) * 900));
-    existing.y = Math.max(8, Math.min(92, 50 - (existing.lat - clusters[0].lat) * 900));
-    existing.recommendations = existing.items.map((item) => item.broadcast_message).filter(Boolean).slice(0, 3);
-    buckets.set(key, existing);
-  });
-  return Array.from(buckets.values());
-}
-
-function clusterLevel(zoom) {
-  if (zoom >= 14) return 'field';
-  if (zoom >= 11) return 'village';
-  if (zoom >= 8) return 'tehsil';
-  if (zoom >= 5) return 'district';
-  return 'state';
-}
-
-function pinSize(cluster) {
-  return Math.max(32, Math.min(64, 28 + Math.sqrt(cluster.farmer_count || 1) * 7));
+  if (!farmer) return 'Production farmer workspace';
+  return [farmer.name, farmer.village, farmer.district].filter(Boolean).join(' · ');
 }
 
 function riskVariant(value) {
@@ -949,45 +658,10 @@ function riskVariant(value) {
   return 'outline';
 }
 
-function severityVariant(value) {
-  if (value > 0.84) return 'destructive';
-  if (value > 0.5) return 'warning';
-  return 'success';
-}
-
-function severityLabel(value) {
-  if (value > 0.84) return 'critical';
-  if (value > 0.7) return 'high';
-  if (value > 0.5) return 'medium';
-  return 'low';
-}
-
-function ndviVariant(value) {
-  if (value === 'declining') return 'warning';
-  if (value === 'improving') return 'success';
-  return 'default';
-}
-
-function impactVariant(level) {
-  if (level === 'critical') return 'destructive';
-  if (level === 'high') return 'warning';
-  if (level === 'low') return 'outline';
-  return 'default';
-}
-
-function shortId(value) {
-  return value ? value.slice(0, 8) : 'unknown';
-}
-
-function metricPass(value, target, direction) {
-  if (typeof value !== 'number') return false;
-  return direction === 'max' ? value <= target : value >= target;
-}
-
-function formatMetric(value) {
-  if (typeof value !== 'number') return 'n/a';
-  if (value <= 1) return value.toFixed(3);
-  return Math.round(value).toLocaleString();
+function normalizeImagePath(path) {
+  if (!path) return '';
+  if (path.startsWith('http') || path.startsWith('/')) return path;
+  return '';
 }
 
 createRoot(document.getElementById('root')).render(<App />);
