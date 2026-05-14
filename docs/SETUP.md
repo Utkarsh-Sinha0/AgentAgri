@@ -2,18 +2,34 @@
 
 ## Prerequisites
 
-- Docker Desktop with Compose v2
-- Ollama running on the host at `http://localhost:11434`
-- Gemma-compatible local models pulled in Ollama, for example:
+### Required: Ollama + Gemma 4 Model (Local AI)
+
+1. **Download Ollama** from [ollama.ai](https://ollama.ai)
+2. **Pull Gemma 4 model** (choose one):
 
 ```powershell
+# RECOMMENDED: Fast, 4GB, good quality
+ollama pull gemma4:2b
+
+# OR: High-quality, 8.9GB, slower
 ollama pull gemma4:e4b
+
+# OR: Balanced, 5GB
 ollama pull gemma4:e2b
 ```
 
-For local development without Docker, use Python 3.11+ and Node.js 20+.
+**Ollama will start automatically and listen on `http://localhost:11434`**
+
+### Optional: Local Development (Without Docker)
+
+For development without Docker, use:
+- Python 3.11+
+- Node.js 20+
+- PostgreSQL (or SQLite default)
 
 ## 3-Command Docker Compose Quickstart
+
+### Setup
 
 ```powershell
 copy .env.example .env
@@ -21,13 +37,34 @@ docker-compose build
 docker-compose up
 ```
 
-Then open:
+### How Docker Auto-Detects Your Ollama Instance
 
-- API and PWA: `http://localhost:8000`
-- Health: `http://localhost:8000/health`
-- Swagger docs in development: `http://localhost:8000/docs`
+When you run `docker-compose up`:
 
-The Compose stack starts PostgreSQL, Redis, the FastAPI app, and all four MCP services. Every service has a healthcheck.
+1. **Docker network connects to your local Ollama** (`http://localhost:11434`)
+2. **FastAPI backend automatically discovers your Gemma 4 model**
+3. **Telegram bot automatically uses the connected model**
+4. **All services have healthchecks** to ensure proper startup
+
+**No environment variable changes needed!** Docker uses the default `OLLAMA_HOST=http://localhost:11434`
+
+### Access the System
+
+- **Web Dashboard**: `http://localhost:8000` (7-page professional UI)
+- **API Health Check**: `http://localhost:8000/health` (system status)
+- **Swagger API Docs**: `http://localhost:8000/docs` (interactive API testing)
+
+### What Gets Started
+
+The Docker Compose stack includes:
+- ✅ PostgreSQL database (persistent storage)
+- ✅ Redis cache (optional, for performance)
+- ✅ FastAPI backend (connects to your local Ollama)
+- ✅ 4 MCP microservices (weather, market prices, schemes, finance)
+- ✅ React PWA frontend (responsive dashboard)
+- ✅ Telegram bot service (connects to FastAPI)
+
+All services have healthchecks and will restart on failure.
 
 ## Local Development
 
@@ -65,6 +102,52 @@ Note: `react-router-dom` registry installation was blocked in the current sandbo
 | `USE_GRAMMAR_DECODING` | no | `true` | Structured model output control |
 | `EVAL_PUBLIC_TOKEN` | no | empty | Optional narrow token for eval endpoints |
 
+## Telegram Bot Setup (Optional but Recommended)
+
+The Telegram bot automatically connects to AgentAgri and uses your Ollama instance for crop analysis.
+
+### 1. Create Telegram Bot
+
+1. Open Telegram app
+2. Search for **@BotFather**
+3. Send: `/newbot`
+4. Follow prompts to name your bot
+5. **Copy the bot token** (looks like `123456789:ABCDEFGhijklmnop`)
+
+### 2. Add Token to AgentAgri
+
+Edit your `.env` file:
+
+```env
+TELEGRAM_BOT_TOKEN=your_token_here
+```
+
+### 3. Restart Docker
+
+```powershell
+docker-compose down
+docker-compose up
+```
+
+### 4. Start Using the Bot
+
+In Telegram, find your bot and send:
+
+```
+/start          → Welcome & registration
+/demo           → Load demo farm with sample data
+📸 Photo        → Crop disease analysis (uses Gemma 4)
+/prices         → Check mandi prices
+/expense        → Log farming costs
+/finance        → View P&L
+/memory         → See field history
+/help           → All commands
+```
+
+**The bot automatically uses your Gemma 4 model from Ollama for all AI analysis.**
+
+---
+
 ## Verification
 
 ```powershell
@@ -74,4 +157,36 @@ venv\Scripts\python.exe -m py_compile app\main.py app\config.py app\models.py ap
 docker-compose config --quiet
 cd pwa; npm run build
 ```
+
+---
+
+## System Architecture Diagram
+
+```
+Your Computer:
+  Ollama (gemma4:2b)
+    ↓ (localhost:11434)
+  Docker Network
+    ├─ FastAPI Backend (Python)
+    │   ├─ Connects to Ollama
+    │   ├─ Serves PWA frontend
+    │   └─ Serves API endpoints
+    ├─ PostgreSQL Database (data storage)
+    ├─ Redis Cache (optional optimization)
+    ├─ 4 MCP Microservices
+    │   ├─ Weather Service
+    │   ├─ Market Prices Service
+    │   ├─ Schemes Service
+    │   └─ Finance Service
+    ├─ React Frontend (PWA)
+    │   └─ 7-page dashboard
+    └─ Telegram Bot Service
+        └─ Connects to FastAPI backend
+
+Farmer's Device:
+  Telegram App ↔ Bot ↔ FastAPI ↔ Ollama (Gemma 4)
+  Browser ↔ http://localhost:8000 ↔ FastAPI ↔ Ollama
+```
+
+**Everything runs locally. No cloud. No signup. No costs.**
 

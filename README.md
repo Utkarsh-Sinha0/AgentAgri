@@ -11,22 +11,77 @@
 
 ---
 
-## Production Quickstart
+## ⚡ Getting Started (3 Steps)
+
+### 1️⃣ Install Ollama & Gemma 4 Model
+
+Download [Ollama](https://ollama.ai) and run:
 
 ```powershell
+ollama pull gemma4:2b      # Fast model (4GB, recommended for demo)
+# OR
+ollama pull gemma4:e4b     # High-quality model (8.9GB)
+```
+
+**That's it!** Ollama runs locally on `http://localhost:11434`. No signup, no cloud, no costs.
+
+### 2️⃣ Start AgentAgri with Docker
+
+```powershell
+git clone https://github.com/Utkarsh-Sinha0/AgentAgri.git
+cd AgentAgri
 copy .env.example .env
 docker-compose build
 docker-compose up
 ```
 
-Open `http://localhost:8000`.
+**Docker automatically detects your Ollama instance and uses whatever Gemma 4 model you pulled.**
 
-Primary docs:
+### 3️⃣ Open in Browser & Telegram
 
-- [Setup](docs/SETUP.md)
-- [Features](docs/FEATURES.md)
-- [API](docs/API.md)
-- [Maturity plan](docs/MATURITY_PLAN.md)
+- **Web Dashboard**: `http://localhost:8000`
+- **API Health**: `http://localhost:8000/health`
+- **Telegram Bot**: Set `TELEGRAM_BOT_TOKEN` in `.env` and the bot connects automatically
+
+**That's it! Your agricultural AI agent is ready to serve farmers.**
+
+---
+
+## 🤖 How It Works
+
+When you install **Gemma 4 2B in Ollama**:
+1. Docker detects the running Ollama service
+2. The FastAPI backend connects to `http://localhost:11434`
+3. The Telegram bot automatically uses the available model
+4. Farmers send photos/text via Telegram → Agent analyzes → Advice delivered
+
+**Works with any Gemma 4 variant**: 2B (fast), E2B (balanced), E4B (high-quality)
+
+---
+
+## 📚 Full Documentation
+
+- [Setup Guide](docs/SETUP.md) — Detailed installation & configuration
+- [Features](docs/FEATURES.md) — All 13 agricultural features
+- [API Reference](docs/API.md) — REST endpoints & responses
+- [Maturity Plan](docs/MATURITY_PLAN.md) — Roadmap & technical decisions
+
+---
+
+## ✨ Key Features
+
+✅ **Crop Disease Diagnosis** (Vision-powered)  
+✅ **Weather Integration** (5-day forecast + alerts)  
+✅ **Market Prices** (Mandi + MSP tracking)  
+✅ **Financial Tracking** (Expense/revenue P&L)  
+✅ **Community Alerts** (Multi-farmer clustering)  
+✅ **Telegram Bot** (24+ commands, photo upload)  
+✅ **Professional Dashboard** (7-page multi-page UI)  
+✅ **Gemma 4 Showcase** (Vision, reasoning, tools, model toggle)  
+✅ **Zero Tech Debt** (Production-hardened code)  
+✅ **Comprehensive Docs** (Setup, features, API guides)  
+
+---
 
 ---
 
