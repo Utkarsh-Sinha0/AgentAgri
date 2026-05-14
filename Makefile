@@ -1,7 +1,7 @@
 # AgriMesh V4.0 — Makefile
 # One command to rule them all: `make demo`
 
-.PHONY: help install setup seed load-wiki test eval run-bot run-api run-mcp-weather run-mcp-mandi demo demo-check pull-model check-vram clean lint migrate pwa-build
+.PHONY: help install setup seed load-wiki test eval run-bot run-api run-mcp-weather run-mcp-mandi demo demo-check pull-model check-vram clean lint migrate migrate-down migrate-revision pwa-build
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -38,9 +38,14 @@ lint: ## Run Ruff linter
 format: ## Auto-format with Ruff
 	ruff format app/ tests/ scripts/
 
-migrate: ## Generate and apply Alembic migrations
-	alembic revision --autogenerate -m "auto"
+migrate: ## Apply Alembic migrations
 	alembic upgrade head
+
+migrate-down: ## Roll back one Alembic migration
+	alembic downgrade -1
+
+migrate-revision: ## Generate Alembic migration, e.g. make migrate-revision MSG="add table"
+	alembic revision --autogenerate -m "$(MSG)"
 
 run-bot: ## Start Telegram bot only
 	python -m app.bot.telegram_bot

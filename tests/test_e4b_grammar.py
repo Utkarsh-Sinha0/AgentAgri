@@ -255,7 +255,7 @@ class TestOllamaClient:
     def test_thinking_mode_is_applied_to_user_message_without_mutating_input(self):
         """Thinking mode must preserve system prompt cache locality and affect the request."""
         import asyncio
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import AsyncMock, patch
 
         from app.utils.ollama_client import OllamaClient
 
@@ -264,9 +264,9 @@ class TestOllamaClient:
             {"role": "user", "content": "plan tools"},
         ]
 
-        with patch("app.utils.ollama_client.ollama.Client") as client_cls:
-            client = MagicMock()
-            client.chat.return_value = {"message": {"content": "{}"}}
+        with patch("app.utils.ollama_client.AsyncClient") as client_cls:
+            client = AsyncMock()
+            client.chat = AsyncMock(return_value={"message": {"content": "{}"}})
             client_cls.return_value = client
 
             result = asyncio.run(OllamaClient().chat(messages, thinking=True))

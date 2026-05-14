@@ -16,6 +16,8 @@ os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///./data/test_agrimesh.db"
 os.environ["OLLAMA_MODEL"] = "gemma4:e2b"
 os.environ["LOG_LEVEL"] = "WARNING"
 os.environ["USE_GRAMMAR_DECODING"] = "0"
+os.environ.setdefault("AGRIMESH_REQUIRE_API_KEY", "false")
+os.environ.setdefault("APP_ENV", "test")
 
 
 @pytest.fixture(scope="session")

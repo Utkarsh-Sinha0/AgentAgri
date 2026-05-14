@@ -5,19 +5,43 @@ grammar-constrained JSON output via Ollama's `format` field.
 """
 from __future__ import annotations
 
+import asyncio
+import base64
 import json
 import time
 from pathlib import Path
 from typing import Any
 
-import ollama
+import ollama  # noqa: F401 — exposes the module attribute for test monkeypatching
 from loguru import logger
+from ollama import AsyncClient
 
 from app.config import settings
 
 # ─── Schema loader ────────────────────────────────────────────────────
 
 _SCHEMA_CACHE: dict[str, dict] = {}
+
+
+def _get_ollama_semaphore() -> asyncio.Semaphore:
+    """Return a Semaphore bound to the running event loop.
+
+    Stored on the loop itself so each event loop (including the fresh one pytest
+    spins up per test) gets an independent Semaphore — avoids the
+    'Lock bound to different event loop' error that surfaces when the limiter
+    is created at module import time.
+    """
+    loop = asyncio.get_running_loop()
+    sem = getattr(loop, "_agrimesh_ollama_semaphore", None)
+    if sem is None:
+        sem = asyncio.Semaphore(settings.ollama_max_concurrency)
+        loop._agrimesh_ollama_semaphore = sem  # type: ignore[attr-defined]
+    return sem
+
+
+class OllamaTimeoutError(RuntimeError):
+    """Raised when an Ollama call exceeds the configured timeout."""
+
 
 def _load_schema(name: str) -> dict:
     if name not in _SCHEMA_CACHE:
@@ -34,9 +58,10 @@ class OllamaClient:
     def __init__(self, model: str | None = None):
         self.model = model or settings.ollama_model
         self.host = settings.ollama_host
-        self._client = ollama.Client(host=self.host)
+        self._client = AsyncClient(host=self.host)
         self._fallback = settings.ollama_fallback_model
         self._use_fallback = False
+        self._fallback_until: float | None = None
 
     # ── Core chat ─────────────────────────────────────────────────
 
@@ -61,8 +86,6 @@ class OllamaClient:
         Returns:
             dict with keys: content, raw_response, latency_ms, model_used
         """
-        model = self._fallback_model if self._use_fallback else self.model
-
         # Build options
         options: dict[str, Any] = {
             "temperature": temperature if temperature is not None else settings.temperature,
@@ -81,25 +104,48 @@ class OllamaClient:
                 messages[-1]["content"] = "<|think|>\n" + messages[-1]["content"]
 
         # Grammar-constrained decoding
-        kwargs: dict[str, Any] = {"model": model, "messages": messages, "options": options}
+        kwargs: dict[str, Any] = {
+            "messages": messages,
+            "options": options,
+            "keep_alive": settings.ollama_keep_alive,
+        }
         if schema_name and settings.use_grammar_decoding:
             schema = _load_schema(schema_name)
             kwargs["format"] = schema  # Ollama passes this to llama.cpp GBNF
             logger.debug(f"Grammar-constrained: {schema_name}")
 
         t0 = time.perf_counter()
+        model = self._select_model()
+        kwargs["model"] = model
         try:
-            response = self._client.chat(**kwargs)
+            response = await self._chat_with_timeout(kwargs)
             content = response.get("message", {}).get("content", "")
+            if model == self.model:
+                self._clear_fallback()
+        except TimeoutError as exc:
+            raise OllamaTimeoutError(
+                f"Ollama chat timed out after {settings.ollama_timeout_seconds}s"
+            ) from exc
         except Exception as exc:
-            logger.error(f"Ollama error with {model}: {exc}")
-            if not self._use_fallback and self._fallback:
-                logger.warning(f"Falling back to {self._fallback}")
-                self._use_fallback = True
-                return await self.chat(messages, schema_name, thinking, temperature, max_tokens)
-            raise
-        finally:
-            self._use_fallback = False
+            logger.bind(model=model).error(f"Ollama error: {exc}")
+            if model == self.model and self._fallback:
+                self._activate_fallback()
+                fallback_model = self._fallback_model
+                logger.bind(model=fallback_model).warning("Falling back to configured Ollama model")
+                kwargs["model"] = fallback_model
+                try:
+                    response = await self._chat_with_timeout(kwargs)
+                    content = response.get("message", {}).get("content", "")
+                    model = fallback_model
+                except TimeoutError as timeout_exc:
+                    raise OllamaTimeoutError(
+                        f"Ollama chat timed out after {settings.ollama_timeout_seconds}s"
+                    ) from timeout_exc
+                except Exception as fallback_exc:
+                    logger.bind(model=fallback_model).error(f"Ollama fallback error: {fallback_exc}")
+                    raise
+            else:
+                raise
 
         latency_ms = int((time.perf_counter() - t0) * 1000)
         return {
@@ -181,27 +227,33 @@ class OllamaClient:
 
     async def analyze_crop_photo(self, image_path: str, farmer_note: str = "") -> dict:
         """Vision analysis of crop photo (Gemma 4 native multimodal)."""
-        import base64
-        from pathlib import Path
-
         img_path = Path(image_path)
         if not img_path.exists():
             return {"error": f"Image not found: {image_path}", "vision_analysis": None}
 
-        with open(img_path, "rb") as f:
-            img_b64 = base64.b64encode(f.read()).decode()
+        image_bytes = await asyncio.to_thread(img_path.read_bytes)
+        img_b64 = (await asyncio.to_thread(base64.b64encode, image_bytes)).decode()
 
-        model = self._fallback_model if self._use_fallback else self.model
+        model = self._select_model()
         # §2.10: Image BEFORE text — 5-10% vision accuracy improvement on Gemma 4
-        response = self._client.chat(
-            model=model,
-            messages=[{
+        kwargs = {
+            "model": model,
+            "messages": [{
                 "role": "user",
                 "content": VISION_PROMPT.format(farmer_note=farmer_note or "No additional note."),
                 "images": [img_b64],
             }],
-            options={"temperature": 0.3},  # Lower temp for vision — factual description, not creative
-        )
+            "options": {"temperature": 0.3},
+            "keep_alive": settings.ollama_keep_alive,
+        }
+        try:
+            response = await self._chat_with_timeout(kwargs)
+            if model == self.model:
+                self._clear_fallback()
+        except TimeoutError as exc:
+            raise OllamaTimeoutError(
+                f"Ollama vision chat timed out after {settings.ollama_timeout_seconds}s"
+            ) from exc
         content = response.get("message", {}).get("content", "")
         return {"vision_analysis": content, "raw": response}
 
@@ -210,6 +262,29 @@ class OllamaClient:
     @property
     def _fallback_model(self) -> str:
         return self._fallback
+
+    def _select_model(self) -> str:
+        if self._fallback and self._fallback_until and time.time() < self._fallback_until:
+            self._use_fallback = True
+            return self._fallback_model
+        self._use_fallback = False
+        return self.model
+
+    async def _chat_with_timeout(self, kwargs: dict[str, Any]) -> dict:
+        kwargs.setdefault("keep_alive", settings.ollama_keep_alive)
+        async with _get_ollama_semaphore():
+            return await asyncio.wait_for(
+                self._client.chat(**kwargs),
+                timeout=settings.ollama_timeout_seconds,
+            )
+
+    def _activate_fallback(self) -> None:
+        self._fallback_until = time.time() + settings.ollama_fallback_cooldown_seconds
+        self._use_fallback = True
+
+    def _clear_fallback(self) -> None:
+        self._fallback_until = None
+        self._use_fallback = False
 
 
 # ─── Prompts ──────────────────────────────────────────────────────────

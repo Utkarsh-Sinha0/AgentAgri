@@ -22,6 +22,7 @@ from pydantic import Field as PydanticField
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.auth import router as auth_router
 from app.config import settings
 from app.database import async_session_factory, get_db, init_db
 from app.models import (
@@ -83,6 +84,16 @@ async def lifespan(app: FastAPI):
     async with async_session_factory() as db:
         await seed_source_registry(db)
 
+    if settings.app_env != "test":
+        try:
+            from app.services.retrieval import get_embedder, get_reranker
+
+            await asyncio.to_thread(get_embedder)
+            await asyncio.to_thread(get_reranker)
+            logger.info("Retrieval models preloaded.")
+        except Exception as exc:
+            logger.error(f"Retrieval model preload failed: {exc}")
+
     if settings.app_env.lower() == "test":
         yield
         return
@@ -142,6 +153,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router, prefix="/api")
 
 
 # ─── Production Safety Middleware ─────────────────────────────────────
