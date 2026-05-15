@@ -162,21 +162,28 @@ class AgentOrchestrator:
                 plan = plan_result.get("parsed", {})
                 tool_calls = plan.get("tool_calls", [])
 
-                # Execute MCP tool calls in parallel
+                # Execute MCP tool calls in parallel. Keep a parallel list of
+                # the executable calls so results map back by index — using
+                # the unfiltered ``tool_calls`` here mis-indexes whenever the
+                # planner emits a "no_tool" entry and silently drops real
+                # tool results (e.g. weather never reaches evidence).
                 tool_tasks = []
+                executable_calls = []
                 for tc in tool_calls:
                     tool_name = tc.get("tool_name", "")
                     params = tc.get("parameters", {})
                     if tool_name and tool_name != "no_tool":
                         tool_tasks.append(self._execute_tool(tool_name, params))
+                        executable_calls.append(tc)
 
                 if tool_tasks:
                     tool_results_list = await asyncio.gather(*tool_tasks, return_exceptions=True)
                     for i, result in enumerate(tool_results_list):
+                        called_name = executable_calls[i].get("tool_name")
                         if isinstance(result, Exception):
-                            logger.error(f"Tool {tool_calls[i].get('tool_name')} failed: {result}")
+                            logger.error(f"Tool {called_name} failed: {result}")
                         else:
-                            tool_results[tool_calls[i].get("tool_name")] = result
+                            tool_results[called_name] = result
             except Exception as exc:
                 logger.error(f"ReAct planning failed: {exc}. Proceeding without tools.")
                 needs_tools = False
@@ -369,6 +376,11 @@ class AgentOrchestrator:
             retrieve_similar_farm_context,
         )
 
+        # Do not pin risk_type to "disease" here: it filtered out pest,
+        # weather, nutrient, and outcome atoms that share the same field
+        # scope. The function already ranks by temporal-decay-weighted
+        # confidence, so dropping the substring filter is safe — the
+        # template selector picks what to surface.
         memory_atoms = await retrieve_memory_context(
             db=db,
             farmer_id=ctx.farmer_id,
@@ -376,7 +388,6 @@ class AgentOrchestrator:
             crop_cycle_id=ctx.crop_cycle_id,
             crop_name=ctx.crop_name,
             crop_stage=ctx.crop_stage,
-            risk_type="disease",
             top_k=8,
         )
 
@@ -710,15 +721,42 @@ class AgentOrchestrator:
     def _build_evidence_cards(
         self, evidence: EvidenceBundle, vision: dict | None
     ) -> list[dict]:
+        # The Telegram /why handler reads ``source_name`` and ``trust_level``
+        # off each card. Earlier code only emitted type/label/content, so
+        # farmers saw "Unknown (trust: ?)" even when citations existed.
         cards = []
         if vision:
-            cards.append({"type": "vision", "label": "📸 Photo Analysis", "content": str(vision.get("vision_analysis", ""))[:300]})
+            cards.append({
+                "type": "vision",
+                "label": "📸 Photo Analysis",
+                "content": str(vision.get("vision_analysis", ""))[:300],
+                "source_name": "AgriMesh Vision (Ollama)",
+                "trust_level": "medium",
+            })
         if evidence.weather_data:
-            cards.append({"type": "weather", "label": "🌦️ Weather", "content": json.dumps(evidence.weather_data, ensure_ascii=False)[:200]})
+            cards.append({
+                "type": "weather",
+                "label": "🌦️ Weather",
+                "content": json.dumps(evidence.weather_data, ensure_ascii=False)[:200],
+                "source_name": "IMD / Open-Meteo",
+                "trust_level": "high",
+            })
         if evidence.mandi_data:
-            cards.append({"type": "mandi", "label": "🏪 Mandi Prices", "content": json.dumps(evidence.mandi_data, ensure_ascii=False)[:200]})
+            cards.append({
+                "type": "mandi",
+                "label": "🏪 Mandi Prices",
+                "content": json.dumps(evidence.mandi_data, ensure_ascii=False)[:200],
+                "source_name": "Agmarknet",
+                "trust_level": "high",
+            })
         for art in evidence.wiki_articles:
-            cards.append({"type": "wiki", "label": f"📚 {art.get('title', 'Article')}", "content": art.get("summary", "")[:200]})
+            cards.append({
+                "type": "wiki",
+                "label": f"📚 {art.get('title', 'Article')}",
+                "content": art.get("summary", "")[:200],
+                "source_name": art.get("title") or "AgriMesh Knowledge Base",
+                "trust_level": "high" if art.get("review_status") == "published" else "medium",
+            })
         return cards
 
     def _no_evidence_response(self, ctx: AgentContext, t0: float) -> AgentResponse:

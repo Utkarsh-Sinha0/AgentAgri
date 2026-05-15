@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.models import Advisory, CropCycle, Farmer, Field, Observation
+from app.models_memory import ActionImpact
 from app.services.conversation import (
     build_action_impact_network,
     build_conversation_context,
@@ -145,3 +146,57 @@ async def test_action_impact_uses_persisted_global_action_index(db_session):
     by_text = {imp.action_text: imp for imp in impacts}
     assert by_text["First action"].action_index == 2
     assert by_text["Second action"].action_index == 5
+
+
+async def test_action_impact_inherits_field_and_crop_scope(db_session):
+    """Regression for codex MEDIUM #8: ActionImpact.field_id and
+    crop_cycle_id were always None even when the originating observation
+    carried both, breaking per-field dashboard filters. The builder must
+    copy scope from the advisory's observation.
+    """
+    farmer = Farmer(
+        id="farmer-scope",
+        phone="scope-test",
+        hashed_password=hash_password("test"),
+        name="Scope Farmer",
+        district="Munger",
+    )
+    field = Field(id="field-scope", farmer_id=farmer.id, name="N1", area_acres=1.0)
+    cycle = CropCycle(
+        id="cycle-scope",
+        field_id=field.id,
+        crop_name="rice",
+        sowing_date=utc_now(),
+        current_stage="vegetative",
+        is_active=True,
+    )
+    observation = Observation(
+        id="obs-scope",
+        farmer_id=farmer.id,
+        field_id=field.id,
+        crop_cycle_id=cycle.id,
+        observation_type="text",
+        text_content="leaf spots",
+    )
+    advisory = Advisory(
+        id="adv-scope",
+        observation_id=observation.id,
+        farmer_id=farmer.id,
+        risk_level="WATCH",
+        confidence="MEDIUM",
+        selected_action_indices=[0],
+        selected_warning_indices=[],
+        actions_text=["Scout the field weekly"],
+        warnings_text=[],
+        contextualization="Watch closely.",
+        evidence_article_ids=[],
+    )
+    db_session.add_all([farmer, field, cycle, observation, advisory])
+    await db_session.commit()
+
+    impacts = await build_action_impact_network(db_session, advisory.id)
+    await db_session.commit()
+
+    assert len(impacts) == 1
+    assert impacts[0].field_id == "field-scope"
+    assert impacts[0].crop_cycle_id == "cycle-scope"

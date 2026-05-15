@@ -776,6 +776,9 @@ async def _process_farmer_query(
             observation_id=observation.id,
             image_path=image_path,
             is_followup=bool(state.get("last_advisory_id")),
+            # E3 needs both flags to render "what changed" against the prior
+            # advisory; passing only is_followup made the feature silently dead.
+            previous_advisory_id=state.get("last_advisory_id"),
         )
 
         # Run agent

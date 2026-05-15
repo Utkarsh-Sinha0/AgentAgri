@@ -321,6 +321,11 @@ async def retrieve(
                 select(WikiArticle).where(WikiArticle.id.in_(list(expanded - article_id_set)))
             )
             db_articles.extend(list(result.scalars().all()))
+    elif path == "graph":
+        # Classified as graph (multi-evidence query) but we have no prior
+        # article IDs to expand from — this is the same candidate set as
+        # the fast path. Relabel to keep telemetry honest.
+        path = "fast"
 
     # ── Step 3: Build candidate list for embedding ───────────────
     candidates = [

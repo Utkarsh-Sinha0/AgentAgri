@@ -804,7 +804,12 @@ async def extract_from_outcome(
         field_id=obs.field_id,
         crop_cycle_id=obs.crop_cycle_id,
         atom_type="outcome_reported",
-        summary=f"Outcome: {result} (rating {rating}/5)" + (f" — {comment[:80]}" if comment else ""),
+        # PII contract: the summary is the only field exposed by
+        # ``retrieve_similar_farm_context`` once the k-anonymity gate opens,
+        # so it must carry no farmer free-text. Keep result/rating only.
+        # The raw comment stays in ``details`` (field-scope) for the
+        # owning farmer's own context.
+        summary=f"Outcome: {result} (rating {rating}/5)",
         details={
             "result": result,
             "comment": comment,
@@ -837,23 +842,41 @@ async def extract_from_outcome(
             chain = await get_causal_chain(db, predecessor_id, max_hops=6)
         else:
             # Fallback: most recent disease/pest atoms for the same farmer
-            # within the last 30 days. Lets us still learn from outcomes
-            # logged against ad-hoc questions or legacy observations.
+            # within the last 30 days. Scope by field/crop-cycle when the
+            # outcome's observation carries them so a wheat outcome on one
+            # field can't shift confidence on a parallel rice cycle. Only
+            # widen the query if the scoped lookup finds nothing.
             cutoff = utc_now() - timedelta(days=30)
+            base_filter = (
+                MemoryAtom.farmer_id == obs.farmer_id,
+                MemoryAtom.atom_type.in_(
+                    ["disease_observed", "pest_detected", "vision_analysis"]
+                ),
+                MemoryAtom.event_at >= cutoff,
+            )
+            scoped_filter = list(base_filter)
+            if obs.field_id:
+                scoped_filter.append(MemoryAtom.field_id == obs.field_id)
+            if obs.crop_cycle_id:
+                scoped_filter.append(MemoryAtom.crop_cycle_id == obs.crop_cycle_id)
+
             fallback = (
                 await db.execute(
                     select(MemoryAtom)
-                    .where(
-                        MemoryAtom.farmer_id == obs.farmer_id,
-                        MemoryAtom.atom_type.in_(
-                            ["disease_observed", "pest_detected", "vision_analysis"]
-                        ),
-                        MemoryAtom.event_at >= cutoff,
-                    )
+                    .where(*scoped_filter)
                     .order_by(desc(MemoryAtom.event_at))
                     .limit(3)
                 )
             ).scalars().all()
+            if not fallback and (obs.field_id or obs.crop_cycle_id):
+                fallback = (
+                    await db.execute(
+                        select(MemoryAtom)
+                        .where(*base_filter)
+                        .order_by(desc(MemoryAtom.event_at))
+                        .limit(3)
+                    )
+                ).scalars().all()
             chain = list(fallback)
 
         for atom in chain:

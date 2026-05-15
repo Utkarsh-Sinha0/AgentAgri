@@ -10,7 +10,7 @@ import uuid
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Advisory, WikiArticle
+from app.models import Advisory, Observation, WikiArticle
 from app.models_memory import ActionImpact, ConversationThread, ConversationTurn
 from app.utils.time import utc_now
 
@@ -226,6 +226,20 @@ async def build_action_impact_network(
         articles = list(article_result.scalars().all())
     article_risks = [a.risk_level for a in articles if a.risk_level]
 
+    # Resolve field/crop_cycle scope from the originating observation so
+    # ActionImpact rows can be filtered per field in dashboards. Earlier
+    # code left these null, which contradicted the field-scoped impact
+    # contract. Best-effort: ignore failures and fall back to null.
+    field_id: str | None = None
+    crop_cycle_id: str | None = None
+    if advisory.observation_id:
+        obs_row = await db.scalar(
+            select(Observation).where(Observation.id == advisory.observation_id)
+        )
+        if obs_row is not None:
+            field_id = obs_row.field_id
+            crop_cycle_id = obs_row.crop_cycle_id
+
     # action_index must be the persisted global wiki-action index (the LLM's
     # selection), not the display position — downstream learning and outcome
     # attribution use this to link impact back to the originating article
@@ -245,8 +259,8 @@ async def build_action_impact_network(
             id=str(uuid.uuid4()),
             advisory_id=advisory.id,
             farmer_id=advisory.farmer_id,
-            field_id=None,
-            crop_cycle_id=None,
+            field_id=field_id,
+            crop_cycle_id=crop_cycle_id,
             action_index=action_index,
             action_text=action_text,
             impact_level=profile["impact_level"],
