@@ -170,6 +170,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _handle_crop_name(update, user_id, text, state)
     elif current_state == "registering_crop_stage":
         await _handle_crop_stage(update, user_id, text, state)
+    elif current_state == "profiling":
+        await _handle_profile_data(update, user_id, text, state)
     elif current_state == "ready":
         # §6.7: Try structured data capture first (no LLM cost)
         captured = await try_structured_capture(update, user_id, text)
@@ -695,6 +697,7 @@ async def _process_farmer_query(
         # Store evidence for callback
         state["last_evidence"] = response.evidence_cards
         state["last_advisory_id"] = response.advisory_id
+        state["last_observation_id"] = observation.id
         state["last_verifier"] = {
             "passes_all": response.verifier_report.passes_all if response.verifier_report else False,
             "details": str(response.verifier_report) if response.verifier_report else "",
@@ -1183,6 +1186,69 @@ async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
+async def _handle_profile_data(update: Update, user_id: str, text: str, state: dict):
+    """Bug 2 fix: parse '<size>, <irrigation>, <water>, <soil_test>, <budget>' and persist FarmerProfile."""
+    parts = [p.strip() for p in text.split(",")]
+    if len(parts) < 5:
+        await update.message.reply_text(
+            "⚠️ फॉर्मेट: <आकार>, <सिंचाई>, <पानी>, <मिट्टी>, <बजट>\n"
+            "Format: <size>, <irrigation>, <water>, <soil_test>, <budget>\n"
+            "उदाहरण: 3 acre, borewell, seasonal, done_old, 50000"
+        )
+        return
+
+    from app.models_memory import FarmerProfile
+
+    async with async_session_factory() as db:
+        phone = state.get("phone", user_id)
+        farmer = await db.scalar(select(Farmer).where(Farmer.phone == phone))
+        if not farmer:
+            await update.message.reply_text("⚠️ पहले /register करें। Please /register first.")
+            state["state"] = "start"
+            return
+
+        profile = await db.scalar(
+            select(FarmerProfile).where(FarmerProfile.farmer_id == farmer.id)
+        )
+        if profile is None:
+            profile = FarmerProfile(farmer_id=farmer.id)
+            db.add(profile)
+
+        # Parse farm size (e.g., "3 acre", "3.5", "3 एकड़")
+        try:
+            size_token = parts[0].split()[0]
+            profile.farm_size_acres = float(size_token)
+        except (ValueError, IndexError):
+            profile.farm_size_acres = None
+
+        profile.irrigation_source = parts[1].lower() or None
+        profile.water_reliability = parts[2].lower() or None
+        profile.soil_test_status = parts[3].lower() or None
+
+        try:
+            profile.annual_budget_rs = int(parts[4].replace(",", "").replace("₹", "").strip())
+        except ValueError:
+            profile.annual_budget_rs = None
+
+        # Compute simple profile completeness
+        filled = sum(
+            1 for v in (
+                profile.farm_size_acres,
+                profile.irrigation_source,
+                profile.water_reliability,
+                profile.soil_test_status,
+                profile.annual_budget_rs,
+            ) if v not in (None, "")
+        )
+        profile.profile_completeness = round(filled / 5.0, 2)
+        profile.last_updated = utc_now()
+
+        await db.commit()
+
+    state["state"] = "ready"
+    await update.message.reply_text("✅ प्रोफाइल सहेज दी गई / Profile saved successfully!")
+
+
 async def fields_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /fields — list all registered fields."""
     user_id = str(update.effective_user.id)
@@ -1522,12 +1588,26 @@ async def feedback_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     comment = " ".join(args[1:]) if len(args) > 1 else ""
-    # Store feedback (future: persist to DB)
     state = get_user_state(user_id)
     state["last_feedback"] = {"rating": rating, "comment": comment}
 
+    # Bug 3 fix: persist to Advisory row.
+    persisted = False
+    advisory_id = state.get("last_advisory_id")
+    if advisory_id:
+        async with async_session_factory() as db:
+            adv = await db.scalar(select(Advisory).where(Advisory.id == advisory_id))
+            if adv is not None:
+                adv.farmer_feedback = rating
+                adv.feedback_text = comment or None
+                await db.commit()
+                persisted = True
+            else:
+                logger.warning(f"feedback: advisory {advisory_id} not found")
+
     emoji = ["", "😞", "😐", "🙂", "😊", "🌟"][rating]
-    await update.message.reply_text(f"{emoji} रेटिंग {rating}/5 दर्ज! धन्यवाद।")
+    suffix = "" if persisted else " (कोई हाल की सलाह नहीं मिली / no recent advisory to attach)"
+    await update.message.reply_text(f"{emoji} रेटिंग {rating}/5 दर्ज!{suffix} धन्यवाद।")
 
 
 async def outcome_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1553,7 +1633,41 @@ async def outcome_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     state = get_user_state(user_id)
     state["last_outcome"] = {"result": result, "comment": comment}
-    await update.message.reply_text(f"📝 परिणाम '{result}' दर्ज! सीखने के लिए धन्यवाद। 🌱")
+
+    # Bug 4 fix: persist outcome to the linked Observation, then record memory atom.
+    observation_id = state.get("last_observation_id")
+    persisted = False
+    rating_map = {"improved": 5, "no_change": 3, "worsened": 1, "not_tried": 2}
+    rating = rating_map.get(result, 2)
+
+    if observation_id:
+        async with async_session_factory() as db:
+            obs = await db.scalar(select(Observation).where(Observation.id == observation_id))
+            if obs is None:
+                logger.warning(f"outcome: observation {observation_id} not found")
+            else:
+                age_days = (utc_now() - obs.created_at).days if obs.created_at else 0
+                if age_days > 30:
+                    await update.message.reply_text(
+                        f"⏳ यह सलाह {age_days} दिन पुरानी है। परिणाम 30 दिनों के अंदर ही दर्ज करें।\n"
+                        f"This advisory is {age_days} days old. Outcomes can only be logged within 30 days."
+                    )
+                    return
+                obs.outcome_text = (f"{result}: {comment}" if comment else result).strip(": ")
+                obs.outcome_rating = rating
+                obs.outcome_logged_at = utc_now()
+                await db.commit()
+                persisted = True
+
+                # Sprint 1: record outcome atom (M2 will boost causal-chain confidence)
+                try:
+                    from app.services.memory import extract_from_outcome
+                    await extract_from_outcome(db, observation_id, result, comment, rating)
+                except Exception as exc:  # never break user flow on memory failure
+                    logger.error(f"extract_from_outcome failed: {exc}")
+
+    suffix = "" if persisted else " (कोई हाल का अवलोकन नहीं / no recent observation linked)"
+    await update.message.reply_text(f"📝 परिणाम '{result}' दर्ज!{suffix} सीखने के लिए धन्यवाद। 🌱")
 
 
 # ─── Bot Runner ───────────────────────────────────────────────────────

@@ -132,16 +132,16 @@ async def discover_patterns(db: AsyncSession) -> dict:
             article2 = art2.scalar_one_or_none()
 
             if article1 and article2:
-                # Add to correlated_with only if not already present
-                corr1 = article1.causes_of or []
-                corr2 = article2.causes_of or []
+                # Co-occurrence is correlation, not causation. Bug 1 fix.
+                corr1 = list(article1.correlated_with or [])
+                corr2 = list(article2.correlated_with or [])
 
                 if a2 not in corr1:
                     corr1.append(a2)
-                    article1.causes_of = corr1
+                    article1.correlated_with = corr1
                 if a1 not in corr2:
                     corr2.append(a1)
-                    article2.causes_of = corr2
+                    article2.correlated_with = corr2
 
                 results["new_graph_edges"] += 1
                 results["insights"].append({

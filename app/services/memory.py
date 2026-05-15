@@ -540,3 +540,62 @@ async def seed_memory_from_existing(db: AsyncSession) -> dict:
     await db.commit()
     logger.info(f"Memory backfill complete: {stats}")
     return stats
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# OUTCOME EXTRACTION (Bug 4 stub — full implementation in Sprint 3 M2)
+# ═══════════════════════════════════════════════════════════════════════
+
+async def extract_from_outcome(
+    db: AsyncSession,
+    observation_id: str,
+    result: str,
+    comment: str,
+    rating: int,
+) -> MemoryAtom | None:
+    """
+    Record a farmer-reported outcome as an outcome_reported MemoryAtom and
+    (Sprint 3 M2) boost the confidence of atoms in the causal chain.
+
+    Sprint 1 scope: record the outcome atom. Confidence boost is added in M2.
+    """
+    obs_res = await db.execute(select(Observation).where(Observation.id == observation_id))
+    obs = obs_res.scalar_one_or_none()
+    if obs is None:
+        logger.warning(f"extract_from_outcome: observation {observation_id} not found")
+        return None
+
+    farmer_res = await db.execute(select(Farmer).where(Farmer.id == obs.farmer_id))
+    farmer = farmer_res.scalar_one_or_none()
+
+    # Clamp rating defensively
+    rating = max(1, min(5, int(rating)))
+    confidence = 0.95 if rating >= 4 else (0.85 if rating >= 3 else 0.75)
+
+    atom = MemoryAtom(
+        id=str(uuid.uuid4()),
+        farmer_id=obs.farmer_id,
+        field_id=obs.field_id,
+        crop_cycle_id=obs.crop_cycle_id,
+        atom_type="outcome_reported",
+        summary=f"Outcome: {result} (rating {rating}/5)" + (f" — {comment[:80]}" if comment else ""),
+        details={
+            "result": result,
+            "comment": comment,
+            "rating": rating,
+            "observation_id": observation_id,
+        },
+        confidence=confidence,
+        source_type="farmer_reported",
+        source_id=observation_id,
+        village=getattr(farmer, "village", None) if farmer else None,
+        tehsil=getattr(farmer, "tehsil", None) if farmer else None,
+        district=getattr(farmer, "district", None) if farmer else None,
+        state=getattr(farmer, "state", None) if farmer else None,
+        event_at=utc_now(),
+        is_private=True,
+    )
+    db.add(atom)
+    await db.commit()
+    logger.info(f"extract_from_outcome: recorded outcome_reported atom for obs {observation_id}")
+    return atom
