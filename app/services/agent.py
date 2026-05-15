@@ -338,8 +338,18 @@ class AgentOrchestrator:
         return {"error": f"Unknown tool: {tool_name}"}
 
     async def _load_memory_context(self, db: AsyncSession, ctx: AgentContext) -> str:
-        """Load farmer's memory via the Living Memory system (semantic top-k, filtered)."""
-        from app.services.memory import retrieve_memory_context
+        """Load farmer's memory via the Living Memory system (semantic top-k, filtered).
+
+        Also pulls anonymized peer-farmer atoms from the same district when the
+        k-anonymity floor is met (M4 cross-farmer learning).
+        """
+        from sqlalchemy import select
+
+        from app.models import Farmer
+        from app.services.memory import (
+            retrieve_memory_context,
+            retrieve_similar_farm_context,
+        )
 
         memory_atoms = await retrieve_memory_context(
             db=db,
@@ -351,15 +361,44 @@ class AgentOrchestrator:
             risk_type="disease",
             top_k=8,
         )
-        if not memory_atoms:
+
+        peer_atoms: list[dict] = []
+        if ctx.crop_name:
+            farmer = await db.scalar(select(Farmer).where(Farmer.id == ctx.farmer_id))
+            district = farmer.district if farmer else None
+            if district:
+                try:
+                    peer_atoms = await retrieve_similar_farm_context(
+                        db=db,
+                        farmer_id=ctx.farmer_id,
+                        crop_name=ctx.crop_name,
+                        district=district,
+                        top_k=5,
+                    )
+                except Exception:
+                    peer_atoms = []
+
+        if not memory_atoms and not peer_atoms:
             return ""
 
-        lines = ["Field memory (semantic retrieval):"]
-        for mem in memory_atoms[:8]:
-            event_info = f" [{mem.get('event_at', '?')[:10]}]" if mem.get('event_at') else ""
-            lines.append(f"  - [{mem.get('atom_type', 'event')}]{event_info}: {mem.get('summary', '')[:200]}")
-            if mem.get("type") == "village_summary":
-                lines.append(f"    Village pattern: {mem.get('patterns', [])}")
+        lines: list[str] = []
+        if memory_atoms:
+            lines.append("Field memory (semantic retrieval):")
+            for mem in memory_atoms[:8]:
+                event_info = f" [{mem.get('event_at', '?')[:10]}]" if mem.get('event_at') else ""
+                lines.append(f"  - [{mem.get('atom_type', 'event')}]{event_info}: {mem.get('summary', '')[:200]}")
+                if mem.get("type") == "village_summary":
+                    lines.append(f"    Village pattern: {mem.get('patterns', [])}")
+
+        if peer_atoms:
+            lines.append(
+                f"Nearby farms (anonymized, same district, same crop, n={len(peer_atoms)}):"
+            )
+            for mem in peer_atoms[:5]:
+                event_info = f" [{mem.get('event_at', '?')[:10]}]" if mem.get('event_at') else ""
+                lines.append(
+                    f"  - [{mem.get('atom_type', 'event')}]{event_info}: {mem.get('summary', '')[:200]}"
+                )
         return "\n".join(lines)
 
     async def _load_personal_profile_context(self, db: AsyncSession, ctx: AgentContext) -> str:
