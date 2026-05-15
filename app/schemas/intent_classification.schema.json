@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Intent Classification",
-  "description": "Classify user intent for adaptive retrieval routing.",
+  "description": "Classify user intent and extract semantic entities (crop, region, tags, followup) for adaptive retrieval routing. All extraction is LLM-decided; no keyword fallbacks.",
   "type": "object",
   "properties": {
     "intent": {
@@ -20,11 +20,39 @@
       "type": "string",
       "enum": ["hi", "en", "mixed"]
     },
+    "crop_name": {
+      "type": "string",
+      "description": "Crop the farmer is asking about, lowercase English (e.g. 'rice', 'wheat', 'cotton', 'tomato'). Empty string if not mentioned and not inferable.",
+      "maxLength": 40
+    },
+    "crop_stage": {
+      "type": "string",
+      "description": "Growth stage if mentioned or clearly implied (e.g. 'seedling', 'tillering', 'flowering', 'grain_filling', 'harvest'). Empty string if unknown.",
+      "maxLength": 40
+    },
+    "state_or_region": {
+      "type": "string",
+      "description": "Indian state, district, or region the farmer references (e.g. 'Punjab', 'Vidarbha', 'West Bengal'). Empty string if not mentioned.",
+      "maxLength": 60
+    },
+    "topic_tags": {
+      "type": "array",
+      "description": "Semantic tags describing the agronomic topic. Pick from: fungal_disease, bacterial_disease, viral_disease, pest, insect, nutrient_deficiency, water_management, weather_damage, soil_health, weed, harvest, post_harvest, market, scheme, credit, insurance, general. 0-4 tags.",
+      "items": {
+        "type": "string",
+        "enum": ["fungal_disease", "bacterial_disease", "viral_disease", "pest", "insect", "nutrient_deficiency", "water_management", "weather_damage", "soil_health", "weed", "harvest", "post_harvest", "market", "scheme", "credit", "insurance", "general"]
+      },
+      "maxItems": 4
+    },
+    "is_followup": {
+      "type": "boolean",
+      "description": "True if this message is a follow-up to a previous advisory (e.g. asks 'why', 'kitna', refers to 'it', or builds on prior context). False if the message stands alone."
+    },
     "reason": {
       "type": "string",
       "maxLength": 120
     }
   },
-  "required": ["intent", "needs_retrieval", "language"],
+  "required": ["intent", "needs_retrieval", "language", "crop_name", "topic_tags", "is_followup"],
   "additionalProperties": false
 }

@@ -50,6 +50,8 @@ class AgentContext:
     image_path: str | None = None
     is_followup: bool = False
     previous_advisory_id: str | None = None
+    # Populated from DB at process() entry — real value, never a placeholder.
+    land_owned_acres: float | None = None
 
 
 @dataclass
@@ -96,6 +98,18 @@ class AgentOrchestrator:
         thinking_enabled = False
         detected_followup = ctx.is_followup
 
+        # Hydrate land_owned_acres from the real Field row (no placeholder).
+        if ctx.land_owned_acres is None and ctx.field_id:
+            try:
+                from sqlalchemy import select as _sa_select
+                from app.models import Field as _FieldModel
+                _res = await db.execute(_sa_select(_FieldModel.area_acres).where(_FieldModel.id == ctx.field_id))
+                _acres = _res.scalar_one_or_none()
+                if isinstance(_acres, (int, float)):
+                    ctx.land_owned_acres = float(_acres)
+            except Exception as exc:
+                logger.warning(f"Land acres hydration failed: {exc}")
+
         # ── Step 0: Vision analysis (if photo provided) ──────────
         vision_result = None
         if ctx.image_path:
@@ -107,24 +121,46 @@ class AgentOrchestrator:
             except Exception as exc:
                 logger.error(f"Vision analysis failed: {exc}")
 
-        # ── Step 1: Intent classification ────────────────────────
+        # ── Step 1: Intent classification (LLM-decided entities) ─
+        intent: dict = {}
+        llm_crop_name = ""
+        llm_crop_stage = ""
+        llm_state = ""
+        llm_topic_tags: list[str] = []
+        llm_is_followup = False
         try:
             intent_result = await self.llm.classify_intent(ctx.message, ctx.language)
-            intent = intent_result.get("parsed", {})
+            intent = intent_result.get("parsed", {}) or {}
             needs_retrieval = intent.get("needs_retrieval", True)
             needs_tools = intent.get("needs_tool_call", False)
-            logger.info(f"Intent: {intent.get('intent')}, retrieval={needs_retrieval}, tools={needs_tools}")
+            llm_crop_name = (intent.get("crop_name") or "").strip()
+            llm_crop_stage = (intent.get("crop_stage") or "").strip()
+            llm_state = (intent.get("state_or_region") or "").strip()
+            llm_topic_tags = [t for t in (intent.get("topic_tags") or []) if t]
+            llm_is_followup = bool(intent.get("is_followup", False))
+            logger.info(
+                f"Intent: {intent.get('intent')}, retrieval={needs_retrieval}, tools={needs_tools}, "
+                f"crop='{llm_crop_name}', stage='{llm_crop_stage}', region='{llm_state}', "
+                f"tags={llm_topic_tags}, followup={llm_is_followup}"
+            )
         except Exception as exc:
             logger.error(f"Intent classification failed: {exc}")
             needs_retrieval = True
             needs_tools = False
 
+        # Propagate LLM-decided entities onto ctx so downstream steps (tool
+        # adapters, retrieval filters, memory) read them without a second LLM call.
+        if llm_crop_name and not ctx.crop_name:
+            ctx.crop_name = llm_crop_name
+        if llm_crop_stage and not ctx.crop_stage:
+            ctx.crop_stage = llm_crop_stage
+
         # ── Step 1.5: Durable conversation routing ───────────────
         previous_article_ids: list[str] = []
         try:
-            from app.services.conversation import looks_like_followup, previous_evidence_article_ids
+            from app.services.conversation import previous_evidence_article_ids
 
-            detected_followup = detected_followup or looks_like_followup(ctx.message)
+            detected_followup = detected_followup or llm_is_followup
             previous_article_ids = await previous_evidence_article_ids(
                 db,
                 farmer_id=ctx.farmer_id,
@@ -137,7 +173,7 @@ class AgentOrchestrator:
         # ── Step 2: Speculative retrieval (fire in parallel) ─────
         retrieval_task = None
         if needs_retrieval:
-            topic_tags = self._extract_topic_tags(ctx.message, vision_result)
+            topic_tags = llm_topic_tags or ["general"]
             retrieval_task = await speculative_retrieve(
                 db,
                 query=ctx.message,
@@ -346,25 +382,6 @@ class AgentOrchestrator:
 
     # ── Helpers ──────────────────────────────────────────────────
 
-    def _extract_topic_tags(self, message: str, vision_result: dict | None) -> list[str]:
-        """Extract topic tags from the message and vision analysis."""
-        tags = set()
-        keywords = {
-            "fungal_disease": ["फफूंद", "fungus", "blight", "rust", "smut", "mildew", "झुलसा", "धब्बा"],
-            "pest": ["कीट", "insect", "pest", "caterpillar", "aphid", "borer", "सूंडी", "कीड़ा"],
-            "nutrient_deficiency": ["पीला", "yellow", "nitrogen", "phosphorus", "potash", "zinc", "नाइट्रोजन", "यूरिया"],
-            "water_management": ["पानी", "water", "drainage", "irrigation", "flood", "सिंचाई", "जलभराव"],
-            "weather_damage": ["rain", "बारिश", "hail", "frost", "heat", "cold", "पाला"],
-        }
-        combined = message.lower()
-        if vision_result:
-            combined += " " + str(vision_result).lower()
-
-        for tag, kws in keywords.items():
-            if any(kw in combined for kw in kws):
-                tags.add(tag)
-        return list(tags) if tags else ["general"]
-
     async def _execute_tool(
         self,
         tool_name: str,
@@ -420,40 +437,48 @@ class AgentOrchestrator:
             # Drop location string — field_id is the real key, ctx supplies it
             params.pop("location", None)
 
-        crop_default = (ctx.crop_name if ctx else None) or "rice"
+        # Crop name comes from LLM intent extraction (propagated onto ctx) — no
+        # keyword/placeholder fallback. If the LLM did not surface a crop, we
+        # only inject `crop` for tools that strictly require it (mandi/MSP/scheme)
+        # and otherwise leave it unset for the tool to error or skip cleanly.
+        crop_default = ctx.crop_name if ctx and ctx.crop_name else None
         field_default = ctx.field_id if ctx else None
         farmer_id = ctx.farmer_id if ctx else None
 
         if tool_name in ("get_forecast", "get_historical_weather"):
             params.setdefault("field_id", field_default)
-            # planner may emit "days_ahead" etc.
             if "days_ahead" in params and "days" not in params:
                 params["days"] = params.pop("days_ahead")
         elif tool_name == "get_mandi_prices":
-            params.setdefault("crop", crop_default)
-            # planner may emit "market"/"mandi" instead of "district"
+            if crop_default:
+                params.setdefault("crop", crop_default)
             for alt in ("market", "mandi", "city"):
                 if alt in params and "district" not in params:
                     params["district"] = params.pop(alt)
                 else:
                     params.pop(alt, None)
         elif tool_name == "get_msp":
-            params.setdefault("crop", crop_default)
+            if crop_default:
+                params.setdefault("crop", crop_default)
         elif tool_name == "match_schemes":
-            params.setdefault("crop", crop_default)
-            # Hydrate farmer_profile with a small-farmer default so PM-KISAN
-            # eligibility (≤5 acres) evaluates correctly. Without this, the
-            # eligibility checker defaults land to 999 acres and excludes
-            # PM-KISAN entirely — which is wrong for the mock smallholder
-            # farmer (2.5 acres) and for nearly every realistic user.
+            if crop_default:
+                params.setdefault("crop", crop_default)
+            # Hydrate farmer_profile from real farmer/field rows. land_owned_acres
+            # was loaded from Field.area_acres at process() entry — no 2.5/'small'
+            # placeholder. If absent, the scheme service falls back to its own
+            # default rather than us lying about smallholder status.
             fp = params.get("farmer_profile") or {}
             if farmer_id and "farmer_id" not in fp:
                 fp["farmer_id"] = farmer_id
-            fp.setdefault("land_owned_acres", 2.5)
-            fp.setdefault("farmer_type", "small")
+            acres = ctx.land_owned_acres if ctx else None
+            if isinstance(acres, (int, float)) and "land_owned_acres" not in fp:
+                fp["land_owned_acres"] = float(acres)
             params["farmer_profile"] = fp
             if "field" not in params and field_default:
-                params["field"] = {"field_id": field_default, "area_acres": 2.5}
+                field_payload = {"field_id": field_default}
+                if isinstance(acres, (int, float)):
+                    field_payload["area_acres"] = float(acres)
+                params["field"] = field_payload
 
         return params
 

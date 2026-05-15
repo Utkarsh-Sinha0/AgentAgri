@@ -334,7 +334,7 @@ You operate in Hindi and English. Your advice MUST be:
 Your tools: get_forecast, get_historical_weather, get_mandi_prices, get_msp, match_schemes.
 You pick actions/warnings by index from retrieved wiki articles — NEVER invent advice outside those indices."""
 
-INTENT_CLASSIFICATION_PROMPT = """Classify this farmer message and decide whether wiki retrieval and external tools are needed.
+INTENT_CLASSIFICATION_PROMPT = """You are routing a farmer's message. Read the message, understand it like a knowledgeable agronomist who speaks Hindi, Hinglish, and English, and decide intent + extract entities.
 
 Routing policy (apply strictly):
 - intent=disease_diagnosis, nutrient_advice → needs_retrieval=true, needs_tool_call=false
@@ -343,11 +343,15 @@ Routing policy (apply strictly):
 - intent=general_chat, command → needs_retrieval=false, needs_tool_call=false
 - When in doubt for any agronomic/crop question → needs_retrieval=true
 
-Cues for disease_diagnosis (Hindi/Hinglish): "रोग", "बीमारी", "धब्बे" (spots), "पीला" (yellow), "सूख" (drying), "कीड़े" (insects), "मर रहे" (dying).
-Cues for nutrient_advice: "खाद", "उर्वरक", "यूरिया", "DAP", "पोटाश".
-Cues for scheme_query (route here for ANY of these — never disease): "PM Kisan", "PM-KISAN", "PMFBY", "फसल बीमा", "crop insurance", "premium", "deadline", "eligible", "eligibility", "KCC", "Kisan Credit Card", "किसान क्रेडिट कार्ड", "लोन"/"loan" (when about scheme/credit), "ऋण", "subsidy", "सब्सिडी", "योजना", "scheme", "installment", "किस्त", "Aadhaar", "आधार", "Soil Health Card", "मृदा स्वास्थ्य".
-Cues for market_query: "mandi", "मंडी", "भाव", "price", "rate", "MSP", "बेचना", "sell".
-Cues for weather_query: "बारिश", "rain", "weather", "मौसम", "forecast", "tomorrow", "कल".
+Entity extraction (use your own judgment — do not rely on keyword lookups):
+- crop_name: the crop being discussed, lowercase English. Empty string if no crop is mentioned or implied.
+- crop_stage: growth stage if mentioned or clearly implied. Empty string otherwise.
+- state_or_region: Indian state/district/region if mentioned. Empty string otherwise.
+- topic_tags: 0-4 semantic tags from the enum that best describe the agronomic topic.
+- is_followup: true if this message builds on a prior advisory (refers to "it", asks "why"/"how much", clarifies a previous answer); false if it stands alone.
+- language: hi / en / mixed based on the script and vocabulary used.
+
+Do not echo keywords. Decide semantically.
 
 Farmer message:
 {user_message}"""
