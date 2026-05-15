@@ -77,7 +77,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [
         [InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")],
-        [InlineKeyboardButton("🧭 Dashboard: map, weather, money, memory", url=_dashboard_url(phone=user_id))],
+        [_dashboard_button("🧭 Dashboard: map, weather, money, memory", phone=user_id)],
         [InlineKeyboardButton("📝 Register: save farmer profile", callback_data="cmd_register")],
         [InlineKeyboardButton("🌱 Crop: set active field crop", callback_data="cmd_crop")],
         [InlineKeyboardButton("📸 Photo: diagnose crop symptoms", callback_data="cmd_photo")],
@@ -317,6 +317,27 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/why — advice के evidence और verifier देखें\n\n"
             "फसल की समस्या लिखें या फोटो भेजें।"
         )
+    elif data == "cmd_dashboard":
+        farmer_id = state.get("farmer_id")
+        if not farmer_id:
+            async with async_session_factory() as db:
+                farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
+                farmer_id = farmer.id if farmer else ""
+        url = _dashboard_url(farmer_id=farmer_id, phone=user_id if not farmer_id else None)
+        is_public = url.startswith("https://") and "localhost" not in url and "127.0.0.1" not in url
+        if is_public:
+            await query.message.reply_text(
+                "🧭 *AgriMesh Dashboard*",
+                parse_mode="Markdown",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Open dashboard", url=url)]]),
+            )
+        else:
+            await query.message.reply_text(
+                f"🧭 *Dashboard (dev mode)*\n\nLocal URL: `{url}`\n"
+                "Open it in a browser on this machine — Telegram won't render an "
+                "inline button for non-https URLs.",
+                parse_mode="Markdown",
+            )
     elif data == "cmd_photo":
         await query.message.reply_text(
             "📸 कृपया अपनी फसल की फोटो भेजें।\n"
@@ -804,10 +825,7 @@ async def _process_farmer_query(
                 InlineKeyboardButton("📋 साक्ष्य / Evidence", callback_data="show_evidence"),
             ])
         keyboard.append([
-            InlineKeyboardButton(
-                "🧭 Personal dashboard / खेत पेज",
-                url=_dashboard_url(farmer_id=farmer.id),
-            )
+            _dashboard_button("🧭 Personal dashboard / खेत पेज", farmer_id=farmer.id)
         ])
         if response.verifier_report and response.verifier_report.passes_all:
             keyboard.append([
@@ -1668,13 +1686,23 @@ async def dashboard_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
             farmer_id = farmer.id if farmer else ""
     url = _dashboard_url(farmer_id=farmer_id, phone=user_id if not farmer_id else None)
-    await update.message.reply_text(
-        "🧭 *आपका AgriMesh Dashboard*\n\n"
-        "यह पेज दिखाएगा: field weather, crop stage, NDVI, nearby clusters, मंडी, finance, memory, और पुराने सवालों का context.\n"
-        "फोन में cache रहेगा ताकि कमजोर network में भी आखिरी data दिखे।",
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Open dashboard", url=url)]]),
-    )
+    is_public = url.startswith("https://") and "localhost" not in url and "127.0.0.1" not in url
+    if is_public:
+        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("Open dashboard", url=url)]])
+        body = (
+            "🧭 *आपका AgriMesh Dashboard*\n\n"
+            "यह पेज दिखाएगा: field weather, crop stage, NDVI, nearby clusters, मंडी, finance, memory, और पुराने सवालों का context.\n"
+            "फोन में cache रहेगा ताकि कमजोर network में भी आखिरी data दिखे।"
+        )
+    else:
+        reply_markup = None
+        body = (
+            "🧭 *आपका AgriMesh Dashboard* (dev mode)\n\n"
+            f"Dashboard URL is local-only: `{url}`\n"
+            "Open it in a browser on this machine. Telegram won't render an "
+            "inline button for non-https URLs."
+        )
+    await update.message.reply_text(body, parse_mode="Markdown", reply_markup=reply_markup)
 
 
 def _dashboard_url(farmer_id: str | None = None, phone: str | None = None) -> str:
@@ -1684,6 +1712,25 @@ def _dashboard_url(farmer_id: str | None = None, phone: str | None = None) -> st
     if phone:
         return f"{base}/?mode=farmer&phone={phone}"
     return f"{base}/?mode=farmer"
+
+
+def _dashboard_button(
+    text: str,
+    farmer_id: str | None = None,
+    phone: str | None = None,
+) -> InlineKeyboardButton:
+    """Build a dashboard button that degrades when the dashboard URL is local.
+
+    Telegram rejects inline URL buttons whose host is localhost/127.x or
+    a non-https scheme, so when running in dev with a local dashboard we
+    fall back to a callback_data button (handled by `cmd_dashboard` in
+    handle_callback) instead of producing a 400 BadRequest at /start.
+    """
+    url = _dashboard_url(farmer_id=farmer_id, phone=phone)
+    is_public = url.startswith("https://") and "localhost" not in url and "127.0.0.1" not in url
+    if is_public:
+        return InlineKeyboardButton(text, url=url)
+    return InlineKeyboardButton(text, callback_data="cmd_dashboard")
 
 
 async def sources_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
