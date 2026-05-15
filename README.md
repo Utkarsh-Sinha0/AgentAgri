@@ -11,6 +11,8 @@
 
 ---
 
+> **New here?** Follow [TODO_MAKE_IT_WORK.md](TODO_MAKE_IT_WORK.md) — a top-to-bottom runbook from fresh clone to a farmer-served Telegram bot, including the post-audit verification steps and prod-hardening checklist.
+
 ## ⚡ Getting Started (3 Steps)
 
 ### 1️⃣ Install Ollama & Gemma 4 Model
