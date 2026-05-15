@@ -173,7 +173,7 @@ class AgentOrchestrator:
                     tool_name = tc.get("tool_name", "")
                     params = tc.get("parameters", {})
                     if tool_name and tool_name != "no_tool":
-                        tool_tasks.append(self._execute_tool(tool_name, params))
+                        tool_tasks.append(self._execute_tool(tool_name, params, ctx))
                         executable_calls.append(tc)
 
                 if tool_tasks:
@@ -342,8 +342,19 @@ class AgentOrchestrator:
                 tags.add(tag)
         return list(tags) if tags else ["general"]
 
-    async def _execute_tool(self, tool_name: str, params: dict) -> Any:
-        """Execute an MCP tool call."""
+    async def _execute_tool(
+        self,
+        tool_name: str,
+        params: dict,
+        ctx: AgentContext | None = None,
+    ) -> Any:
+        """Execute an MCP tool call.
+
+        Planner-emitted kwargs don't always match real signatures (e.g. it
+        sends ``location`` for weather or omits required ``crop`` for mandi).
+        Adapt + inject context defaults so the tool actually runs instead of
+        crashing the whole ReAct step.
+        """
         # Import tool functions lazily
         from app.services.mandi import get_mandi_prices, get_msp
         from app.services.scheme import match_schemes
@@ -358,9 +369,61 @@ class AgentOrchestrator:
         }
 
         fn = tool_map.get(tool_name)
-        if fn:
-            return await fn(**params)
-        return {"error": f"Unknown tool: {tool_name}"}
+        if not fn:
+            return {"error": f"Unknown tool: {tool_name}"}
+
+        adapted = self._adapt_tool_params(tool_name, dict(params or {}), ctx)
+        try:
+            return await fn(**adapted)
+        except TypeError as exc:
+            # Planner emitted unknown kwargs — strip to known params and retry.
+            logger.warning(
+                f"Tool {tool_name} TypeError ({exc}); retrying with filtered kwargs"
+            )
+            import inspect
+            sig = inspect.signature(fn)
+            allowed = {k: v for k, v in adapted.items() if k in sig.parameters}
+            return await fn(**allowed)
+
+    @staticmethod
+    def _adapt_tool_params(
+        tool_name: str,
+        params: dict,
+        ctx: AgentContext | None,
+    ) -> dict:
+        """Map planner kwargs to real tool signatures + inject ctx defaults."""
+        # Common aliases coming from the LLM planner
+        if "location" in params and "field_id" not in params:
+            # Drop location string — field_id is the real key, ctx supplies it
+            params.pop("location", None)
+
+        crop_default = (ctx.crop_name if ctx else None) or "rice"
+        field_default = ctx.field_id if ctx else None
+        farmer_id = ctx.farmer_id if ctx else None
+
+        if tool_name in ("get_forecast", "get_historical_weather"):
+            params.setdefault("field_id", field_default)
+            # planner may emit "days_ahead" etc.
+            if "days_ahead" in params and "days" not in params:
+                params["days"] = params.pop("days_ahead")
+        elif tool_name == "get_mandi_prices":
+            params.setdefault("crop", crop_default)
+            # planner may emit "market"/"mandi" instead of "district"
+            for alt in ("market", "mandi", "city"):
+                if alt in params and "district" not in params:
+                    params["district"] = params.pop(alt)
+                else:
+                    params.pop(alt, None)
+        elif tool_name == "get_msp":
+            params.setdefault("crop", crop_default)
+        elif tool_name == "match_schemes":
+            params.setdefault("crop", crop_default)
+            if "farmer_profile" not in params and farmer_id:
+                params["farmer_profile"] = {"farmer_id": farmer_id}
+            if "field" not in params and field_default:
+                params["field"] = {"field_id": field_default}
+
+        return params
 
     async def _load_memory_context(self, db: AsyncSession, ctx: AgentContext) -> str:
         """Load farmer's memory via the Living Memory system (semantic top-k, filtered).
