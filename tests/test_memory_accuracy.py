@@ -469,6 +469,7 @@ async def test_m4_excludes_requesting_farmer_from_results(db_session):
         confidence=0.9,
         district="Gaya",
         event_at=utc_now() - timedelta(days=3),
+        is_shareable=True,
     ))
     for p in peers:
         db_session.add(MemoryAtom(
@@ -479,6 +480,7 @@ async def test_m4_excludes_requesting_farmer_from_results(db_session):
             confidence=0.8,
             district="Gaya",
             event_at=utc_now() - timedelta(days=2),
+            is_shareable=True,
         ))
     await db_session.commit()
 
@@ -504,6 +506,7 @@ async def test_m4_skips_system_pseudo_farmer(db_session):
             confidence=0.7,
             district="Saran",
             event_at=utc_now() - timedelta(days=1),
+            is_shareable=True,
         ))
     await db_session.commit()
 
@@ -532,6 +535,7 @@ async def test_m4_lookback_window_excludes_old_atoms(db_session):
             confidence=0.8,
             district="Vaishali",
             event_at=utc_now() - timedelta(days=400),
+            is_shareable=True,
         ))
     await db_session.commit()
 
@@ -558,6 +562,7 @@ async def test_m4_crop_filter_narrows_pool(db_session):
             confidence=0.8,
             district="Begusarai",
             event_at=utc_now() - timedelta(days=3),
+            is_shareable=True,
         ))
     await db_session.commit()
 
@@ -609,6 +614,7 @@ async def test_m4_top_k_caps_output_even_with_many_peers(db_session):
             confidence=0.8,
             district="Nalanda",
             event_at=utc_now() - timedelta(days=i % 30),
+            is_shareable=True,
         ))
     await db_session.commit()
 
@@ -636,6 +642,7 @@ async def test_m4_one_atom_per_peer_farmer(db_session):
                 confidence=0.8,
                 district="Buxar",
                 event_at=utc_now() - timedelta(days=i),
+                is_shareable=True,
             ))
     await db_session.commit()
 
@@ -645,3 +652,64 @@ async def test_m4_one_atom_per_peer_farmer(db_session):
     )
     # At most one atom per peer → at most 3 atoms in this test.
     assert len(out) <= 3
+
+
+async def test_m4_is_shareable_filter_excludes_unflagged_atoms(db_session):
+    """Regression for codex HIGH #5: even atom_types in the whitelist must
+    stay private unless their atom was explicitly marked shareable at
+    extract time. Three peer atoms of a safe type with ``is_shareable=False``
+    must not satisfy the k=3 gate.
+    """
+    me = await _farmer(db_session, phone="9100000060", district="Patna")
+    peers = [
+        await _farmer(db_session, phone=f"9100007{i:03d}", district="Patna")
+        for i in range(3)
+    ]
+    for p in peers:
+        db_session.add(MemoryAtom(
+            id=str(uuid.uuid4()),
+            farmer_id=p.id,
+            atom_type="disease_observed",   # in whitelist
+            summary="rice blast nearby",
+            confidence=0.8,
+            district="Patna",
+            event_at=utc_now() - timedelta(days=2),
+            is_shareable=False,             # but not classified shareable
+        ))
+    await db_session.commit()
+
+    out = await retrieve_similar_farm_context(
+        db_session, farmer_id=me.id, crop_name="rice", district="Patna",
+        min_farmers_for_privacy=3,
+    )
+    assert out == []
+
+
+async def test_m4_is_shareable_filter_includes_flagged_atoms(db_session):
+    """Counterpart to the exclusion test: identical atoms with
+    ``is_shareable=True`` *do* satisfy the gate and surface in the output.
+    """
+    me = await _farmer(db_session, phone="9100000070", district="Sheikhpura")
+    peers = [
+        await _farmer(db_session, phone=f"9100008{i:03d}", district="Sheikhpura")
+        for i in range(3)
+    ]
+    for p in peers:
+        db_session.add(MemoryAtom(
+            id=str(uuid.uuid4()),
+            farmer_id=p.id,
+            atom_type="disease_observed",
+            summary="rice blast nearby",
+            confidence=0.8,
+            district="Sheikhpura",
+            event_at=utc_now() - timedelta(days=2),
+            is_shareable=True,
+        ))
+    await db_session.commit()
+
+    out = await retrieve_similar_farm_context(
+        db_session, farmer_id=me.id, crop_name="rice", district="Sheikhpura",
+        min_farmers_for_privacy=3,
+    )
+    assert len(out) >= 1
+    assert all(a["atom_type"] == "disease_observed" for a in out)

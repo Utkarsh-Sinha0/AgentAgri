@@ -378,6 +378,7 @@ async def test_display_renders_action_with_citation(orchestrator, db_session):
     rec = Recommendation(
         risk_level="WATCH", confidence="MEDIUM",
         contextualization="ctx",
+        selected_action_indices=[0],
         actions_text=["Spray neem-oil at 5 ml/L"],
     )
     ev = EvidenceBundle(
@@ -388,3 +389,35 @@ async def test_display_renders_action_with_citation(orchestrator, db_session):
     # Action is rendered with the citation chip on the same line.
     action_line = next((l for l in out.splitlines() if "Spray neem-oil" in l), "")
     assert "📚 Rice blast IPM" in action_line
+
+
+async def test_display_citation_uses_global_action_index_not_display_position(
+    orchestrator, db_session
+):
+    """Regression: selected_action_indices=[2] must cite the second article.
+
+    Earlier code passed the display position (i-1 = 0) instead of the
+    persisted global wiki-action index (2), so the FIRST article was always
+    cited regardless of which action the LLM actually picked.
+    """
+    ctx = AgentContext(farmer_id="f1", message="m", language="hi")
+    rec = Recommendation(
+        risk_level="WATCH", confidence="MEDIUM",
+        contextualization="ctx",
+        # Pick global action index 2 → first action of the SECOND article.
+        selected_action_indices=[2],
+        actions_text=["Apply trichoderma to soil"],
+    )
+    ev = EvidenceBundle(
+        wiki_articles=[
+            {"id": "w1", "title": "Rice blast IPM",
+             "actions": ["Spray neem-oil at 5 ml/L", "Remove infected leaves"]},
+            {"id": "w2", "title": "Soil biocontrol",
+             "actions": ["Apply trichoderma to soil"]},
+        ],
+    )
+    out = await orchestrator._build_advisory_display(db_session, ctx, rec, ev)
+    action_line = next((l for l in out.splitlines() if "trichoderma" in l), "")
+    # The right article (Soil biocontrol) must be attributed — not Rice blast.
+    assert "📚 Soil biocontrol" in action_line
+    assert "Rice blast IPM" not in action_line

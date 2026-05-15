@@ -341,9 +341,10 @@ class VerifierService:
         article_count = len(ev.wiki_articles)
         memory = ev.memory_context or ""
 
-        # Atom count signal — _format_memory_context emits one "atom_type"
-        # token per atom, so counting that string is a stable proxy.
-        atom_count = memory.lower().count("atom_type") if memory else 0
+        # Atom count signal — _load_memory_context emits one "  - [<atom_type>]"
+        # line per atom. Count those lines, not the literal word "atom_type"
+        # (which never appears in the rendered text).
+        atom_count = self._count_memory_atoms(memory)
 
         # Recency signal — any YYYY-MM in memory within the last 14 days.
         has_recent_evidence = self._memory_has_recent_evidence(memory, days=14)
@@ -399,6 +400,18 @@ class VerifierService:
             if ref >= cutoff:
                 return True
         return False
+
+    @staticmethod
+    def _count_memory_atoms(memory: str) -> int:
+        """Count atoms in a rendered memory_context.
+
+        `agent._load_memory_context` emits one ``  - [<atom_type>]`` line per
+        atom (with an optional ``[date]`` after it). Match that prefix so the
+        counter tracks the real rendered output rather than a literal word.
+        """
+        if not memory:
+            return 0
+        return len(re.findall(r"(?m)^\s*-\s*\[[^\]]+\]", memory))
 
     # ── Helpers ──────────────────────────────────────────────────
 

@@ -226,8 +226,20 @@ async def build_action_impact_network(
         articles = list(article_result.scalars().all())
     article_risks = [a.risk_level for a in articles if a.risk_level]
 
+    # action_index must be the persisted global wiki-action index (the LLM's
+    # selection), not the display position — downstream learning and outcome
+    # attribution use this to link impact back to the originating article
+    # action. Fall back to display position only if indices are absent
+    # (degenerate input).
+    actions_text = list(advisory.actions_text or [])
+    selected_indices = list(advisory.selected_action_indices or [])
+    if len(selected_indices) != len(actions_text):
+        selected_indices = list(range(len(actions_text)))
+
     impacts = []
-    for idx, action_text in enumerate(advisory.actions_text or []):
+    for display_pos, (action_index, action_text) in enumerate(
+        zip(selected_indices, actions_text)
+    ):
         profile = _score_action(action_text, advisory.risk_level, article_risks)
         impact = ActionImpact(
             id=str(uuid.uuid4()),
@@ -235,7 +247,7 @@ async def build_action_impact_network(
             farmer_id=advisory.farmer_id,
             field_id=None,
             crop_cycle_id=None,
-            action_index=idx,
+            action_index=action_index,
             action_text=action_text,
             impact_level=profile["impact_level"],
             expected_result=profile["expected_result"],

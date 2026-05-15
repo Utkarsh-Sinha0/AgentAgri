@@ -191,6 +191,9 @@ async def extract_from_observation(
             district=farmer.district,
             event_at=advisory.created_at or utc_now(),
             is_private=True,
+            # M4-safe: advisory_given is in the cross-farmer whitelist and the
+            # summary carries no PII (only crop, risk, action labels).
+            is_shareable=True,
             causal_predecessor_atom_id=(vision_atom.id if vision_atom else obs_atom.id),
         )
         atoms.append(adv_atom)
@@ -677,6 +680,9 @@ async def retrieve_similar_farm_context(
             MemoryAtom.atom_type.in_(
                 ["disease_observed", "pest_detected", "advisory_given", "outcome_reported"]
             ),
+            # Belt-and-braces: only atoms explicitly flagged shareable at
+            # extract time leak across farmers, even within the whitelist.
+            MemoryAtom.is_shareable.is_(True),
         )
         .order_by(desc(MemoryAtom.event_at))
         .limit(200)
@@ -815,6 +821,10 @@ async def extract_from_outcome(
         state=getattr(farmer, "state", None) if farmer else None,
         event_at=utc_now(),
         is_private=True,
+        # M4-safe: outcome_reported is in the cross-farmer whitelist; summary
+        # contains only result/rating, no PII or free-text beyond a truncated
+        # comment fragment.
+        is_shareable=True,
         causal_predecessor_atom_id=predecessor_id,
     )
     db.add(outcome_atom)

@@ -99,3 +99,49 @@ async def test_action_impact_network_is_deterministic(db_session):
     assert len(second) == 1
     assert first[0].impact_level == "high"
     assert "label-approved product" in first[0].dependencies
+
+
+async def test_action_impact_uses_persisted_global_action_index(db_session):
+    """Regression: ActionImpact.action_index must mirror selected_action_indices,
+    not the display position. Earlier code used enumerate(actions_text) and
+    therefore always stored 0..N-1, losing the link to the originating wiki
+    action.
+    """
+    farmer = Farmer(
+        id="farmer-impact-idx",
+        phone="impact-idx-test",
+        hashed_password=hash_password("test"),
+        name="Impact Idx Farmer",
+        district="Munger",
+    )
+    observation = Observation(
+        id="obs-impact-idx",
+        farmer_id=farmer.id,
+        crop_cycle_id="cycle-impact-idx",
+        observation_type="text",
+        text_content="leaf spots",
+    )
+    advisory = Advisory(
+        id="adv-impact-idx",
+        observation_id=observation.id,
+        farmer_id=farmer.id,
+        risk_level="WATCH",
+        confidence="MEDIUM",
+        # The LLM picked global indices 2 and 5 from the wiki action pool.
+        selected_action_indices=[2, 5],
+        selected_warning_indices=[],
+        actions_text=["First action", "Second action"],
+        warnings_text=[],
+        contextualization="Watch closely.",
+        evidence_article_ids=["rice_blast"],
+    )
+    db_session.add_all([farmer, observation, advisory])
+    await db_session.commit()
+
+    impacts = await build_action_impact_network(db_session, advisory.id)
+    await db_session.commit()
+
+    # Sorted by action_text to be deterministic regardless of dict iteration.
+    by_text = {imp.action_text: imp for imp in impacts}
+    assert by_text["First action"].action_index == 2
+    assert by_text["Second action"].action_index == 5

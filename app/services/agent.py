@@ -256,6 +256,24 @@ class AgentOrchestrator:
         else:
             display_text = safe_fallback or SAFE_FALLBACK_HI
             logger.warning("Verifier failed — using safe fallback")
+            # Replace the rejected recommendation with the fallback so the
+            # persisted Advisory + ActionImpact records match what the farmer
+            # actually saw. Downgrade confidence to LOW (verifier rejected it),
+            # drop the unsafe wiki-backed actions, and store the fallback text
+            # in contextualization. raw_json keeps the original LLM output for
+            # audit/debugging.
+            recommendation = Recommendation(
+                risk_level=recommendation.risk_level,
+                confidence="LOW",
+                selected_action_indices=[],
+                selected_warning_indices=[],
+                contextualization=display_text,
+                actions_text=[],
+                warnings_text=[],
+                memory_reference=recommendation.memory_reference,
+                should_escalate=recommendation.should_escalate,
+                raw_json=recommendation.raw_json,
+            )
 
         # ── Step 9: Persist advisory ─────────────────────────────
         advisory_id = await self._persist_advisory(
@@ -661,11 +679,19 @@ class AgentOrchestrator:
             peer_atoms: list[dict] = []  # already folded into memory_context for E1 counting
 
             lines.append("*अनुशंसित कार्य / Recommended Actions:*")
-            for i, action in enumerate(rec.actions_text, 1):
+            # actions_text and selected_action_indices are 1:1 (built together
+            # at parse-time). Pass the global wiki-action index, not the
+            # display position, so citations attribute to the right article.
+            # If indices are missing (degenerate input), fall back to display
+            # position so actions still render — but citations will be inexact.
+            indices = rec.selected_action_indices or list(range(len(rec.actions_text)))
+            for display_pos, (global_idx, action) in enumerate(
+                zip(indices, rec.actions_text), 1
+            ):
                 citation = self._build_action_citation(
-                    i - 1, evidence.wiki_articles, memory_atoms, peer_atoms
+                    global_idx, evidence.wiki_articles, memory_atoms, peer_atoms
                 )
-                lines.append(f"  {i}. {action}{citation}")
+                lines.append(f"  {display_pos}. {action}{citation}")
             lines.append("")
 
         if rec.warnings_text:

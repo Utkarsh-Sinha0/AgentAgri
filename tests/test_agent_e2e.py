@@ -263,3 +263,21 @@ async def test_agent_verifier_catches_dangerous_output(db_session, mock_ollama):
         # The verifier should have caught the dangerous output
         if response.verifier_report:
             assert response.verifier_report.passes_all is False or response.verifier_report.passes_regex_filter is False
+
+        # Regression for HIGH #4: when the verifier rejects, the persisted
+        # Advisory must mirror the safe fallback (downgraded confidence, no
+        # wiki-backed actions) — not the unsafe raw LLM output.
+        if response.advisory_id and response.verifier_report and not response.verifier_report.passes_all:
+            from sqlalchemy import select
+
+            from app.models import Advisory
+            stored = await db_session.scalar(
+                select(Advisory).where(Advisory.id == response.advisory_id)
+            )
+            assert stored is not None
+            assert stored.confidence == "LOW"
+            assert not stored.actions_text
+            assert not stored.selected_action_indices
+            # The contextualization should hold the safe fallback (which is
+            # what was shown to the farmer), not the unsafe "cure 100%" text.
+            assert "100%" not in (stored.contextualization or "")

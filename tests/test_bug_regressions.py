@@ -190,15 +190,42 @@ async def test_bug5_future_dated_evidence_does_not_count_as_recent():
 
 
 async def test_bug5_high_confidence_passes_with_many_atoms():
-    """HIGH passes when atom_count >= 5 even without a recent date."""
+    """HIGH passes when atom_count >= 5 even without a recent date.
+
+    Uses the real rendered format (``  - [<atom_type>] [date]: …``) that
+    agent._load_memory_context emits — the counter must match that, not a
+    literal "atom_type" token.
+    """
     verifier = VerifierService()
-    # Embed 5 atom_type tokens — the verifier counts the literal string.
-    mem = "\n".join(f"  - [atom_type] entry {i}" for i in range(5))
+    # Use a date well outside the 14-day recency window so the atom counter
+    # is the only signal that can pass calibration.
+    stale = (utc_now() - timedelta(days=60)).strftime("%Y-%m-%d")
+    mem = "\n".join(
+        f"  - [disease_observed] [{stale}]: leaf spot entry {i}" for i in range(5)
+    )
     ev = EvidenceBundle(
         wiki_articles=[{"id": "a"}, {"id": "b"}, {"id": "c"}],
         memory_context=mem,
     )
     assert verifier._check_calibration(Recommendation(confidence="HIGH"), ev) is True
+
+
+async def test_bug5_high_confidence_atom_counter_rejects_under_threshold():
+    """Four atoms + no recent date must NOT satisfy the HIGH gate.
+
+    This pins the counter behaviour so the literal-string regression
+    can't return — four bracketed atom lines are below the >=5 floor.
+    """
+    verifier = VerifierService()
+    stale = (utc_now() - timedelta(days=60)).strftime("%Y-%m-%d")
+    mem = "\n".join(
+        f"  - [disease_observed] [{stale}]: leaf spot entry {i}" for i in range(4)
+    )
+    ev = EvidenceBundle(
+        wiki_articles=[{"id": "a"}, {"id": "b"}, {"id": "c"}],
+        memory_context=mem,
+    )
+    assert verifier._check_calibration(Recommendation(confidence="HIGH"), ev) is False
 
 
 # ─── Bug 6: contradiction check uses bilingual markers + falls back ─────
@@ -547,6 +574,7 @@ async def test_m4_cross_farm_released_at_k_threshold(db_session):
             district="Vaishali",
             village=p.village,
             event_at=utc_now() - timedelta(days=5),
+            is_shareable=True,
         ))
     await db_session.commit()
 
