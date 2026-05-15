@@ -6,7 +6,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-75%20passed-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-211%20passed-brightgreen)](tests/)
 [![Kaggle](https://img.shields.io/badge/kaggle-gemma--4--good--hackathon-orange)](https://kaggle.com)
 
 ---
@@ -1167,6 +1167,7 @@ http://localhost:8000/redoc (ReDoc)
 - [x] API hardening: restricted CORS, trusted hosts, API-key gate, request limits, security headers
 - [x] Dependency audit gates: Python `pip-audit`, PWA `npm audit`
 - [x] 1 district seeded (Munger, Bihar)
+- [x] Codex adversarial audit closed: 15/15 findings fixed (5 HIGH + 8 MEDIUM + 2 LOW), 211 regression tests passing
 
 ### Phase 2: Pilot (Jul-Sep 2026)
 

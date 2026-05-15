@@ -56,7 +56,7 @@ AgriMesh V4.0 is a **local-first, AI-powered agricultural intelligence agent** f
 | Grammar schemas | **5** |
 | Telegram commands | **24** |
 | Registered sources | **16** |
-| Tests | **42 passing** |
+| Tests | **211 passing** |
 | Target VRAM | ~8.9 GB / 12 GB (74%) |
 | Target latency | p50 ≤ 3.5s, p95 ≤ 6.0s |
 
@@ -834,7 +834,23 @@ PrivacyManager.mask_coordinates(lat, lng, scale)
 
 ## 21. Test Suite
 
-### 42 Passing Tests
+### 211 Passing Tests
+
+After the Sprint 6 codex adversarial-audit close-out (May 2026), the suite expanded from 42 to 211 tests. Regression tests for all 15 audit findings live in `tests/test_bug_regressions.py` and `tests/test_conversation_impact.py`.
+
+### Codex Adversarial Audit Close-out (May 2026)
+
+All 15 findings from the codex adversarial review are fixed and regression-tested:
+
+| Severity | Count | Examples |
+|---|---|---|
+| HIGH | 5 | Verifier atom_count bug, citation display-index bug, ActionImpact display-index bug, verifier-failed advisories still persisted, M4 cross-farmer retrieval lacked privacy filter |
+| MEDIUM | 8 | Tool-result indexing, E3 follow-up wiring, hardcoded risk_type, retrieval graph-path label, /why source/trust loss, PII in shareable atoms, outcome scope leak, ActionImpact field/crop scope |
+| LOW | 2 | ESCALATE accepted monitor-only actions; `no_evidence` path was not persisted for learning |
+
+Local commits (not yet pushed): `713bf23` HIGH, `3df4419` MEDIUM, `0a9f649` LOW.
+
+### Legacy Test Inventory (pre-audit, 42 baseline)
 
 | Test File | Tests | Coverage |
 |---|---|---|
@@ -849,7 +865,7 @@ PrivacyManager.mask_coordinates(lat, lng, scale)
 ### Test Commands
 
 ```bash
-make test          # All 42 tests with coverage
+make test          # All 211 tests with coverage
 make test-e4b      # Grammar + verifier tests
 make test-retrieval # Retrieval pipeline tests
 make test-agent    # Agent E2E tests
