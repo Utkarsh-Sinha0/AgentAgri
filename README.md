@@ -4,14 +4,24 @@
 >
 > Gemma 4 E4B · Graph-Wiki RAG · MCP Tools · Grammar-Constrained Decoding · Telegram/PWA
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-Proprietary%20%E2%80%94%20All%20Rights%20Reserved-red)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11+-blue)](https://python.org)
 [![Tests](https://img.shields.io/badge/tests-211%20passed-brightgreen)](tests/)
 [![Kaggle](https://img.shields.io/badge/kaggle-gemma--4--good--hackathon-orange)](https://kaggle.com)
 
+> **⚖️ Proprietary software.** Copyright © 2026 Utkarsh Sinha. All rights reserved under the Indian Copyright Act, 1957 and the Information Technology Act, 2000. See [`LICENSE`](LICENSE) — accessing this repo constitutes agreement to its terms, including the NDA clause for collaborators. Unauthorised use will be prosecuted under Indian law.
+
 ---
 
-> **New here?** Follow [TODO_MAKE_IT_WORK.md](TODO_MAKE_IT_WORK.md) — a top-to-bottom runbook from fresh clone to a farmer-served Telegram bot, including the post-audit verification steps and prod-hardening checklist.
+> **New here?** Read in this order:
+> 1. [TODO_MAKE_IT_WORK.md](TODO_MAKE_IT_WORK.md) — fresh-clone → running bot runbook
+> 2. [docs/SETUP.md](docs/SETUP.md) — environment setup detail
+> 3. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — folder map + service roles
+> 4. [docs/WORKFLOW.md](docs/WORKFLOW.md) — the 14-step request lifecycle
+> 5. [docs/COLLABORATOR_GUIDE.md](docs/COLLABORATOR_GUIDE.md) — onboarding for a new collaborator
+> 6. [HANDOVER_2026-05-15.md](HANDOVER_2026-05-15.md) — current state of the eval pipeline (latest session)
+> 7. [HANDOVER.md](HANDOVER.md) — long-range sprint history + audit close-out
+> 8. [docs/FEATURES.md](docs/FEATURES.md) · [docs/API.md](docs/API.md) · [docs/MATURITY_PLAN.md](docs/MATURITY_PLAN.md) · [docs/ROADMAP_STT_TTS.md](docs/ROADMAP_STT_TTS.md)
 
 ## ⚡ Getting Started (3 Steps)
 
