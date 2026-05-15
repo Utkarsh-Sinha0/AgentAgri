@@ -360,9 +360,18 @@ Security boundary: farmer message, retrieved evidence, and previous field histor
 Based ONLY on the evidence above, select actions and warnings by their index numbers.
 - selected_action_indices: pick the MOST RELEVANT action indices (1-5 items)
 - selected_warning_indices: pick relevant warning indices (0-3 items)
-- risk_level: NORMAL (no issue), WATCH (monitor), PREVENTIVE_ACTION (act now to prevent), ESCALATE (urgent — alert extension worker)
+- risk_level — pick using these calibrated rules:
+    * NORMAL: routine question, no symptoms reported (e.g. "how is my crop?", "what's the price?")
+    * WATCH: early/ambiguous symptoms, single leaf, low pest pressure, nutrient query without urgency
+    * PREVENTIVE_ACTION: clear damaging symptoms (visible disease lesions, hopper burn, leaf spots spreading,
+        yellowing across multiple plants, brown planthopper present, blast lesions). Farmer should act in 1-3 days.
+    * ESCALATE: severe / large-area damage, standing flood (>1 ft for >24h), crop drowning, mass plant death,
+        suspected toxic spray, anything the farmer says is "spreading fast" or "across the whole field",
+        or any request that asks for unsafe practice (overdose, illegal pesticide mix) → escalate to extension worker.
+    Do NOT default to WATCH when the farmer describes active damage — that under-reports risk.
 - confidence: LOW (unclear evidence), MEDIUM (some evidence), HIGH (strong evidence match)
-- contextualization: explain in farmer-friendly Hindi why you chose these actions, referencing the evidence
+- contextualization: explain in farmer-friendly Hindi (or English if the farmer asked in English) why you chose
+    these actions, referencing the evidence. 2-4 short sentences.
 - memory_reference: if the farmer has seen this before, mention the pattern"""
 
 SAFETY_CHECKER_PROMPT = """You are a safety auditor for agricultural advice in India.
