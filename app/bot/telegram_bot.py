@@ -197,7 +197,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ पहले /register, /field, और /crop करें। कृपया पहले पंजीकरण पूरा करें।")
         return
 
-    await update.message.send_chat_action(ChatAction.TYPING)
+    await update.message.reply_chat_action(ChatAction.TYPING)
 
     # Download photo
     photo_file = await update.message.photo[-1].get_file()
@@ -741,7 +741,7 @@ async def _process_farmer_query(
     state = get_user_state(user_id)
     phone = state.get("phone", user_id)
 
-    await update.message.send_chat_action(ChatAction.TYPING)
+    await update.message.reply_chat_action(ChatAction.TYPING)
 
     # Get farmer context from DB
     async with async_session_factory() as db:
@@ -896,7 +896,7 @@ async def prices_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     crop = state.get("crop_name", "rice")
     district = "Munger"
 
-    await update.message.send_chat_action(ChatAction.TYPING)
+    await update.message.reply_chat_action(ChatAction.TYPING)
     from app.services.mandi import get_mandi_prices, get_msp
     prices = await get_mandi_prices(crop=crop, district=district)
     msp_data = await get_msp(crop=crop)
@@ -1010,7 +1010,7 @@ async def finance_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ पहले /register, /field, और /crop करें।")
         return
 
-    await update.message.send_chat_action(ChatAction.TYPING)
+    await update.message.reply_chat_action(ChatAction.TYPING)
     async with async_session_factory() as db:
         from app.services.finance import compute_pnl
         pnl = await compute_pnl(
@@ -1043,7 +1043,7 @@ async def memory_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⚠️ पहले /register, /field, और /crop करें।")
         return
 
-    await update.message.send_chat_action(ChatAction.TYPING)
+    await update.message.reply_chat_action(ChatAction.TYPING)
     async with async_session_factory() as db:
         from sqlalchemy import desc, select
         # Get recent observations
@@ -1085,7 +1085,7 @@ async def demo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /demo — bind a rich demo memory palace to this Telegram user."""
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
-    await update.message.send_chat_action(ChatAction.TYPING)
+    await update.message.reply_chat_action(ChatAction.TYPING)
     await _activate_demo_memory(update.message, user_id, state)
 
 
@@ -1125,7 +1125,7 @@ async def _activate_demo_memory(message, user_id: str, state: dict):
 
 async def health_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /health — system health check."""
-    await update.message.send_chat_action(ChatAction.TYPING)
+    await update.message.reply_chat_action(ChatAction.TYPING)
     import time
     t0 = time.perf_counter()
 
@@ -1735,7 +1735,7 @@ def _dashboard_button(
 
 async def sources_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /sources — show source freshness dashboard."""
-    await update.message.send_chat_action(ChatAction.TYPING)
+    await update.message.reply_chat_action(ChatAction.TYPING)
     from app.services.evidence import check_source_freshness
 
     sources_to_check = [
