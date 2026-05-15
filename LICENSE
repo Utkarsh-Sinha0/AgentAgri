@@ -1,0 +1,161 @@
+AGENTAGRI — PROPRIETARY SOFTWARE LICENCE
+=========================================
+
+Copyright (c) 2026 Utkarsh Sinha. All Rights Reserved.
+
+This software, its source code, design, documentation, datasets, prompts,
+trained-model artefacts, evaluation sets, schemas, and any derivative or
+component thereof (collectively, the "Work") is the sole and exclusive
+intellectual property of Utkarsh Sinha (the "Owner"), and is protected
+under the laws of the Republic of India, including but not limited to:
+
+  - The Copyright Act, 1957 (as amended)
+  - The Information Technology Act, 2000 (as amended)
+  - The Indian Contract Act, 1872
+  - The Trade Marks Act, 1999
+
+and applicable international copyright treaties to which India is a
+signatory (including the Berne Convention and the TRIPS Agreement).
+
+
+1. GRANT OF ACCESS
+-------------------
+No rights are granted under this licence except as expressly stated in
+writing and signed by the Owner. Access to the Work — including by way
+of clone, fork, download, view, audit, or pull-request collaboration —
+does NOT constitute a grant of any licence, sublicence, ownership,
+co-ownership, or commercial right.
+
+
+2. PROHIBITED ACTS
+-------------------
+Without prior, specific, express, written permission of the Owner, no
+person, firm, partnership, company, or other entity shall:
+
+  (a) reproduce, copy, transcribe, photograph, or otherwise duplicate
+      the Work or any substantial part thereof;
+
+  (b) modify, adapt, translate, port, fork, derive, or create derivative
+      works of any nature;
+
+  (c) distribute, publish, host, sublicense, sell, lease, lend, or
+      otherwise transfer the Work or any part to any third party;
+
+  (d) reverse-engineer, decompile, disassemble, or otherwise attempt to
+      extract the source code, algorithms, prompts, model weights, or
+      training procedures from any compiled, served, or hosted form of
+      the Work;
+
+  (e) use the Work, its design patterns, agentic architecture, prompt
+      templates, evaluation methodology, or the underlying ideas — in
+      whole or in part — to develop any competing or substantially
+      similar product, service, paper, or commercial offering;
+
+  (f) remove, obscure, or alter any copyright, trademark, attribution,
+      or proprietary notice contained in the Work;
+
+  (g) use the name "AgentAgri", "AgriMesh", or any confusingly similar
+      mark in any product, service, or publication without the Owner's
+      prior written authorisation.
+
+
+3. COLLABORATOR ACCESS AND CONFIDENTIALITY (NDA CLAUSE)
+--------------------------------------------------------
+Any person granted access to the Work for the purpose of contribution,
+review, testing, evaluation, or collaboration ("Collaborator") shall be
+bound by the following non-disclosure obligations as a condition of such
+access:
+
+  (i)   the Work, including all code, documentation, datasets,
+        evaluation results, model behaviour, prompts, internal
+        discussions, design decisions, unpublished findings, and any
+        non-public information related thereto, is and shall remain
+        the Confidential Information of the Owner;
+
+  (ii)  the Collaborator shall not disclose, share, post, blog, tweet,
+        publish, present, or otherwise communicate any Confidential
+        Information to any third party, including but not limited to
+        employers, mentors, peer groups, social media, or AI training
+        services, without the Owner's prior written consent;
+
+  (iii) all contributions made by the Collaborator (commits, pull
+        requests, suggestions, designs, documentation, evaluation
+        feedback) shall vest, by way of an irrevocable assignment, in
+        the Owner immediately upon creation, and the Collaborator
+        hereby assigns all right, title, and interest therein to the
+        Owner under Section 18 of the Copyright Act, 1957;
+
+  (iv)  the Collaborator's obligations under this section shall survive
+        for a period of five (5) years from the date of cessation of
+        access, regardless of the cause of such cessation;
+
+  (v)   the Collaborator shall, upon written request by the Owner,
+        immediately return or destroy all copies of the Work and any
+        derivative materials in their possession and certify such
+        destruction in writing.
+
+
+4. NO WARRANTY
+---------------
+The Work is provided "AS IS", without warranty of any kind, express or
+implied, including but not limited to the warranties of merchantability,
+fitness for a particular purpose, non-infringement, accuracy of advisory
+output, or suitability for use in agricultural decision-making. The
+Owner shall not be liable to any party for any damages — direct,
+indirect, incidental, consequential, exemplary, or punitive — arising
+out of the use or inability to use the Work, including any reliance
+placed by farmers or extension workers on advisory outputs generated
+by the Work.
+
+
+5. REMEDIES AND ENFORCEMENT
+----------------------------
+Any breach of this licence shall entitle the Owner to seek, in addition
+to all rights and remedies available under law:
+
+  (a) injunctive relief (interim and permanent) under Sections 55 and 62
+      of the Copyright Act, 1957 and Order XXXIX of the Code of Civil
+      Procedure, 1908;
+
+  (b) damages, including statutory damages, punitive damages, account
+      of profits, and reasonable attorneys' fees;
+
+  (c) criminal prosecution under Sections 63, 63A, 63B, and 65 of the
+      Copyright Act, 1957, and Sections 43, 65, and 66 of the
+      Information Technology Act, 2000, where applicable;
+
+  (d) the right to immediately revoke any and all access, accounts, and
+      collaboration privileges without notice.
+
+
+6. JURISDICTION AND GOVERNING LAW
+----------------------------------
+This licence shall be governed by, construed under, and enforced in
+accordance with the laws of the Republic of India. The courts at
+New Delhi shall have exclusive jurisdiction over any dispute, claim,
+or proceeding arising out of or relating to this licence or the Work,
+to the exclusion of all other forums. The parties hereby submit to
+the exclusive personal jurisdiction of such courts.
+
+
+7. SEVERABILITY AND ENTIRE AGREEMENT
+-------------------------------------
+If any provision of this licence is held invalid or unenforceable by a
+court of competent jurisdiction, the remaining provisions shall continue
+in full force and effect. This licence constitutes the entire agreement
+between the parties with respect to the Work, and supersedes all prior
+or contemporaneous oral or written communications.
+
+
+8. CONTACT
+-----------
+For licence enquiries, written permissions, or commercial licensing,
+contact: Utkarsh Sinha — 22f2000376@ds.study.iitm.ac.in
+
+---
+By accessing, viewing, cloning, forking, contributing to, or otherwise
+interacting with the Work, you acknowledge that you have read,
+understood, and agreed to be bound by the terms of this licence.
+
+UNAUTHORISED USE IS STRICTLY PROHIBITED AND WILL BE PROSECUTED TO THE
+FULLEST EXTENT PERMITTED UNDER INDIAN LAW.
