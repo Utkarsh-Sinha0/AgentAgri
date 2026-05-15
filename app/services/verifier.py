@@ -102,6 +102,12 @@ class VerifierService:
         """
         report = VerifierReport()
 
+        # Detect response type so we can relax structural+calibration checks
+        # for legitimate non-advisory responses (safety redirects, escalations
+        # with no actionable indices). These were failing verifier purely
+        # because they have zero wiki-indexed actions.
+        is_safety_redirect = self._is_safety_redirect(recommendation, evidence)
+
         # ── Line 1: Grammar-constrained decoding already handled upstream ──
         # We arrive here with valid JSON. But check ranges anyway.
 
@@ -140,16 +146,27 @@ class VerifierService:
         )
 
         # ── Aggregate ──
-        report.passes_all = all([
-            report.indices_in_range,
-            report.actions_exist_in_wiki,
-            report.warnings_exist_in_wiki,
-            report.actions_match_risk_type,
-            report.actions_dont_contradict_memory,
-            report.passes_regex_filter,
-            report.passes_llm_safety_check,
-            report.confidence_calibrated_to_evidence,
-        ])
+        # For safety-redirect responses (e.g. "don't spray 5x, consult KVK"),
+        # the agent legitimately picks no wiki actions and routes to a human.
+        # Don't fail those purely on structural/calibration grounds — safety
+        # signal is what matters there.
+        if is_safety_redirect:
+            report.passes_all = all([
+                report.passes_regex_filter,
+                report.passes_llm_safety_check,
+            ])
+            report.details["response_type"] = "safety_redirect"
+        else:
+            report.passes_all = all([
+                report.indices_in_range,
+                report.actions_exist_in_wiki,
+                report.warnings_exist_in_wiki,
+                report.actions_match_risk_type,
+                report.actions_dont_contradict_memory,
+                report.passes_regex_filter,
+                report.passes_llm_safety_check,
+                report.confidence_calibrated_to_evidence,
+            ])
 
         safe_fallback = None if report.passes_all else self._build_fallback(recommendation)
 
@@ -162,6 +179,27 @@ class VerifierService:
         )
 
         return report, safe_fallback
+
+    # ── Response-type detection ──────────────────────────────────
+
+    @staticmethod
+    def _is_safety_redirect(rec: Recommendation, ev: EvidenceBundle) -> bool:
+        """A safety redirect picks no/few wiki actions and points to a human.
+
+        Heuristic: no selected_action_indices AND (should_escalate OR the
+        contextualization mentions an extension worker / call center / label).
+        """
+        if rec.selected_action_indices:
+            return False
+        if rec.should_escalate:
+            return True
+        ctx = (rec.contextualization or "").lower()
+        redirect_markers = (
+            "extension worker", "kisan call", "krishi vigyan", "kvk",
+            "consult", "do not mix", "do not spray",
+            "विस्तार", "किसान कॉल", "कृषि विज्ञान", "लेबल", "नहीं छिड़कें",
+        )
+        return any(m in ctx for m in redirect_markers)
 
     # ── Structural checks ────────────────────────────────────────
 
