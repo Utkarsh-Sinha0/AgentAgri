@@ -210,9 +210,30 @@ class VerifierService:
     # ── Semantic checks ──────────────────────────────────────────
 
     def _check_actions_match_risk(self, rec: Recommendation, ev: EvidenceBundle) -> bool:
-        """ESCALATE risk should NOT have only 'monitor' actions."""
-        if rec.risk_level == "ESCALATE" and len(rec.selected_action_indices) == 0:
-            return False
+        """ESCALATE risk must carry at least one *active* action.
+
+        Earlier the check only required len(actions) >= 1 for ESCALATE, so a
+        recommendation like ["Monitor the field daily"] could escalate without
+        proposing any intervention. ESCALATE is the verifier's "hand this to a
+        human or do something material" signal — pure observation actions are
+        a verifier failure and should fall back to the safe template.
+        """
+        if rec.risk_level == "ESCALATE":
+            if len(rec.selected_action_indices) == 0:
+                return False
+            monitor_only_tokens = (
+                "monitor", "scout", "inspect", "observe", "watch",
+                "देख", "जांच", "निरीक्षण", "अवलोकन",
+            )
+            if rec.actions_text and all(
+                any(tok in (a or "").lower() for tok in monitor_only_tokens)
+                for a in rec.actions_text
+            ):
+                logger.warning(
+                    "ESCALATE rejected: all selected actions are monitor-only "
+                    f"({rec.actions_text})"
+                )
+                return False
         if rec.risk_level == "NORMAL" and len(rec.selected_action_indices) > 3:
             logger.info("NORMAL risk advisory includes multiple actions; allowed but worth monitoring")
         return True

@@ -230,7 +230,7 @@ class AgentOrchestrator:
             )
         else:
             # No evidence — fall back to conservative response
-            return self._no_evidence_response(ctx, t0)
+            return await self._no_evidence_response(db, ctx, t0)
 
         parsed = selection_result.get("parsed", {})
         recommendation = Recommendation(
@@ -759,19 +759,60 @@ class AgentOrchestrator:
             })
         return cards
 
-    def _no_evidence_response(self, ctx: AgentContext, t0: float) -> AgentResponse:
+    async def _no_evidence_response(
+        self, db: AsyncSession, ctx: AgentContext, t0: float
+    ) -> AgentResponse:
+        """No retrieval evidence → safe prompt-for-info reply.
+
+        LOW #10: also persist a minimal advisory marked
+        ``retrieval_path="none"`` so coverage gaps are queryable (which
+        crops/stages/messages produce zero evidence). Without this the
+        bot answers but the analytics side never sees the miss.
+        """
         latency_ms = int((time.perf_counter() - t0) * 1000)
+        display_text = (
+            "🌾 नमस्ते! मुझे आपकी समस्या समझने के लिए और जानकारी चाहिए।\n\n"
+            "कृपया बताएं:\n"
+            "1. कौन सी फसल है?\n"
+            "2. फसल किस अवस्था में है?\n"
+            "3. लक्षण कब से दिख रहे हैं?\n\n"
+            "या फोटो भेजें — मैं फसल की तस्वीर देखकर बेहतर सलाह दे सकता हूं। 📸\n\n"
+            "📞 तत्काल सहायता: किसान कॉल सेंटर 1800-180-1551"
+        )
+
+        advisory_id: str | None = None
+        if ctx.observation_id:
+            import uuid as _uuid
+
+            advisory_id = str(_uuid.uuid4())
+            try:
+                advisory = Advisory(
+                    id=advisory_id,
+                    observation_id=ctx.observation_id,
+                    farmer_id=ctx.farmer_id,
+                    risk_level="NORMAL",
+                    confidence="LOW",
+                    selected_action_indices=[],
+                    selected_warning_indices=[],
+                    actions_text=[],
+                    warnings_text=[],
+                    contextualization=display_text,
+                    thinking_enabled=False,
+                    model_used="",
+                    retrieval_path="none",
+                    latency_ms=latency_ms,
+                    evidence_article_ids=[],
+                )
+                db.add(advisory)
+                await db.commit()
+            except Exception as exc:
+                logger.warning(f"no-evidence advisory persist failed: {exc}")
+                advisory_id = None
+                await db.rollback()
+
         return AgentResponse(
-            advisory_id=None,
-            display_text=(
-                "🌾 नमस्ते! मुझे आपकी समस्या समझने के लिए और जानकारी चाहिए।\n\n"
-                "कृपया बताएं:\n"
-                "1. कौन सी फसल है?\n"
-                "2. फसल किस अवस्था में है?\n"
-                "3. लक्षण कब से दिख रहे हैं?\n\n"
-                "या फोटो भेजें — मैं फसल की तस्वीर देखकर बेहतर सलाह दे सकता हूं। 📸\n\n"
-                "📞 तत्काल सहायता: किसान कॉल सेंटर 1800-180-1551"
-            ),
+            advisory_id=advisory_id,
+            display_text=display_text,
             risk_level="NORMAL",
             confidence="LOW",
             evidence_cards=[],

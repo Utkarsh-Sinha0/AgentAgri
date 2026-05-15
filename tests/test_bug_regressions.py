@@ -623,3 +623,102 @@ def test_e2_confidence_prefix_mapping_covers_all_levels():
     # Each prefix should be bilingual (contains '/').
     for level, text in prefixes.items():
         assert "/" in text, f"E2: {level} prefix missing bilingual delimiter"
+
+
+# ─── LOW #9: ESCALATE must reject monitor-only action sets ──────────────
+
+
+def test_low9_escalate_rejects_monitor_only_actions():
+    """ESCALATE risk with all-monitor actions must fail semantic check.
+
+    Earlier the verifier only required len(actions) >= 1 for ESCALATE, so a
+    "Monitor the field daily" recommendation could escalate without proposing
+    any active intervention.
+    """
+    verifier = VerifierService()
+    rec = Recommendation(
+        risk_level="ESCALATE",
+        selected_action_indices=[0, 1],
+        actions_text=["Monitor the field daily", "Scout for new spots"],
+    )
+    assert verifier._check_actions_match_risk(rec, EvidenceBundle()) is False
+
+
+def test_low9_escalate_accepts_active_action_alongside_monitor():
+    """Mixed action sets (one active + one monitor) still pass for ESCALATE."""
+    verifier = VerifierService()
+    rec = Recommendation(
+        risk_level="ESCALATE",
+        selected_action_indices=[0, 1],
+        actions_text=["Contact extension officer immediately", "Scout daily"],
+    )
+    assert verifier._check_actions_match_risk(rec, EvidenceBundle()) is True
+
+
+def test_low9_escalate_rejects_hindi_monitor_only_actions():
+    """Hindi monitor tokens (देख / जांच) trip the same rejection."""
+    verifier = VerifierService()
+    rec = Recommendation(
+        risk_level="ESCALATE",
+        selected_action_indices=[0],
+        actions_text=["रोज़ खेत देखें और जांच करें"],
+    )
+    assert verifier._check_actions_match_risk(rec, EvidenceBundle()) is False
+
+
+# ─── LOW #10: no-evidence path must record an Advisory ─────────────────
+
+
+async def test_low10_no_evidence_persists_advisory_with_retrieval_path_none(db_session):
+    """When retrieval finds nothing, the agent must still record a minimal
+    advisory marked retrieval_path='none' so coverage gaps are queryable."""
+    from sqlalchemy import select
+
+    from app.services.agent import AgentContext, AgentOrchestrator
+    from app.utils.security import hash_password
+
+    farmer = Farmer(
+        id="farmer-no-ev",
+        phone="no-ev",
+        hashed_password=hash_password("test"),
+        name="No Ev",
+        district="Munger",
+    )
+    field = Field(id="field-no-ev", farmer_id=farmer.id, name="N1", area_acres=1.0)
+    cycle = CropCycle(
+        id="cycle-no-ev",
+        field_id=field.id,
+        crop_name="rice",
+        sowing_date=utc_now(),
+        current_stage="vegetative",
+        is_active=True,
+    )
+    obs = Observation(
+        id="obs-no-ev",
+        farmer_id=farmer.id,
+        field_id=field.id,
+        crop_cycle_id=cycle.id,
+        observation_type="text",
+        text_content="something obscure",
+    )
+    db_session.add_all([farmer, field, cycle, obs])
+    await db_session.commit()
+
+    orch = AgentOrchestrator()
+    ctx = AgentContext(
+        farmer_id=farmer.id,
+        message="something obscure",
+        language="en",
+        observation_id=obs.id,
+    )
+    resp = await orch._no_evidence_response(db_session, ctx, t0=0.0)
+
+    assert resp.retrieval_path == "none"
+    assert resp.advisory_id is not None
+
+    persisted = await db_session.scalar(select(Advisory).where(Advisory.id == resp.advisory_id))
+    assert persisted is not None
+    assert persisted.retrieval_path == "none"
+    assert persisted.observation_id == obs.id
+    assert persisted.confidence == "LOW"
+    assert persisted.actions_text == []
