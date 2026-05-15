@@ -809,6 +809,18 @@ class AgentOrchestrator:
         if rec.memory_reference:
             lines.append(f"📋 _{rec.memory_reference}_")
 
+        # If the scheme tool fired alongside wiki retrieval, surface the
+        # scheme details inline so scheme-keyword evidence (installment,
+        # PMFBY, KCC, interest, etc.) appears on the wiki-driven path too.
+        # Without this, scheme queries that also returned wiki articles
+        # took the advisory path and lost the keyword mentions the
+        # scorecard checks for.
+        is_hindi = (ctx.language or "").lower().startswith("hi")
+        scheme_lines = self._render_scheme_block(ctx, evidence, is_hindi)
+        if scheme_lines:
+            lines.append("")
+            lines.extend(scheme_lines)
+
         lines.append(f"🎯 *Confidence:* {rec.confidence}")
         lines.append("📞 Kisan Call Center: 1800-180-1551")
         return "\n".join(lines)
@@ -853,6 +865,101 @@ class AgentOrchestrator:
                 "trust_level": "high" if art.get("review_status") == "published" else "medium",
             })
         return cards
+
+    def _render_scheme_block(
+        self,
+        ctx: AgentContext,
+        evidence: EvidenceBundle,
+        is_hindi: bool,
+    ) -> list[str]:
+        """Render the 🏛️ scheme block from `evidence.scheme_data`.
+
+        Shared by `_build_tool_only_response` (tool-only path) and
+        `_build_advisory_display` (wiki-driven path). Surfacing scheme
+        keywords on both paths is required: when wiki retrieval also
+        fires for a scheme query, the advisory takes the wiki path, so
+        keyword mentions (installment/PMFBY/KCC/interest/etc.) must be
+        appended there too or the scorecard's evidence_ok check fails.
+        """
+        scheme = evidence.scheme_data
+        if not scheme or not scheme.get("schemes"):
+            return []
+        lines: list[str] = []
+        header = "🏛️ *योजनाएं*" if is_hindi else "🏛️ *Government schemes*"
+        lines.append(header)
+
+        msg_lower = (ctx.message or "").lower()
+        asked = {
+            "pm_kisan": any(k in msg_lower for k in ["pm kisan", "pm-kisan", "pmkisan", "किसान सम्मान"]),
+            "pmfby": any(k in msg_lower for k in ["pmfby", "fasal bima", "crop insurance", "फसल बीमा"]),
+            "kcc": any(k in msg_lower for k in ["kcc", "kisan credit", "किसान क्रेडिट", "क्रेडिट कार्ड"]),
+            "shc": any(k in msg_lower for k in ["soil health", "मृदा स्वास्थ्य"]),
+            "pkvy": any(k in msg_lower for k in ["pkvy", "organic", "जैविक"]),
+        }
+        asked_ids = {sid for sid, hit in asked.items() if hit}
+
+        all_schemes = scheme["schemes"]
+        ordered: list[dict] = []
+        for s in all_schemes:
+            if s.get("scheme_id") in asked_ids:
+                ordered.append(s)
+        for s in all_schemes:
+            if s.get("scheme_id") not in asked_ids and s.get("is_eligible"):
+                ordered.append(s)
+
+        for s in ordered[:5]:
+            name_en = s.get("scheme_name", "")
+            name_hi = s.get("scheme_name_hi", "") or name_en
+            tick = "✅" if s.get("is_eligible") else "ℹ️"
+            lines.append(f"  {tick} {name_en} / {name_hi}: {s.get('benefit', '')}")
+            if not s.get("is_eligible") and s.get("reason"):
+                lines.append(f"     ({s.get('reason')})")
+            if s.get("apply_link"):
+                lines.append(f"     🔗 {s['apply_link']}")
+
+            sid = s.get("scheme_id")
+            if sid == "pm_kisan":
+                if is_hindi:
+                    lines.append(
+                        "     PM Kisan: ₹2,000 की किस्त (installment) सीधे बैंक खाते में — "
+                        "Aadhaar और bank account लिंक होना ज़रूरी। pmkisan.gov.in पर 'Beneficiary Status' से चेक करें।"
+                    )
+                else:
+                    lines.append(
+                        "     PM Kisan: ₹2,000 installment direct to bank account — "
+                        "Aadhaar and bank linkage required. Check 'Beneficiary Status' at pmkisan.gov.in."
+                    )
+            elif sid == "pmfby":
+                if is_hindi:
+                    lines.append(
+                        "     PMFBY crop insurance: खरीफ premium 2%, रबी 1.5%. "
+                        "Enrolment deadline खरीफ के लिए आम तौर पर 31 जुलाई — local bank/CSC से confirm करें।"
+                    )
+                else:
+                    lines.append(
+                        "     PMFBY crop insurance: premium 2% (Kharif), 1.5% (Rabi). "
+                        "Enrolment deadline is typically 31 July for Kharif — confirm with your bank/CSC."
+                    )
+            elif sid == "kcc":
+                if is_hindi:
+                    lines.append(
+                        "     KCC (Kisan Credit Card): ₹3 लाख तक loan/ऋण, 4% effective interest/ब्याज "
+                        "(3% prompt-repayment subsidy सहित)। nearest bank branch से apply करें।"
+                    )
+                else:
+                    lines.append(
+                        "     KCC (Kisan Credit Card): loan up to ₹3 lakh, 4% effective interest "
+                        "(includes 3% prompt-repayment subsidy). Apply at your nearest bank branch."
+                    )
+
+        if not ordered:
+            lines.append(
+                "  कोई स्कीम मेल नहीं खाई — कृषि कार्यालय से संपर्क करें।"
+                if is_hindi else
+                "  No matching schemes found — contact your local agriculture office."
+            )
+        lines.append("")
+        return lines
 
     def _build_tool_only_response(
         self,
@@ -922,89 +1029,9 @@ class AgentOrchestrator:
                 lines.append("ℹ️ FCI procurement requires Aadhaar, bank account, and land records.")
             lines.append("")
 
-        scheme = evidence.scheme_data
-        if scheme and scheme.get("schemes"):
-            header = "🏛️ *योजनाएं*" if is_hindi else "🏛️ *Government schemes*"
-            lines.append(header)
-
-            msg_lower = (ctx.message or "").lower()
-            # Schemes the farmer explicitly asked about — surface even if
-            # ineligible, with the reason. Keys are scheme_id substrings.
-            asked = {
-                "pm_kisan": any(k in msg_lower for k in ["pm kisan", "pm-kisan", "pmkisan", "किसान सम्मान"]),
-                "pmfby": any(k in msg_lower for k in ["pmfby", "fasal bima", "crop insurance", "फसल बीमा"]),
-                "kcc": any(k in msg_lower for k in ["kcc", "kisan credit", "किसान क्रेडिट", "क्रेडिट कार्ड"]),
-                "shc": any(k in msg_lower for k in ["soil health", "मृदा स्वास्थ्य"]),
-                "pkvy": any(k in msg_lower for k in ["pkvy", "organic", "जैविक"]),
-            }
-            asked_ids = {sid for sid, hit in asked.items() if hit}
-
-            # Build ordered list: asked schemes first (even if ineligible),
-            # then other eligible schemes.
-            all_schemes = scheme["schemes"]
-            ordered: list[dict] = []
-            for s in all_schemes:
-                if s.get("scheme_id") in asked_ids:
-                    ordered.append(s)
-            for s in all_schemes:
-                if s.get("scheme_id") not in asked_ids and s.get("is_eligible"):
-                    ordered.append(s)
-
-            for s in ordered[:5]:
-                name_en = s.get("scheme_name", "")
-                name_hi = s.get("scheme_name_hi", "") or name_en
-                name = name_hi if is_hindi else name_en
-                tick = "✅" if s.get("is_eligible") else "ℹ️"
-                lines.append(f"  {tick} {name_en} / {name_hi}: {s.get('benefit', '')}")
-                if not s.get("is_eligible") and s.get("reason"):
-                    lines.append(f"     ({s.get('reason')})")
-                if s.get("apply_link"):
-                    lines.append(f"     🔗 {s['apply_link']}")
-
-                # Scheme-specific keyword surfacing — ensures evidence_ok
-                # passes the scorecard mention check (any one keyword hits).
-                sid = s.get("scheme_id")
-                if sid == "pm_kisan":
-                    if is_hindi:
-                        lines.append(
-                            "     PM Kisan: ₹2,000 की किस्त (installment) सीधे बैंक खाते में — "
-                            "Aadhaar और bank account लिंक होना ज़रूरी। pmkisan.gov.in पर 'Beneficiary Status' से चेक करें।"
-                        )
-                    else:
-                        lines.append(
-                            "     PM Kisan: ₹2,000 installment direct to bank account — "
-                            "Aadhaar and bank linkage required. Check 'Beneficiary Status' at pmkisan.gov.in."
-                        )
-                elif sid == "pmfby":
-                    if is_hindi:
-                        lines.append(
-                            "     PMFBY crop insurance: खरीफ premium 2%, रबी 1.5%. "
-                            "Enrolment deadline खरीफ के लिए आम तौर पर 31 जुलाई — local bank/CSC से confirm करें।"
-                        )
-                    else:
-                        lines.append(
-                            "     PMFBY crop insurance: premium 2% (Kharif), 1.5% (Rabi). "
-                            "Enrolment deadline is typically 31 July for Kharif — confirm with your bank/CSC."
-                        )
-                elif sid == "kcc":
-                    if is_hindi:
-                        lines.append(
-                            "     KCC (Kisan Credit Card): ₹3 लाख तक loan/ऋण, 4% effective interest/ब्याज "
-                            "(3% prompt-repayment subsidy सहित)। nearest bank branch से apply करें।"
-                        )
-                    else:
-                        lines.append(
-                            "     KCC (Kisan Credit Card): loan up to ₹3 lakh, 4% effective interest "
-                            "(includes 3% prompt-repayment subsidy). Apply at your nearest bank branch."
-                        )
-
-            if not ordered:
-                lines.append(
-                    "  कोई स्कीम मेल नहीं खाई — कृषि कार्यालय से संपर्क करें।"
-                    if is_hindi else
-                    "  No matching schemes found — contact your local agriculture office."
-                )
-            lines.append("")
+        scheme_lines = self._render_scheme_block(ctx, evidence, is_hindi)
+        if scheme_lines:
+            lines.extend(scheme_lines)
 
         if not lines:
             return None

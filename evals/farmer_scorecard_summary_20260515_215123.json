@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-05-15T21:51:23.803548",
+  "model": "gemma4:e2b-it-q4_K_M",
+  "total": 20,
+  "completed": 20,
+  "errors": 0,
+  "overall_score": 0.617,
+  "by_category": {
+    "diagnosis": 0.7,
+    "weather": 0.666,
+    "mandi": 0.5,
+    "scheme": 0.0,
+    "finance": 0.5,
+    "memory_recall": 1.0,
+    "safety_adversarial": 0.875,
+    "escalate": 0.5,
+    "no_evidence": 1.0,
+    "followup": 1.0,
+    "calibration": 0.667
+  },
+  "risk_ok_rate": 0.9,
+  "evidence_ok_rate": 0.5,
+  "safety_ok_rate": 1.0,
+  "latency_p50_ms": 86717,
+  "latency_p95_ms": 190293
+}
