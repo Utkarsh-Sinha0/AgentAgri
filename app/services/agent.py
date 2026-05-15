@@ -12,7 +12,7 @@ import asyncio
 import json
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, ClassVar
 
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -252,7 +252,7 @@ class AgentOrchestrator:
 
         # ── Step 8: Build display text ───────────────────────────
         if verifier_report.passes_all:
-            display_text = self._build_advisory_display(recommendation, evidence)
+            display_text = await self._build_advisory_display(db, ctx, recommendation, evidence)
         else:
             display_text = safe_fallback or SAFE_FALLBACK_HI
             logger.warning("Verifier failed — using safe fallback")
@@ -512,17 +512,160 @@ class AgentOrchestrator:
             all_warnings.extend(art.get("warnings", []))
         return [all_warnings[i] for i in indices if 0 <= i < len(all_warnings)]
 
-    def _build_advisory_display(
-        self, rec: Recommendation, evidence: EvidenceBundle
-    ) -> str:
-        """Build the farmer-facing display text."""
-        risk_emoji = {"NORMAL": "🟢", "WATCH": "🟡", "PREVENTIVE_ACTION": "🟠", "ESCALATE": "🔴"}
-        lines = [f"{risk_emoji.get(rec.risk_level, '🟡')} **{rec.risk_level}** — {rec.contextualization}\n"]
+    # ── Evidence sub-helpers (E1, E2, E3) ────────────────────────
 
+    _CONFIDENCE_PREFIX: ClassVar[dict[str, str]] = {
+        "LOW": "एहतियात के तौर पर / As a precaution: ",
+        "MEDIUM": "हम अनुशंसा करते हैं / We recommend: ",
+        "HIGH": "हम दृढ़ता से सुझाते हैं / We strongly recommend: ",
+        "ESCALATE": "⚠️ तुरंत कृषि विशेषज्ञ से संपर्क करें / Urgent — contact expert: ",
+    }
+
+    @staticmethod
+    def _build_action_citation(
+        action_index: int,
+        wiki_articles: list[dict],
+        memory_atoms: list[dict],
+        peer_atoms: list[dict],
+    ) -> str:
+        """Compose the inline citation suffix for one action (E1).
+
+        The citation is intentionally conservative — only sources that actually
+        backed THIS action index are surfaced. We map action_index onto wiki
+        articles by walking each article's action list until we hit the right
+        offset, so citations stay correct when one article contributes multiple
+        actions.
+        """
+        parts: list[str] = []
+
+        cursor = 0
+        for art in wiki_articles or []:
+            actions = art.get("actions") or []
+            if cursor + len(actions) > action_index:
+                title = art.get("title")
+                if title:
+                    parts.append(f"📚 {title}")
+                break
+            cursor += len(actions)
+
+        memory_hits = [
+            a for a in (memory_atoms or [])
+            if a.get("atom_type") in {"disease_observed", "pest_detected", "advisory_given"}
+        ]
+        if memory_hits:
+            parts.append(f"{len(memory_hits)} similar case{'s' if len(memory_hits) != 1 else ''}")
+
+        if peer_atoms:
+            district = next(
+                (p.get("district") for p in peer_atoms if p.get("district")),
+                None,
+            )
+            if district:
+                parts.append(f"in {district}")
+            else:
+                parts.append(f"{len(peer_atoms)} nearby farms")
+
+        if not parts:
+            return ""
+        return " [" + " • ".join(parts) + "]"
+
+    @staticmethod
+    def _parse_memory_atoms_from_context(memory_context: str | None) -> list[dict]:
+        """Re-derive a minimal atom list from the formatted memory context block.
+
+        The orchestrator threads the formatted string through the verifier and
+        prompt; for E1 we just need atom_type counts. We avoid re-querying the
+        DB here — the formatter writes each atom on its own line as
+        ``  - [atom_type] [date]: summary…``.
+        """
+        if not memory_context:
+            return []
+        out: list[dict] = []
+        for raw in memory_context.splitlines():
+            line = raw.strip()
+            if not line.startswith("- ["):
+                continue
+            close = line.find("]", 3)
+            if close == -1:
+                continue
+            atom_type = line[3:close].strip()
+            if not atom_type:
+                continue
+            out.append({"atom_type": atom_type})
+        return out
+
+    async def _build_change_detection(
+        self,
+        db: AsyncSession,
+        current_rec: Recommendation,
+        current_evidence: EvidenceBundle,
+        previous_advisory_id: str | None,
+    ) -> str:
+        """E3: compare this advisory against the prior one for follow-ups."""
+        if not previous_advisory_id:
+            return ""
+        from sqlalchemy import select
+
+        from app.models import Advisory
+
+        prev = await db.scalar(
+            select(Advisory).where(Advisory.id == previous_advisory_id)
+        )
+        if not prev:
+            return ""
+
+        deltas: list[str] = []
+        if prev.risk_level and prev.risk_level != current_rec.risk_level:
+            deltas.append(f"Risk: {prev.risk_level} → {current_rec.risk_level}")
+        if prev.confidence and prev.confidence != current_rec.confidence:
+            deltas.append(f"Confidence: {prev.confidence} → {current_rec.confidence}")
+
+        curr_article_ids = {a.get("id") for a in current_evidence.wiki_articles if a.get("id")}
+        prev_article_ids = set(prev.evidence_article_ids or [])
+        new_articles = curr_article_ids - prev_article_ids
+        if new_articles:
+            deltas.append(f"{len(new_articles)} new source(s)")
+
+        if not deltas:
+            return "No significant changes since last advisory"
+        return " • ".join(deltas)
+
+    async def _build_advisory_display(
+        self,
+        db: AsyncSession,
+        ctx: AgentContext,
+        rec: Recommendation,
+        evidence: EvidenceBundle,
+    ) -> str:
+        """Build the farmer-facing display text (with E1/E2/E3 evidence)."""
+        risk_emoji = {"NORMAL": "🟢", "WATCH": "🟡", "PREVENTIVE_ACTION": "🟠", "ESCALATE": "🔴"}
+
+        # E2: confidence-leveled preamble
+        confidence_prefix = self._CONFIDENCE_PREFIX.get(rec.confidence, "")
+
+        header = f"{risk_emoji.get(rec.risk_level, '🟡')} **{rec.risk_level}** — {confidence_prefix}{rec.contextualization}"
+        lines = [header, ""]
+
+        # E3: change summary for follow-ups
+        if ctx.is_followup and ctx.previous_advisory_id:
+            change_summary = await self._build_change_detection(
+                db, rec, evidence, ctx.previous_advisory_id
+            )
+            if change_summary:
+                lines.append(f"📊 पिछली सलाह से बदलाव / What changed: {change_summary}")
+                lines.append("")
+
+        # E1: actions with inline citations
         if rec.actions_text:
+            memory_atoms = self._parse_memory_atoms_from_context(evidence.memory_context)
+            peer_atoms: list[dict] = []  # already folded into memory_context for E1 counting
+
             lines.append("*अनुशंसित कार्य / Recommended Actions:*")
             for i, action in enumerate(rec.actions_text, 1):
-                lines.append(f"  {i}. {action}")
+                citation = self._build_action_citation(
+                    i - 1, evidence.wiki_articles, memory_atoms, peer_atoms
+                )
+                lines.append(f"  {i}. {action}{citation}")
             lines.append("")
 
         if rec.warnings_text:
