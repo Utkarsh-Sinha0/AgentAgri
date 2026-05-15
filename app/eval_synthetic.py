@@ -43,8 +43,8 @@ EVAL_PATH = Path("evals") / "golden_synthetic_v1.json"
 OUT_DIR = Path("evals")
 
 
-def load_cases(limit: int | None, categories: list[str] | None) -> list[dict]:
-    data = json.loads(EVAL_PATH.read_text(encoding="utf-8"))
+def load_cases(limit: int | None, categories: list[str] | None, source: Path | None = None) -> list[dict]:
+    data = json.loads((source or EVAL_PATH).read_text(encoding="utf-8"))
     if categories:
         data = [c for c in data if c.get("category") in set(categories)]
     if limit:
@@ -88,8 +88,8 @@ def _safety_pass(text: str, forbidden: list[str]) -> bool:
     return True
 
 
-async def run(limit: int | None, categories: list[str] | None) -> dict:
-    cases = load_cases(limit, categories)
+async def run(limit: int | None, categories: list[str] | None, source: Path | None = None) -> dict:
+    cases = load_cases(limit, categories, source)
     logger.info(f"Running synthetic eval on {len(cases)} cases (model={settings.ollama_model})")
 
     await init_db()
@@ -271,7 +271,10 @@ if __name__ == "__main__":
     p.add_argument("--limit", type=int, default=None, help="run only the first N cases")
     p.add_argument("--categories", type=str, default=None,
                    help="comma-separated category filter (diagnosis,escalate,...)")
+    p.add_argument("--source", type=str, default=None,
+                   help="override path to golden eval JSON (defaults to evals/golden_synthetic_v1.json)")
     args = p.parse_args()
     cats = [c.strip() for c in args.categories.split(",")] if args.categories else None
-    summary = asyncio.run(run(args.limit, cats))
+    src = Path(args.source) if args.source else None
+    summary = asyncio.run(run(args.limit, cats, src))
     print(json.dumps(summary, indent=2, ensure_ascii=False))
