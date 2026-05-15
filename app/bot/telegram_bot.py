@@ -160,6 +160,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _handle_phone_registration(update, user_id, text, state)
     elif current_state == "registering_district":
         await _handle_district_registration(update, user_id, text, state)
+    elif current_state == "registering_tehsil":
+        await _handle_tehsil_registration(update, user_id, text, state)
+    elif current_state == "registering_village":
+        await _handle_village_registration(update, user_id, text, state)
     elif current_state == "registering_field_name":
         await _handle_field_name(update, user_id, text, state)
     elif current_state == "registering_field_area":
@@ -168,6 +172,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _handle_field_soil(update, user_id, text, state)
     elif current_state == "registering_crop_name":
         await _handle_crop_name(update, user_id, text, state)
+    elif current_state == "registering_crop_sowing":
+        await _handle_crop_sowing(update, user_id, text, state)
     elif current_state == "registering_crop_stage":
         await _handle_crop_stage(update, user_id, text, state)
     elif current_state == "profiling":
@@ -202,6 +208,73 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     caption = update.message.caption or ""
     await _process_farmer_query(update, user_id, caption, str(photo_path))
+
+
+async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Persist voice notes as Observations (Bug 8).
+
+    The agent pipeline doesn't transcribe yet, so we save the OGG to disk and
+    create an audio-typed Observation pointing at it. Downstream STT can pick
+    these up later via ``Observation.audio_path``.
+    """
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+
+    if state.get("state") != "ready":
+        await update.message.reply_text(
+            "⚠️ पहले /register, /field, और /crop करें।\n"
+            "Please complete /register, /field, /crop first."
+        )
+        return
+
+    voice = update.message.voice or update.message.audio
+    if voice is None:
+        return
+
+    await update.message.chat.send_action(ChatAction.TYPING)
+
+    voice_dir = Path(settings.data_dir) / "voice"
+    voice_dir.mkdir(parents=True, exist_ok=True)
+    voice_path = voice_dir / f"{user_id}_{utc_now().strftime('%Y%m%d_%H%M%S')}.ogg"
+
+    try:
+        tg_file = await voice.get_file()
+        await tg_file.download_to_drive(str(voice_path))
+    except Exception as exc:
+        logger.error(f"Voice download failed: {exc}")
+        await update.message.reply_text("❌ Audio download failed. Please try again.")
+        return
+
+    # Persist as Observation so the rest of the pipeline can pick it up later.
+    async with async_session_factory() as db:
+        phone = state.get("phone", user_id)
+        farmer = await db.scalar(select(Farmer).where(Farmer.phone == phone))
+        if farmer is None:
+            await update.message.reply_text("⚠️ पहले /register करें।")
+            return
+
+        import uuid
+        obs = Observation(
+            id=str(uuid.uuid4()),
+            farmer_id=farmer.id,
+            crop_cycle_id=state.get("crop_cycle_id"),
+            text_content=update.message.caption or "[voice note]",
+            audio_path=str(voice_path),
+        )
+        db.add(obs)
+        try:
+            await db.commit()
+            state["last_observation_id"] = obs.id
+        except Exception as exc:
+            await db.rollback()
+            logger.error(f"Voice observation persist failed: {exc}")
+            await update.message.reply_text("❌ Save failed. Please try again.")
+            return
+
+    await update.message.reply_text(
+        "🎙️ आवाज़ संदेश मिल गया! जल्द ही प्रसंस्करण होगा।\n"
+        "Voice note received — transcription will be processed shortly."
+    )
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -305,8 +378,26 @@ async def _handle_phone_registration(update, user_id: str, phone: str, state: di
 async def _handle_district_registration(update, user_id: str, district: str, state: dict):
     state["data"]["district"] = district
     state["data"]["preferred_language"] = "hi"
+    state["state"] = "registering_tehsil"
+    await update.message.reply_text(
+        "तहसील / ब्लॉक का नाम लिखें / Enter your tehsil / block:"
+    )
 
-    # Persist farmer
+
+async def _handle_tehsil_registration(update, user_id: str, tehsil: str, state: dict):
+    state["data"]["tehsil"] = tehsil
+    state["state"] = "registering_village"
+    await update.message.reply_text(
+        "गाँव का नाम लिखें / Enter your village:"
+    )
+
+
+async def _handle_village_registration(update, user_id: str, village: str, state: dict):
+    state["data"]["village"] = village
+
+    district = state["data"].get("district", "")
+    tehsil = state["data"].get("tehsil", "")
+
     async with async_session_factory() as db:
         import uuid
         existing = await db.execute(select(Farmer).where(Farmer.phone == user_id))
@@ -315,6 +406,8 @@ async def _handle_district_registration(update, user_id: str, district: str, sta
             farmer.name = state["data"]["name"]
             farmer.preferred_language = "hi"
             farmer.district = district
+            farmer.tehsil = tehsil
+            farmer.village = village
             farmer.is_active = True
         else:
             farmer = Farmer(
@@ -324,8 +417,8 @@ async def _handle_district_registration(update, user_id: str, district: str, sta
                 name=state["data"]["name"],
                 preferred_language="hi",
                 district=district,
-                tehsil="",
-                village="",
+                tehsil=tehsil,
+                village=village,
             )
             db.add(farmer)
         try:
@@ -416,6 +509,50 @@ async def _handle_field_soil(update, user_id: str, soil: str, state: dict):
 
 async def _handle_crop_name(update, user_id: str, crop_name: str, state: dict):
     state["data"]["crop_name"] = crop_name
+    state["state"] = "registering_crop_sowing"
+    await update.message.reply_text(
+        "बुवाई की तारीख लिखें (YYYY-MM-DD) / Sowing date (YYYY-MM-DD).\n"
+        "अगर पता न हो, लिखें 'skip' / Type 'skip' if unknown:"
+    )
+
+
+def _state_sowing_date(state: dict):
+    """Return stored sowing_date or utc_now() fallback."""
+    from datetime import datetime
+    raw = state.get("data", {}).get("sowing_date")
+    if not raw:
+        return utc_now()
+    try:
+        return datetime.fromisoformat(raw)
+    except Exception:
+        return utc_now()
+
+
+def _parse_sowing_date(text: str):
+    """Parse a YYYY-MM-DD sowing date; return None on skip / invalid."""
+    from datetime import datetime
+    text = (text or "").strip().lower()
+    if text in ("skip", "छोड़ें", "छोडें", "-", ""):
+        return None
+    try:
+        dt = datetime.strptime(text, "%Y-%m-%d")
+        # Future-dated sowings are almost certainly typos; reject.
+        if dt > utc_now().replace(tzinfo=None):
+            return None
+        return dt
+    except ValueError:
+        return None
+
+
+async def _handle_crop_sowing(update, user_id: str, text: str, state: dict):
+    parsed = _parse_sowing_date(text)
+    if parsed is None and text.strip().lower() not in ("skip", "छोड़ें", "छोडें", "-", ""):
+        await update.message.reply_text(
+            "⚠️ कृपया YYYY-MM-DD में लिखें (जैसे 2026-04-15) या 'skip' लिखें।\n"
+            "Please enter YYYY-MM-DD (e.g. 2026-04-15) or 'skip'."
+        )
+        return
+    state["data"]["sowing_date"] = parsed.isoformat() if parsed else None
     state["state"] = "registering_crop_stage"
 
     await update.message.reply_text(
@@ -492,7 +629,7 @@ async def _persist_crop_stage_from_callback(query, user_id: str, stage: str, sta
             id=str(uuid.uuid4()),
             field_id=field.id,
             crop_name=state["data"].get("crop_name", "rice"),
-            sowing_date=utc_now(),
+            sowing_date=_state_sowing_date(state),
             current_stage=stage,
             is_active=True,
         )
@@ -502,7 +639,6 @@ async def _persist_crop_stage_from_callback(query, user_id: str, stage: str, sta
             state["crop_cycle_id"] = cycle.id
             state["crop_name"] = cycle.crop_name
             state["crop_stage"] = cycle.current_stage
-            state["field_id"] = field.id
             state["field_id"] = field.id
         except Exception as exc:
             await db.rollback()
@@ -543,7 +679,7 @@ async def _handle_crop_stage(update, user_id: str, stage: str, state: dict):
             id=str(uuid.uuid4()),
             field_id=field.id,
             crop_name=state["data"]["crop_name"],
-            sowing_date=utc_now(),
+            sowing_date=_state_sowing_date(state),
             current_stage=stage,
             is_active=True,
         )
@@ -1711,6 +1847,7 @@ def create_bot() -> Application:
     # Messages (structured data capture runs first)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, handle_voice))
 
     # Callbacks
     app.add_handler(CallbackQueryHandler(handle_callback))

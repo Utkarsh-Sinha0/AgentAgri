@@ -10,12 +10,26 @@ Produces an auditable VerifierReport stored alongside every Advisory.
 """
 from __future__ import annotations
 
+import asyncio
 import re
 from dataclasses import dataclass, field
+from datetime import timedelta
 
 from loguru import logger
 
 from app.utils.safety import SAFE_FALLBACK_EN, SAFE_FALLBACK_HI, full_safety_check
+from app.utils.time import utc_now
+
+# Semantic-similarity check (Bug 6) — uses the same BGE-M3 instance that
+# retrieval already loads. We never trigger the lazy load from here; if the
+# embedder hasn't been initialised yet we silently fall back to the keyword
+# heuristic so the verifier stays cheap in unit tests.
+try:
+    from app.services import retrieval as _retrieval_mod
+except Exception:  # pragma: no cover - import-time defensiveness
+    _retrieval_mod = None  # type: ignore[assignment]
+
+_SEMANTIC_CONTRADICTION_THRESHOLD = 0.80
 
 # ─── Data Classes ─────────────────────────────────────────────────────
 
@@ -107,7 +121,7 @@ class VerifierService:
         report.actions_match_risk_type = self._check_actions_match_risk(
             recommendation, evidence
         )
-        report.actions_dont_contradict_memory = self._check_memory_contradiction(
+        report.actions_dont_contradict_memory = await self._check_memory_contradiction(
             recommendation, evidence
         )
 
@@ -203,8 +217,21 @@ class VerifierService:
             logger.info("NORMAL risk advisory includes multiple actions; allowed but worth monitoring")
         return True
 
-    def _check_memory_contradiction(self, rec: Recommendation, ev: EvidenceBundle) -> bool:
-        """Check if advice contradicts recent memory."""
+    async def _check_memory_contradiction(
+        self, rec: Recommendation, ev: EvidenceBundle
+    ) -> bool:
+        """Check if advice contradicts recent memory.
+
+        Two-stage check (Bug 6):
+          1. Keyword precondition — memory must contain a completion marker
+             (bilingual: "already applied", "पहले", "कर चुके" …). If no
+             completion signal is present, there is nothing to contradict.
+          2. Semantic similarity — if BGE-M3 is already loaded, embed each
+             proposed action and the memory context and flag a contradiction
+             when cosine similarity exceeds 0.80. Falls back to the original
+             keyword-overlap heuristic when the embedder hasn't been loaded
+             (we never force the 500 MB load from the verifier).
+        """
         memory = ev.memory_context.lower()
         if not memory:
             return True
@@ -213,15 +240,39 @@ class VerifierService:
             "already applied",
             "already done",
             "already used",
+            "already sprayed",
+            "already sown",
             "done earlier",
             "used earlier",
+            "applied yesterday",
+            "applied last week",
             "पहले",
             "कर चुके",
             "लगा चुके",
+            "छिड़क चुके",
+            "डाल चुके",
         )
         if not any(marker in memory for marker in done_markers):
             return True
 
+        if not rec.actions_text:
+            return True
+
+        # Stage 2a — semantic similarity, only if embedder is already warm.
+        contradiction = await self._semantic_action_repeated(
+            rec.actions_text, ev.memory_context
+        )
+        if contradiction is not None:
+            if contradiction:
+                logger.warning(
+                    "Semantic check: proposed action overlaps with completion "
+                    "signal in memory (cos_sim >= "
+                    f"{_SEMANTIC_CONTRADICTION_THRESHOLD})"
+                )
+                return False
+            return True
+
+        # Stage 2b — keyword overlap fallback.
         action_terms = _important_terms(" ".join(rec.actions_text))
         overlapping_terms = [term for term in action_terms if term in memory]
         if overlapping_terms:
@@ -231,17 +282,123 @@ class VerifierService:
             return False
         return True
 
+    @staticmethod
+    async def _semantic_action_repeated(
+        actions: list[str], memory_context: str
+    ) -> bool | None:
+        """Return True/False if a semantic check ran, or None to skip.
+
+        We deliberately do *not* call ``get_embedder()`` here — that would
+        trigger the 500 MB lazy load from inside the verifier hot path and
+        from unit tests that don't need it. Instead we peek at the module
+        global; if it's already initialised we use it, otherwise we return
+        ``None`` so the caller can fall back to keyword matching.
+        """
+        if _retrieval_mod is None:
+            return None
+        embedder = getattr(_retrieval_mod, "_embedder", None)
+        if embedder is None:
+            return None
+        try:
+            from sentence_transformers.util import cos_sim  # type: ignore
+        except Exception:
+            return None
+
+        try:
+            action_text = " ".join(a.strip() for a in actions if a and a.strip())
+            if not action_text or not memory_context.strip():
+                return False
+
+            # Run encode + similarity in a worker thread — encode is CPU-bound.
+            def _score() -> float:
+                vecs = embedder.encode(
+                    [action_text, memory_context],
+                    convert_to_tensor=True,
+                    normalize_embeddings=True,
+                )
+                sim = cos_sim(vecs[0], vecs[1])
+                return float(sim.item() if hasattr(sim, "item") else sim[0][0])
+
+            similarity = await asyncio.to_thread(_score)
+            return similarity >= _SEMANTIC_CONTRADICTION_THRESHOLD
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(f"Semantic contradiction check failed, falling back: {exc}")
+            return None
+
     # ── Calibration check ────────────────────────────────────────
 
     def _check_calibration(self, rec: Recommendation, ev: EvidenceBundle) -> bool:
-        """Confidence should be proportional to evidence quantity and quality."""
-        article_count = len(ev.wiki_articles)
+        """Confidence should be proportional to evidence quantity AND recency.
 
-        if rec.confidence == "HIGH" and article_count < 3:
-            logger.warning(f"HIGH confidence with only {article_count} evidence articles")
-            return False
+        Rules (Bug 5):
+        * HIGH requires (>=3 wiki articles) AND ((>=5 memory atoms) OR
+          (memory evidence within the last 14 days)). This gates HIGH on
+          fresh evidence so stale memories alone don't inflate confidence.
+        * MEDIUM requires >=1 wiki article. Anything less is downgraded.
+        * LOW / ESCALATE pass calibration unconditionally (LOW is already
+          conservative; ESCALATE just routes to a human expert).
+        """
+        article_count = len(ev.wiki_articles)
+        memory = ev.memory_context or ""
+
+        # Atom count signal — _format_memory_context emits one "atom_type"
+        # token per atom, so counting that string is a stable proxy.
+        atom_count = memory.lower().count("atom_type") if memory else 0
+
+        # Recency signal — any YYYY-MM in memory within the last 14 days.
+        has_recent_evidence = self._memory_has_recent_evidence(memory, days=14)
+
+        if rec.confidence == "HIGH":
+            if article_count < 3:
+                logger.warning(
+                    f"HIGH confidence rejected: only {article_count} wiki articles"
+                )
+                return False
+            if atom_count < 5 and not has_recent_evidence:
+                logger.warning(
+                    f"HIGH confidence rejected: {atom_count} atoms and no "
+                    f"evidence within last 14 days"
+                )
+                return False
+            return True
+
+        if rec.confidence == "MEDIUM":
+            if article_count < 1:
+                logger.warning("MEDIUM confidence rejected: 0 wiki articles")
+                return False
 
         return True
+
+    @staticmethod
+    def _memory_has_recent_evidence(memory: str, days: int = 14) -> bool:
+        """Return True if memory_context references a date within `days`.
+
+        Matches ISO-like YYYY-MM and YYYY-MM-DD tokens, the formats used by
+        memory.retrieve_memory_context when it emits ``event_at`` timestamps.
+        Tolerates malformed dates by skipping them rather than raising.
+        """
+        if not memory:
+            return False
+        now = utc_now()
+        cutoff = now - timedelta(days=days)
+        for token in re.findall(r"\b(\d{4})-(\d{2})(?:-(\d{2}))?\b", memory):
+            year, month, day = token
+            try:
+                y = int(year)
+                m = int(month)
+                d = int(day) if day else 1
+                if not (1 <= m <= 12 and 1 <= d <= 31):
+                    continue
+                ref = now.replace(year=y, month=m, day=d, hour=0, minute=0,
+                                  second=0, microsecond=0)
+            except ValueError:
+                continue
+            # Future-dated tokens (typos, schema drift) shouldn't count as recent.
+            if ref > now:
+                continue
+            if ref >= cutoff:
+                return True
+        return False
 
     # ── Helpers ──────────────────────────────────────────────────
 

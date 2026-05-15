@@ -18,6 +18,7 @@ from app.models import (
     Advisory,
     AlertCluster,
     AlertStatus,
+    CropCycle,
     Farmer,
     Observation,
     WikiArticle,
@@ -53,60 +54,85 @@ async def discover_patterns(db: AsyncSession) -> dict:
     if not rows:
         return results
 
-    # Group by crop + district + risk_level
+    # Batch-fetch Farmer + CropCycle for every observation to avoid the
+    # original N+1 (Bug 9). Two SELECTs instead of 2*len(rows).
+    farmer_ids = {obs.farmer_id for obs, _ in rows if obs.farmer_id}
+    cycle_ids = {obs.crop_cycle_id for obs, _ in rows if obs.crop_cycle_id}
+
+    farmer_map: dict[str, Farmer] = {}
+    if farmer_ids:
+        f_res = await db.execute(select(Farmer).where(Farmer.id.in_(farmer_ids)))
+        farmer_map = {f.id: f for f in f_res.scalars().all()}
+
+    cycle_map: dict[str, CropCycle] = {}
+    if cycle_ids:
+        c_res = await db.execute(select(CropCycle).where(CropCycle.id.in_(cycle_ids)))
+        cycle_map = {c.id: c for c in c_res.scalars().all()}
+
+    # Group by crop_name + district + risk_level (Bug 9: crop_cycle_id was
+    # per-field-per-season so it never collided across farmers, which made
+    # clustering effectively a no-op).
     groups: dict[str, list] = {}
     for obs, adv in rows:
-        # Get farmer's district
-        farmer_result = await db.execute(
-            select(Farmer).where(Farmer.id == obs.farmer_id)
-        )
-        farmer = farmer_result.scalar_one_or_none()
+        farmer = farmer_map.get(obs.farmer_id)
         district = farmer.district if farmer else "unknown"
+        cycle = cycle_map.get(obs.crop_cycle_id) if obs.crop_cycle_id else None
+        crop_name = (cycle.crop_name if cycle else "unknown") or "unknown"
 
-        key = f"{obs.crop_cycle_id}:{district}:{adv.risk_level if adv else 'UNKNOWN'}"
+        key = f"{crop_name}:{district}:{adv.risk_level if adv else 'UNKNOWN'}"
         if key not in groups:
             groups[key] = []
-        groups[key].append((obs, adv, district))
+        groups[key].append((obs, adv, district, crop_name))
 
     # ── 2. Create clusters for groups with 3+ observations ───────
     for _key, items in groups.items():
-        if len(items) >= 3:
-            districts = set(d for _, _, d in items)
-            for district in districts:
-                district_items = [(o, a) for o, a, d in items if d == district]
-                if len(district_items) >= 3:
-                    # Check if cluster already exists
-                    obs_ids = [o.id for o, _ in district_items]
-                    adv_ids = [a.id for _, a in district_items if a]
+        if len(items) < 3:
+            continue
+        districts = {d for _, _, d, _ in items}
+        for district in districts:
+            district_items = [
+                (o, a, c) for o, a, d, c in items if d == district
+            ]
+            if len(district_items) < 3:
+                continue
 
-                    existing = await db.execute(
-                        select(AlertCluster).where(
-                            AlertCluster.observation_ids.contains(obs_ids[:1])
-                        )
-                    )
-                    if existing.scalar_one_or_none():
-                        continue
+            obs_ids = [o.id for o, _, _ in district_items]
+            adv_ids = [a.id for _, a, _ in district_items if a]
 
-                    cluster = AlertCluster(
-                        id=str(__import__("uuid").uuid4()),
-                        district=district,
-                        tehsil="",
-                        crop_name="multiple",
-                        issue_category=district_items[0][1].risk_level if district_items[0][1] else "UNKNOWN",
-                        observation_ids=obs_ids,
-                        advisory_ids=adv_ids,
-                        farmer_count=len(district_items),
-                        severity=min(0.40 + (len(district_items) * 0.05), 0.95),
-                        status=AlertStatus.PENDING,
-                    )
-                    db.add(cluster)
-                    results["new_clusters"] += 1
-                    results["insights"].append({
-                        "type": "cluster_detected",
-                        "district": district,
-                        "farmer_count": len(district_items),
-                        "risk_level": district_items[0][1].risk_level if district_items[0][1] else "UNKNOWN",
-                    })
+            existing = await db.execute(
+                select(AlertCluster).where(
+                    AlertCluster.observation_ids.contains(obs_ids[:1])
+                )
+            )
+            if existing.scalar_one_or_none():
+                continue
+
+            crop_names = {c for _, _, c in district_items if c}
+            cluster_crop = next(iter(crop_names)) if len(crop_names) == 1 else "multiple"
+            first_adv = district_items[0][1]
+            risk_level = first_adv.risk_level if first_adv else "UNKNOWN"
+
+            cluster = AlertCluster(
+                id=str(__import__("uuid").uuid4()),
+                district=district,
+                tehsil="",
+                crop_name=cluster_crop,
+                issue_category=risk_level,
+                observation_ids=obs_ids,
+                advisory_ids=adv_ids,
+                farmer_count=len(district_items),
+                severity=min(0.40 + (len(district_items) * 0.05), 0.95),
+                status=AlertStatus.PENDING,
+            )
+            db.add(cluster)
+            results["new_clusters"] += 1
+            results["insights"].append({
+                "type": "cluster_detected",
+                "district": district,
+                "crop_name": cluster_crop,
+                "farmer_count": len(district_items),
+                "risk_level": risk_level,
+            })
 
     # ── 3. Propose graph edges from co-occurrence ────────────────
     # Find which wiki articles were retrieved together frequently
