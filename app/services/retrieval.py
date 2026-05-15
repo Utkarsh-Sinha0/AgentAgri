@@ -215,7 +215,14 @@ async def _rerank(
     candidates: list[dict],
     top_k: int = 3,
 ) -> list[dict]:
-    """Cross-encoder reranking of top candidates. ~50 ms for top-20."""
+    """Cross-encoder reranking with a title/tag-overlap boost.
+
+    Pure cross-encoder scores were too smooth for the small wiki corpus —
+    Brown Spot kept ranking #1 for blast/BPH/yellowing queries because
+    its summary was the densest text. Add a small boost for candidates
+    whose title or topic_tags contain query tokens, so disease-specific
+    queries land on the right article.
+    """
     if len(candidates) <= top_k:
         for c in candidates:
             c["_rerank_score"] = c.get("_score", 0.0)
@@ -223,24 +230,56 @@ async def _rerank(
 
     pairs = [[query, c.get("summary", "") or c.get("title", "")] for c in candidates]
 
-    # Batch compute scores
     async with _get_embedding_semaphore():
         reranker = get_reranker()
         scores = await asyncio.to_thread(reranker.compute_score, pairs)
     if isinstance(scores, float):
         scores = [scores]
 
-    # Sort by reranker score
-    reranked = sorted(
-        zip(candidates, scores, strict=False),
-        key=lambda x: x[1],
-        reverse=True,
-    )
+    boosted: list[tuple[dict, float]] = []
+    for cand, score in zip(candidates, scores, strict=False):
+        boosted.append((cand, float(score) + _title_tag_boost(query, cand)))
+
+    reranked = sorted(boosted, key=lambda x: x[1], reverse=True)
     result = []
     for cand, score in reranked[:top_k]:
         cand["_rerank_score"] = float(score)
         result.append(cand)
     return result
+
+
+_DISEASE_SYNONYMS = {
+    "blast": ("blast", "ब्लास्ट", "magnaporthe", "neck blast", "leaf blast"),
+    "bph": ("bph", "brown planthopper", "planthopper", "hopper burn", "हॉपर"),
+    "brown_spot": ("brown spot", "बीपीएच", "bipolaris"),
+    "yellowing": ("yellow", "पीला", "nitrogen", "नाइट्रोजन", "deficiency", "कमी"),
+    "flood": ("flood", "drown", "waterlogged", "जलभराव", "डूब"),
+}
+
+
+def _title_tag_boost(query: str, candidate: dict) -> float:
+    """Small additive boost when query and candidate clearly co-mention a disease.
+
+    Returns at most +0.3 — enough to break ties but not enough to override
+    a strongly negative cross-encoder verdict.
+    """
+    q = (query or "").lower()
+    hay = " ".join(
+        [
+            (candidate.get("title") or "").lower(),
+            (candidate.get("title_hi") or "").lower(),
+            " ".join(candidate.get("topic_tags") or []).lower(),
+        ]
+    )
+    if not hay.strip():
+        return 0.0
+    boost = 0.0
+    for syns in _DISEASE_SYNONYMS.values():
+        q_hits = any(s in q for s in syns)
+        h_hits = any(s in hay for s in syns)
+        if q_hits and h_hits:
+            boost += 0.15
+    return min(boost, 0.3)
 
 
 # ─── Graph Traversal ──────────────────────────────────────────────────
