@@ -66,6 +66,15 @@ class MemoryAtom(Base):
     created_at = Column(DateTime, default=utc_now)
     is_private = Column(Boolean, default=True)  # True = only visible at field scale
 
+    # Causal chain: this atom was caused by / follows from another atom (M3).
+    # Self-referential FK; SET NULL on delete to keep history intact.
+    causal_predecessor_atom_id = Column(
+        String(36),
+        ForeignKey("memory_atoms.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # Relationships
     source_citation = relationship(
         "SourceCitation",
