@@ -15,8 +15,17 @@ from app.models_memory import ActionImpact, ConversationThread, ConversationTurn
 from app.utils.time import utc_now
 
 FOLLOWUP_MARKERS = {
-    "hi": ["अब", "फिर", "उसके बाद", "पहले", "वही", "और", "क्या करूं", "दवा", "कल"],
-    "en": ["now", "then", "after that", "same", "again", "previous", "yesterday", "tomorrow"],
+    "hi": [
+        "अब", "फिर", "उसके बाद", "पहले", "वही", "और", "क्या करूं", "दवा", "कल",
+        "पिछले हफ्ते", "पिछली बार", "आपने बताया", "मैंने किया", "अब क्या",
+    ],
+    "en": [
+        "now", "then", "after that", "same", "again", "previous", "yesterday",
+        "tomorrow", "last week", "last time", "told me", "you said",
+        "you told me", "i did that", "did what you", "did as you", "what next",
+        "next step", "follow up", "follow-up", "stopped spreading", "improved",
+        "got better", "still seeing", "still have",
+    ],
 }
 
 
