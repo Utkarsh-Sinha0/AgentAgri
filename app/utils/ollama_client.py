@@ -163,16 +163,50 @@ class OllamaClient:
         schema_name: str,
         thinking: bool = False,
     ) -> dict[str, Any]:
-        """Chat with grammar-constrained output. Returns parsed JSON dict."""
+        """Chat with grammar-constrained output. Returns parsed JSON dict.
+
+        Small models occasionally emit empty or truncated JSON under
+        grammar-constrained decoding. Rather than blowing up the whole
+        pipeline, retry once with a fresh seed; if still bad, return a
+        minimal valid parsed={} so the caller can degrade gracefully
+        instead of crashing.
+        """
         result = await self.chat(messages, schema_name=schema_name, thinking=thinking)
-        try:
-            parsed = json.loads(result["content"])
-        except json.JSONDecodeError:
-            logger.error(f"Grammar-constrained output still invalid JSON! Schema: {schema_name}")
-            logger.error(f"Raw content: {result['content'][:500]}")
-            raise
+        parsed = self._try_parse_json(result.get("content", ""))
+        if parsed is None:
+            logger.warning(
+                f"Grammar-constrained output invalid for schema={schema_name}; retrying once"
+            )
+            retry = await self.chat(messages, schema_name=schema_name, thinking=thinking)
+            parsed = self._try_parse_json(retry.get("content", ""))
+            if parsed is not None:
+                result = retry
+        if parsed is None:
+            logger.error(
+                f"Grammar-constrained output still invalid after retry. "
+                f"Schema: {schema_name}. Raw: {result.get('content', '')[:300]}"
+            )
+            parsed = {}
         result["parsed"] = parsed
         return result
+
+    @staticmethod
+    def _try_parse_json(content: str) -> dict | list | None:
+        s = (content or "").strip()
+        if not s:
+            return None
+        try:
+            return json.loads(s)
+        except json.JSONDecodeError:
+            # Attempt to recover the first balanced JSON object from the string
+            start = s.find("{")
+            end = s.rfind("}")
+            if 0 <= start < end:
+                try:
+                    return json.loads(s[start : end + 1])
+                except json.JSONDecodeError:
+                    return None
+            return None
 
     # ── Quick helpers ──────────────────────────────────────────────
 
