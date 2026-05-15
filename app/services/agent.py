@@ -229,7 +229,18 @@ class AgentOrchestrator:
                 evidence.memory_context,
             )
         else:
-            # No evidence — fall back to conservative response
+            # No wiki evidence. If tools returned something (weather, mandi,
+            # scheme), synthesize a tool-grounded response instead of falling
+            # through to the disease-clarification template — that template
+            # is wrong for every non-disease intent.
+            tool_response = self._build_tool_only_response(
+                ctx, tool_results, evidence
+            )
+            if tool_response is not None:
+                return await self._tool_only_response(
+                    db, ctx, t0, tool_response, tool_results
+                )
+            # No evidence at all — fall back to conservative clarification.
             return await self._no_evidence_response(db, ctx, t0)
 
         parsed = selection_result.get("parsed", {})
@@ -822,6 +833,183 @@ class AgentOrchestrator:
             })
         return cards
 
+    def _build_tool_only_response(
+        self,
+        ctx: AgentContext,
+        tool_results: dict,
+        evidence: EvidenceBundle,
+    ) -> str | None:
+        """Render a Hindi/English advisory directly from tool outputs.
+
+        Returns None if no tool produced anything renderable, so the caller
+        can fall through to clarification.
+        """
+        if not tool_results:
+            return None
+
+        is_hindi = (ctx.language or "").lower().startswith("hi")
+        lines: list[str] = []
+
+        weather = evidence.weather_data
+        if weather and weather.get("forecast"):
+            district = weather.get("district", "")
+            header = (
+                f"🌦️ *मौसम पूर्वानुमान* ({district})" if is_hindi
+                else f"🌦️ *Weather forecast* ({district})"
+            )
+            lines.append(header)
+            for row in weather["forecast"][:5]:
+                date = row.get("date", "")
+                tmax = row.get("temp_max")
+                tmin = row.get("temp_min")
+                rain = row.get("rainfall_mm", 0)
+                cond = row.get("condition", "")
+                lines.append(
+                    f"  • {date}: {tmin}-{tmax}°C, "
+                    f"{rain}mm rain, {cond}"
+                )
+            lines.append("")
+            if is_hindi:
+                lines.append("⚠️ बारिश के दिन यूरिया/कीटनाशक न डालें — बह जाएगा।")
+            else:
+                lines.append("⚠️ Avoid urea or pesticide application on rainy days — it will wash off.")
+            lines.append("")
+
+        mandi = evidence.mandi_data
+        if mandi and mandi.get("prices"):
+            header = "🏪 *मंडी भाव*" if is_hindi else "🏪 *Mandi prices*"
+            lines.append(header)
+            for entry in mandi["prices"][:2]:
+                if entry.get("history"):
+                    latest = entry["history"][0]
+                    lines.append(
+                        f"  • {entry.get('type', 'paddy')}: "
+                        f"₹{latest.get('modal')}/{entry.get('unit', 'qtl')} "
+                        f"(min ₹{latest.get('min')}, max ₹{latest.get('max')})"
+                    )
+            msp = mandi.get("msp")
+            if msp:
+                lines.append(
+                    f"  • MSP (2025-26): ₹{msp}/quintal"
+                    if not is_hindi else
+                    f"  • MSP (2025-26): ₹{msp}/क्विंटल"
+                )
+            lines.append("")
+            if is_hindi:
+                lines.append("ℹ️ FCI खरीद के लिए आधार, बैंक खाता, और भूमि रिकॉर्ड चाहिए।")
+            else:
+                lines.append("ℹ️ FCI procurement requires Aadhaar, bank account, and land records.")
+            lines.append("")
+
+        scheme = evidence.scheme_data
+        if scheme and scheme.get("schemes"):
+            header = "🏛️ *योजनाएं*" if is_hindi else "🏛️ *Government schemes*"
+            lines.append(header)
+            eligible = [s for s in scheme["schemes"] if s.get("is_eligible")]
+            for s in eligible[:4]:
+                name = (s.get("scheme_name_hi") or s.get("scheme_name") or "") if is_hindi else s.get("scheme_name", "")
+                lines.append(f"  ✅ {name}: {s.get('benefit', '')}")
+                if s.get("apply_link"):
+                    lines.append(f"     🔗 {s['apply_link']}")
+            if not eligible:
+                lines.append(
+                    "  कोई स्कीम मेल नहीं खाई — कृषि कार्यालय से संपर्क करें।"
+                    if is_hindi else
+                    "  No matching schemes found — contact your local agriculture office."
+                )
+            lines.append("")
+
+        if not lines:
+            return None
+
+        if is_hindi:
+            lines.append("📞 किसान कॉल सेंटर: 1800-180-1551")
+        else:
+            lines.append("📞 Kisan Call Center: 1800-180-1551")
+
+        return "\n".join(lines)
+
+    async def _tool_only_response(
+        self,
+        db: AsyncSession,
+        ctx: AgentContext,
+        t0: float,
+        display_text: str,
+        tool_results: dict,
+    ) -> AgentResponse:
+        """Persist + return an advisory whose only evidence came from tools."""
+        latency_ms = int((time.perf_counter() - t0) * 1000)
+
+        evidence_cards: list[dict] = []
+        if "get_forecast" in tool_results or "get_historical_weather" in tool_results:
+            wx = tool_results.get("get_forecast") or tool_results.get("get_historical_weather")
+            evidence_cards.append({
+                "type": "weather",
+                "label": "🌦️ Weather",
+                "content": json.dumps(wx, ensure_ascii=False)[:200],
+                "source_name": "IMD / Open-Meteo",
+                "trust_level": "high",
+            })
+        if "get_mandi_prices" in tool_results:
+            evidence_cards.append({
+                "type": "mandi",
+                "label": "🏪 Mandi Prices",
+                "content": json.dumps(tool_results["get_mandi_prices"], ensure_ascii=False)[:200],
+                "source_name": "Agmarknet",
+                "trust_level": "high",
+            })
+        if "match_schemes" in tool_results:
+            evidence_cards.append({
+                "type": "scheme",
+                "label": "🏛️ Schemes",
+                "content": json.dumps(tool_results["match_schemes"], ensure_ascii=False)[:200],
+                "source_name": "myScheme.gov.in",
+                "trust_level": "high",
+            })
+
+        advisory_id: str | None = None
+        if ctx.observation_id:
+            import uuid as _uuid
+
+            advisory_id = str(_uuid.uuid4())
+            try:
+                advisory = Advisory(
+                    id=advisory_id,
+                    observation_id=ctx.observation_id,
+                    farmer_id=ctx.farmer_id,
+                    risk_level="NORMAL",
+                    confidence="MEDIUM",
+                    selected_action_indices=[],
+                    selected_warning_indices=[],
+                    actions_text=[],
+                    warnings_text=[],
+                    contextualization=display_text,
+                    thinking_enabled=True,
+                    model_used="",
+                    retrieval_path="tool_only",
+                    latency_ms=latency_ms,
+                    evidence_article_ids=[],
+                )
+                db.add(advisory)
+                await db.commit()
+            except Exception as exc:
+                logger.warning(f"tool-only advisory persist failed: {exc}")
+                advisory_id = None
+                await db.rollback()
+
+        return AgentResponse(
+            advisory_id=advisory_id,
+            display_text=display_text,
+            risk_level="NORMAL",
+            confidence="MEDIUM",
+            evidence_cards=evidence_cards,
+            verifier_report=None,
+            latency_ms=latency_ms,
+            model_used="",
+            retrieval_path="tool_only",
+            thinking_enabled=True,
+        )
+
     async def _no_evidence_response(
         self, db: AsyncSession, ctx: AgentContext, t0: float
     ) -> AgentResponse:
@@ -833,15 +1021,27 @@ class AgentOrchestrator:
         bot answers but the analytics side never sees the miss.
         """
         latency_ms = int((time.perf_counter() - t0) * 1000)
-        display_text = (
-            "🌾 नमस्ते! मुझे आपकी समस्या समझने के लिए और जानकारी चाहिए।\n\n"
-            "कृपया बताएं:\n"
-            "1. कौन सी फसल है?\n"
-            "2. फसल किस अवस्था में है?\n"
-            "3. लक्षण कब से दिख रहे हैं?\n\n"
-            "या फोटो भेजें — मैं फसल की तस्वीर देखकर बेहतर सलाह दे सकता हूं। 📸\n\n"
-            "📞 तत्काल सहायता: किसान कॉल सेंटर 1800-180-1551"
-        )
+        is_hindi = (ctx.language or "").lower().startswith("hi")
+        if is_hindi:
+            display_text = (
+                "🌾 नमस्ते! मुझे आपकी समस्या समझने के लिए और जानकारी चाहिए।\n\n"
+                "कृपया बताएं:\n"
+                "1. कौन सी फसल है?\n"
+                "2. फसल किस अवस्था में है?\n"
+                "3. लक्षण कब से दिख रहे हैं?\n\n"
+                "या फोटो भेजें — मैं फसल की तस्वीर देखकर बेहतर सलाह दे सकता हूं। 📸\n\n"
+                "📞 तत्काल सहायता: किसान कॉल सेंटर 1800-180-1551"
+            )
+        else:
+            display_text = (
+                "🌾 Hello! I need a bit more information to help you.\n\n"
+                "Please tell me:\n"
+                "1. Which crop is this?\n"
+                "2. What stage is the crop at?\n"
+                "3. Since when have you been seeing the symptoms?\n\n"
+                "Or send a photo — I can look at the crop and give better advice. 📸\n\n"
+                "📞 Immediate help: Kisan Call Center 1800-180-1551"
+            )
 
         advisory_id: str | None = None
         if ctx.observation_id:
