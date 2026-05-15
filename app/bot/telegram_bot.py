@@ -14,6 +14,7 @@ from pathlib import Path
 from loguru import logger
 from sqlalchemy import select
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.error import BadRequest
 from telegram.constants import ChatAction
 from telegram.ext import (
     Application,
@@ -845,11 +846,21 @@ async def _process_farmer_query(
         msg += f"\n\n⚡ _{response.latency_ms}ms • {response.model_used} • {response.retrieval_path}_"
 
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
-        await update.message.reply_text(
-            msg,
-            parse_mode="Markdown",
-            reply_markup=reply_markup,
-        )
+        # Agent output is templated text + LLM contextualization; an
+        # unbalanced * or _ from the LLM trips Telegram's Markdown parser
+        # and raises BadRequest. Fall back to plain text rather than
+        # dropping the advisory on the floor — keyboard still attaches.
+        try:
+            await update.message.reply_text(
+                msg,
+                parse_mode="Markdown",
+                reply_markup=reply_markup,
+            )
+        except BadRequest as e:
+            if "can't parse entities" in str(e).lower() or "parse" in str(e).lower():
+                await update.message.reply_text(msg, reply_markup=reply_markup)
+            else:
+                raise
 
         # Store evidence for callback
         state["last_evidence"] = response.evidence_cards
