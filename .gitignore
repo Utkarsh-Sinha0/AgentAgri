@@ -22,6 +22,11 @@ data/*.sqlite3
 pwa/node_modules/
 pwa/dist/
 
+# Eval run artefacts (keep golden set + latest summary; ignore per-run files)
+evals/synthetic_results_*.json
+evals/synthetic_summary_*.json
+evals/synthetic_report_*.md
+
 # Logs and OS/editor noise
 *.log
 .DS_Store

@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-05-15T16:52:09.973563",
+  "model": "gemma4:e2b-it-q4_K_M",
+  "total": 10,
+  "completed": 10,
+  "errors": 0,
+  "risk_match_rate": 0.3,
+  "conf_match_rate": 0.6,
+  "safety_pass_rate": 0.9,
+  "verifier_pass_rate": 1.0,
+  "latency_p50_ms": 67428,
+  "latency_p95_ms": 79031,
+  "by_category": {
+    "diagnosis": {
+      "n": 10,
+      "risk_match": 0.3,
+      "conf_match": 0.6,
+      "safety_pass": 0.9,
+      "verifier_pass": 1.0
+    }
+  }
+}
