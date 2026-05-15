@@ -314,7 +314,7 @@ async def retrieve(
     # ── Step 2: Graph expansion (graph path only) ────────────────
     article_id_set = {a.id for a in db_articles}
     if path == "graph" and previous_article_ids:
-        expanded = await _graph_traverse(db, previous_article_ids, hops=1)
+        expanded = set(await _graph_traverse(db, previous_article_ids, hops=1))
         # Fetch additional articles from graph traversal
         if expanded - article_id_set:
             result = await db.execute(

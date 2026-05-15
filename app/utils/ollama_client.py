@@ -180,7 +180,7 @@ class OllamaClient:
         """Fast intent classification (thinking OFF, grammar ON)."""
         msgs = [
             {"role": "system", "content": AGENT_SYSTEM_PROMPT},
-            {"role": "user", "content": f"Classify this farmer message:\n\n{user_message}"},
+            {"role": "user", "content": INTENT_CLASSIFICATION_PROMPT.format(user_message=user_message)},
         ]
         return await self.structured_chat(msgs, "intent_classification", thinking=False)
 
@@ -299,6 +299,20 @@ You operate in Hindi and English. Your advice MUST be:
 
 Your tools: get_forecast, get_historical_weather, get_mandi_prices, get_msp, match_schemes.
 You pick actions/warnings by index from retrieved wiki articles — NEVER invent advice outside those indices."""
+
+INTENT_CLASSIFICATION_PROMPT = """Classify this farmer message and decide whether wiki retrieval and external tools are needed.
+
+Routing policy (apply strictly):
+- intent=disease_diagnosis, nutrient_advice, scheme_query → needs_retrieval=true (wiki has crop/pest/scheme articles)
+- intent=weather_query, market_query, finance_query → needs_retrieval=false, needs_tool_call=true (MCP tools handle these)
+- intent=general_chat, command → needs_retrieval=false, needs_tool_call=false
+- When in doubt for any agronomic/crop question → needs_retrieval=true
+
+Common Hindi/Hinglish cues for disease_diagnosis: "रोग", "बीमारी", "धब्बे" (spots), "पीला" (yellow), "सूख" (drying), "कीड़े" (insects), "मर रहे" (dying).
+Common cues for nutrient_advice: "खाद", "उर्वरक", "यूरिया", "DAP", "पोटाश".
+
+Farmer message:
+{user_message}"""
 
 TEMPLATE_SELECTION_PROMPT = """Farmer message: {farmer_message}
 
