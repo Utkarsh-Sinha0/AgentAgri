@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Advisory, Observation, WikiArticle
+from app.models import Advisory, CropCycle, Observation, WikiArticle
 from app.models_memory import ActionImpact, ConversationThread, ConversationTurn
 from app.utils.time import utc_now
 
@@ -49,6 +49,63 @@ async def get_or_create_thread(
     db.add(thread)
     await db.flush()
     return thread
+
+
+async def route_to_thread(
+    db: AsyncSession,
+    *,
+    farmer_id: str,
+    field_id: str | None,
+    crop_cycle_id: str | None,
+    intent_crop_name: str | None = None,
+    channel: str = "telegram",
+) -> ConversationThread:
+    """Pick which thread this turn belongs to.
+
+    Order (per docs/design/telegram_conversation_ux.md §7):
+      1. Active thread for the exact (farmer, field, crop_cycle, channel) scope.
+      2. If the current scope has no active thread AND intent_crop_name is set,
+         any other active thread on the same channel whose linked CropCycle
+         has a matching crop_name. (User-approved cross-scope fallback.)
+      3. Fall back to get_or_create_thread, which creates a new thread for
+         the current scope.
+    """
+    exact = await db.execute(
+        select(ConversationThread)
+        .where(
+            ConversationThread.farmer_id == farmer_id,
+            ConversationThread.field_id == field_id,
+            ConversationThread.crop_cycle_id == crop_cycle_id,
+            ConversationThread.channel == channel,
+            ConversationThread.is_active,
+        )
+        .order_by(desc(ConversationThread.updated_at))
+        .limit(1)
+    )
+    thread = exact.scalar_one_or_none()
+    if thread is not None:
+        return thread
+
+    if intent_crop_name:
+        normalized = intent_crop_name.strip().lower()
+        if normalized:
+            cross = await db.execute(
+                select(ConversationThread)
+                .join(CropCycle, ConversationThread.crop_cycle_id == CropCycle.id)
+                .where(
+                    ConversationThread.farmer_id == farmer_id,
+                    ConversationThread.channel == channel,
+                    ConversationThread.is_active,
+                    func.lower(CropCycle.crop_name) == normalized,
+                )
+                .order_by(desc(ConversationThread.updated_at))
+                .limit(1)
+            )
+            cross_thread = cross.scalar_one_or_none()
+            if cross_thread is not None:
+                return cross_thread
+
+    return await get_or_create_thread(db, farmer_id, field_id, crop_cycle_id, channel)
 
 
 async def latest_thread(
