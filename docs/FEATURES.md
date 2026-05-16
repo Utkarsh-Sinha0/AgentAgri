@@ -1,6 +1,20 @@
 # AgentAgri — Feature Inventory
 
-> Status snapshot as of 2026-05-16 · HEAD `9c7af01` · 216/216 tests green.
+> Status snapshot as of 2026-05-16 · 224/224 tests green.
+
+## Outbreak Warning — 10%-threshold pest/disease early-warning
+
+When a farmer reports a pest or disease via `/outcome` with a negative result (`worsened` / `no_change`), `app/services/outbreak.py` runs a scope cascade (village → tehsil → district). For the smallest scope where reporting farmers ≥ 10% of registered farmers growing the same crop in that area in the last 14 days, the system:
+
+1. Creates an `AlertCluster` row with `kind=outbreak`, `scope`, `pest_or_disease`, `reporting_farmer_ids`.
+2. Pushes a bilingual Telegram warning to every other farmer in scope growing that crop.
+3. Writes an `outbreak_alert` `MemoryAtom` (shareable, public) for each notified farmer so retrieval picks it up for ~14 days.
+4. Prepends a one-line banner to the farmer's *next* agent reply (consumed once, deduped per farmer).
+
+Tunables (top of `app/services/outbreak.py`): `OUTBREAK_THRESHOLD=0.10`, `OUTBREAK_REPORT_WINDOW_DAYS=14`, `OUTBREAK_ALERT_TTL_DAYS=14`, `OUTBREAK_MIN_REPORTERS=2`. Coverage: `tests/test_outbreak_warning.py` (8 cases — threshold met/not-met, scope cascade, alert reuse, push dedup, expiry).
+
+---
+
 > Every feature below is shipped on `main` unless the section header marks it `(Planned)` or `(Future)`.
 
 ---

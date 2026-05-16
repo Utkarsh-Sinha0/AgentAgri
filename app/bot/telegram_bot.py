@@ -879,6 +879,22 @@ async def _process_farmer_query(
         # Build response with evidence and verifier info
         msg = response.display_text
 
+        # Prepend an outbreak warning banner once, if this farmer has a
+        # pending alert that has not yet been surfaced in chat.
+        try:
+            from app.services.outbreak import (
+                fetch_pending_outbreak_for_farmer,
+                format_warning_message,
+                mark_outbreak_consumed,
+            )
+            async with async_session_factory() as _alert_db:
+                pending = await fetch_pending_outbreak_for_farmer(_alert_db, farmer.id)
+                if pending is not None:
+                    msg = f"{format_warning_message(pending)}\n\n{msg}"
+                    await mark_outbreak_consumed(_alert_db, pending, farmer.id)
+        except Exception as exc:
+            logger.warning(f"outbreak prepend skipped: {exc}")
+
         # Add evidence button if evidence exists
         keyboard = []
         if response.evidence_cards:
@@ -1929,8 +1945,101 @@ async def outcome_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except Exception as exc:  # never break user flow on memory failure
                     logger.error(f"extract_from_outcome failed: {exc}")
 
+                # Outbreak warning: negative outcomes on disease/pest reports
+                # may trip the 10% threshold for nearby farmers.
+                if result in ("worsened", "no_change"):
+                    try:
+                        await _maybe_fire_outbreak_warning(
+                            db, context, obs, comment=comment
+                        )
+                    except Exception as exc:
+                        logger.error(f"outbreak check failed: {exc}")
+
     suffix = "" if persisted else " (कोई हाल का अवलोकन नहीं / no recent observation linked)"
     await update.message.reply_text(f"📝 परिणाम '{result}' दर्ज!{suffix} सीखने के लिए धन्यवाद। 🌱")
+
+
+async def _maybe_fire_outbreak_warning(
+    db,
+    context: ContextTypes.DEFAULT_TYPE,
+    observation: Observation,
+    *,
+    comment: str = "",
+) -> None:
+    """
+    Run the outbreak threshold check after a negative /outcome and, if it
+    trips, push the warning to every matching farmer in scope.
+    """
+    from app.services.outbreak import (
+        check_and_trigger_outbreak,
+        format_warning_message,
+        list_target_farmers,
+        mark_outbreak_notified,
+        write_outbreak_memory_atoms,
+    )
+
+    cycle = await db.scalar(
+        select(CropCycle).where(CropCycle.id == observation.crop_cycle_id)
+    )
+    if cycle is None:
+        return
+
+    threat_label = _extract_threat_label(observation, comment)
+    if not threat_label:
+        return
+
+    alert = await check_and_trigger_outbreak(
+        db,
+        reporter_farmer_id=observation.farmer_id,
+        crop_name=cycle.crop_name,
+        pest_or_disease=threat_label,
+    )
+    if alert is None:
+        return
+
+    targets = await list_target_farmers(db, alert)
+    if not targets:
+        return
+
+    warning = format_warning_message(alert)
+    sent_ids: list[str] = []
+    for farmer in targets:
+        if not farmer.phone:
+            continue
+        try:
+            await context.bot.send_message(chat_id=farmer.phone, text=warning)
+            sent_ids.append(farmer.id)
+        except Exception as exc:
+            logger.warning(f"outbreak push failed for {farmer.id}: {exc}")
+
+    if sent_ids:
+        await mark_outbreak_notified(db, alert, sent_ids)
+        await write_outbreak_memory_atoms(
+            db, alert, [f for f in targets if f.id in set(sent_ids)]
+        )
+
+
+def _extract_threat_label(observation: Observation, comment: str) -> str:
+    """Best-effort pest/disease label from vision analysis or free text."""
+    vision = observation.vision_analysis or {}
+    for key in ("suspected_disease", "disease", "pest", "issue"):
+        val = vision.get(key) if isinstance(vision, dict) else None
+        if val:
+            return str(val)
+    pool = " ".join(
+        s for s in (observation.text_content, observation.outcome_text, comment) if s
+    ).lower()
+    keywords = [
+        "blast", "blight", "rust", "smut", "wilt", "rot", "mildew",
+        "leaf curl", "yellow vein", "stem borer", "leaf folder",
+        "brown plant hopper", "aphid", "thrips", "whitefly", "mite",
+        "bollworm", "fall armyworm", "shoot borer",
+        "तना छेदक", "झुलसा", "फफूंद", "रतुआ",
+    ]
+    for kw in keywords:
+        if kw in pool:
+            return kw
+    return ""
 
 
 # ─── Conversation thread commands ─────────────────────────────────────

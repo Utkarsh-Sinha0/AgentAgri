@@ -55,6 +55,11 @@ class AlertStatus:
     DISMISSED = "dismissed"
 
 
+class AlertKind:
+    PATTERN = "pattern"      # nightly co-occurrence cluster (legacy default)
+    OUTBREAK = "outbreak"    # threshold-tripped pest/disease warning
+
+
 # ─── Auth ─────────────────────────────────────────────────────────────
 
 class Farmer(Base):
@@ -358,6 +363,15 @@ class AlertCluster(Base):
     farmers_notified = Column(Integer, default=0)
     created_at = Column(DateTime, default=utc_now)
 
+    # Outbreak warning extension (10%-threshold pest/disease alerts)
+    kind = Column(String(20), default=AlertKind.PATTERN, index=True)
+    scope = Column(String(20), nullable=True)         # village | tehsil | district
+    pest_or_disease = Column(String(120), nullable=True)
+    reporting_farmer_ids = Column(JSON, default=list)  # farmers whose reports tripped threshold
+    notified_farmer_ids = Column(JSON, default=list)   # farmers who received the warning
+    consumed_farmer_ids = Column(JSON, default=list)   # farmers for whom the prepend already fired
+    expires_at = Column(DateTime, nullable=True, index=True)
+
     extension_worker = relationship("ExtensionWorker")
 
 
@@ -402,6 +416,8 @@ Index("ix_clusters_district_crop", AlertCluster.district, AlertCluster.crop_name
 Index("ix_clusters_status", AlertCluster.status)
 Index("ix_alert_clusters_status_severity", AlertCluster.status, AlertCluster.severity)
 Index("ix_alert_clusters_district_severity", AlertCluster.district, AlertCluster.severity)
+Index("ix_alert_clusters_kind_crop_village", AlertCluster.kind, AlertCluster.crop_name, AlertCluster.village)
+Index("ix_alert_clusters_kind_expires", AlertCluster.kind, AlertCluster.expires_at)
 Index("ix_finance_farmer_cycle", FinanceEntry.farmer_id, FinanceEntry.crop_cycle_id)
 Index("ix_finance_farmer_cycle_type", FinanceEntry.farmer_id, FinanceEntry.crop_cycle_id, FinanceEntry.entry_type)
 Index("ix_finance_entries_recorded_at", FinanceEntry.recorded_at)
