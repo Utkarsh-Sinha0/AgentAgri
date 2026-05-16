@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 
 from loguru import logger
-from sqlalchemy import select
+from sqlalchemy import desc, select
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.error import BadRequest
 from telegram.constants import ChatAction
@@ -36,6 +36,7 @@ from app.models import (
     Field,
     Observation,
 )
+from app.models_memory import ConversationThread
 from app.services.agent import AgentContext, get_agent
 from app.services.demo_seed import seed_demo_memory_palace
 from app.utils.security import hash_password
@@ -75,6 +76,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "6. फोटो भेजें या समस्या लिखें 📸\n\n"
         "📞 किसान कॉल सेंटर: 1800-180-1551"
     )
+
+    try:
+        async with async_session_factory() as db:
+            farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
+            if farmer:
+                has_thread = await db.scalar(
+                    select(ConversationThread.id)
+                    .where(
+                        ConversationThread.farmer_id == farmer.id,
+                        ConversationThread.channel == "telegram",
+                        ConversationThread.is_active == True,  # noqa: E712
+                    )
+                    .limit(1)
+                )
+                if has_thread:
+                    welcome += "\n\n🗂 आपकी पिछली बातचीत जारी है। /threads से देखें।"
+    except Exception as exc:
+        logger.warning(f"start-hint thread lookup failed: {exc}")
 
     keyboard = [
         [InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")],
@@ -378,6 +397,47 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data.startswith("stage_"):
         stage = data.replace("stage_", "", 1)
         await _persist_crop_stage_from_callback(query, user_id, stage, state)
+    elif data == "threads_list":
+        await _show_threads(update, user_id, show_archived=False)
+    elif data == "threads_show_archived":
+        await _show_threads(update, user_id, show_archived=True)
+    elif data.startswith("thread_switch:"):
+        thread_id = data.split(":", 1)[1]
+        async with async_session_factory() as db:
+            thread = await db.get(ConversationThread, thread_id)
+            farmer_id = await _resolve_farmer_id(state, user_id)
+            if thread and thread.farmer_id == farmer_id:
+                state["field_id"] = thread.field_id
+                state["crop_cycle_id"] = thread.crop_cycle_id
+                state["last_advisory_id"] = thread.last_advisory_id
+                label = thread.title or f"Thread {thread.id[:8]}"
+                await query.edit_message_text(f"✅ बातचीत पर जाएँ / Switched to {label}.")
+            else:
+                await query.edit_message_text("❌ बातचीत नहीं मिली / Thread not found.")
+    elif data == "thread_new":
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("हाँ / Yes, close it", callback_data="newthread_confirm")],
+            [InlineKeyboardButton("नहीं / Cancel", callback_data="newthread_cancel")],
+        ])
+        await query.message.reply_text(
+            "इस बातचीत को बंद करें और नई शुरू करें? / Close this conversation and start fresh?",
+            reply_markup=keyboard,
+        )
+    elif data == "newthread_confirm":
+        await _archive_active_thread(user_id, state)
+        try:
+            await query.edit_message_text(
+                "✅ बातचीत बंद। नया सवाल पूछें / Conversation closed. Ask a new question."
+            )
+        except BadRequest:
+            await query.message.reply_text(
+                "✅ बातचीत बंद। नया सवाल पूछें / Conversation closed. Ask a new question."
+            )
+    elif data == "newthread_cancel":
+        try:
+            await query.edit_message_text("❌ रद्द / Cancelled.")
+        except BadRequest:
+            await query.message.reply_text("❌ रद्द / Cancelled.")
 
 
 # ─── Registration Handlers ────────────────────────────────────────────
@@ -841,6 +901,12 @@ async def _process_farmer_query(
         keyboard.append([
             InlineKeyboardButton("💰 खर्च जोड़ें / Add Expense", callback_data="cmd_finance"),
             InlineKeyboardButton("ℹ️ मदद / Help", callback_data="cmd_help"),
+        ])
+
+        # Conversation thread row (design §4.2 / §8)
+        keyboard.append([
+            InlineKeyboardButton("🗂 बातचीत / Threads", callback_data="threads_list"),
+            InlineKeyboardButton("✳ नई बातचीत / New thread", callback_data="thread_new"),
         ])
 
         msg += f"\n\n⚡ _{response.latency_ms}ms • {response.model_used} • {response.retrieval_path}_"
@@ -1867,6 +1933,171 @@ async def outcome_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📝 परिणाम '{result}' दर्ज!{suffix} सीखने के लिए धन्यवाद। 🌱")
 
 
+# ─── Conversation thread commands ─────────────────────────────────────
+
+
+async def _resolve_farmer_id(state: dict, user_id: str) -> str | None:
+    farmer_id = state.get("farmer_id")
+    if farmer_id:
+        return farmer_id
+    async with async_session_factory() as db:
+        farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
+        if farmer:
+            state["farmer_id"] = farmer.id
+            return farmer.id
+    return None
+
+
+async def _current_active_thread(db, farmer_id: str, state: dict) -> ConversationThread | None:
+    field_id = state.get("field_id")
+    crop_cycle_id = state.get("crop_cycle_id")
+    if not field_id:
+        field = await db.scalar(
+            select(Field).where(Field.farmer_id == farmer_id).order_by(desc(Field.created_at)).limit(1)
+        )
+        field_id = field.id if field else None
+    if field_id and not crop_cycle_id:
+        cycle = await db.scalar(
+            select(CropCycle)
+            .where(CropCycle.field_id == field_id, CropCycle.is_active == True)  # noqa: E712
+            .order_by(desc(CropCycle.created_at))
+            .limit(1)
+        )
+        crop_cycle_id = cycle.id if cycle else None
+    return await db.scalar(
+        select(ConversationThread).where(
+            ConversationThread.farmer_id == farmer_id,
+            ConversationThread.field_id == field_id,
+            ConversationThread.crop_cycle_id == crop_cycle_id,
+            ConversationThread.channel == "telegram",
+            ConversationThread.is_active == True,  # noqa: E712
+        )
+    )
+
+
+async def _archive_active_thread(user_id: str, state: dict) -> bool:
+    farmer_id = await _resolve_farmer_id(state, user_id)
+    if not farmer_id:
+        return False
+    async with async_session_factory() as db:
+        thread = await _current_active_thread(db, farmer_id, state)
+        if not thread:
+            return False
+        thread.is_active = False
+        await db.commit()
+    return True
+
+
+async def _show_threads(update: Update, user_id: str, show_archived: bool = False):
+    """Render the threads list. Works for both /threads command and inline callback."""
+    state = get_user_state(user_id)
+    callback_msg = update.callback_query.message if update.callback_query else None
+
+    async def _send(text: str, reply_markup=None):
+        if callback_msg is not None:
+            try:
+                await callback_msg.edit_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+            except BadRequest:
+                await callback_msg.edit_text(text.replace("*", ""), reply_markup=reply_markup)
+        else:
+            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+
+    farmer_id = await _resolve_farmer_id(state, user_id)
+    if not farmer_id:
+        await _send("❌ पहले रजिस्टर करें / Please register first using /start.")
+        return
+
+    async with async_session_factory() as db:
+        query = (
+            select(ConversationThread)
+            .where(
+                ConversationThread.farmer_id == farmer_id,
+                ConversationThread.channel == "telegram",
+                ConversationThread.is_active == (not show_archived),
+            )
+            .order_by(desc(ConversationThread.updated_at))
+            .limit(5 if show_archived else 8)
+        )
+        threads = (await db.execute(query)).scalars().all()
+
+        if not threads:
+            text = (
+                "📁 कोई पुरानी बातचीत नहीं / No archived conversations."
+                if show_archived
+                else "अभी कोई बातचीत नहीं। कोई सवाल पूछें / No conversations yet. Ask a question."
+            )
+            buttons = (
+                [[InlineKeyboardButton("⬅️ मुख्य / Active", callback_data="threads_list")]]
+                if show_archived
+                else []
+            )
+            await _send(text, InlineKeyboardMarkup(buttons) if buttons else None)
+            return
+
+        lines = ["🗣️ *आपकी बातचीतें / Your Conversations*", ""]
+        buttons: list[list[InlineKeyboardButton]] = []
+        for thread in threads:
+            field = await db.get(Field, thread.field_id) if thread.field_id else None
+            cycle = await db.get(CropCycle, thread.crop_cycle_id) if thread.crop_cycle_id else None
+            crop_label = cycle.crop_name if cycle else "general"
+            field_label = field.name if field else "—"
+            label = thread.title or f"{crop_label} • {field_label}"
+            if show_archived:
+                label = "📁 " + label
+            label = f"{label} ({thread.turn_count})"
+            buttons.append([InlineKeyboardButton(label[:60], callback_data=f"thread_switch:{thread.id}")])
+
+        if show_archived:
+            buttons.append([InlineKeyboardButton("⬅️ मुख्य / Active", callback_data="threads_list")])
+        else:
+            buttons.append([InlineKeyboardButton("पुराने / Show archived", callback_data="threads_show_archived")])
+
+        await _send("\n".join(lines), InlineKeyboardMarkup(buttons))
+
+
+async def threads_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /threads — list active conversation threads."""
+    user_id = str(update.effective_user.id)
+    await _show_threads(update, user_id, show_archived=False)
+
+
+async def newthread_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /newthread — archive current thread and start fresh (with confirm)."""
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+    farmer_id = await _resolve_farmer_id(state, user_id)
+    if not farmer_id:
+        await update.message.reply_text("❌ पहले रजिस्टर करें / Please register first using /start.")
+        return
+    async with async_session_factory() as db:
+        active = await _current_active_thread(db, farmer_id, state)
+    if not active:
+        await update.message.reply_text(
+            "अभी कोई सक्रिय बातचीत नहीं। पहले सवाल पूछें / No active conversation yet. Ask a question first."
+        )
+        return
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("हाँ / Yes, close it", callback_data="newthread_confirm")],
+        [InlineKeyboardButton("नहीं / Cancel", callback_data="newthread_cancel")],
+    ])
+    await update.message.reply_text(
+        "इस बातचीत को बंद करें और नई शुरू करें? / Close this conversation and start fresh?",
+        reply_markup=keyboard,
+    )
+
+
+async def endthread_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /endthread — archive the current active thread."""
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+    if await _archive_active_thread(user_id, state):
+        await update.message.reply_text("बातचीत बंद कर दी गई / Conversation closed.")
+    else:
+        await update.message.reply_text(
+            "अभी कोई सक्रिय बातचीत नहीं / No active conversation."
+        )
+
+
 # ─── Bot Runner ───────────────────────────────────────────────────────
 
 def create_bot() -> Application:
@@ -1904,6 +2135,9 @@ def create_bot() -> Application:
     app.add_handler(CommandHandler("feedback", feedback_command))
     app.add_handler(CommandHandler("outcome", outcome_command))
     app.add_handler(CommandHandler("health", health_command))
+    app.add_handler(CommandHandler("threads", threads_command))
+    app.add_handler(CommandHandler("newthread", newthread_command))
+    app.add_handler(CommandHandler("endthread", endthread_command))
 
     # Messages (structured data capture runs first)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
