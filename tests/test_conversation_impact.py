@@ -5,7 +5,6 @@ from app.models_memory import ActionImpact
 from app.services.conversation import (
     build_action_impact_network,
     build_conversation_context,
-    looks_like_followup,
     previous_evidence_article_ids,
     record_turn,
 )
@@ -58,7 +57,6 @@ async def test_conversation_turns_preserve_farmer_context(db_session):
     assert "Conversation continuity" in context
     assert "भूरे धब्बे" in context
     assert article_ids == ["rice_brown_spot", "water_management_rice"]
-    assert looks_like_followup("अब क्या करूं?")
 
 
 async def test_action_impact_network_is_deterministic(db_session):

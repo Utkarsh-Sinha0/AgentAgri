@@ -14,30 +14,6 @@ from app.models import Advisory, Observation, WikiArticle
 from app.models_memory import ActionImpact, ConversationThread, ConversationTurn
 from app.utils.time import utc_now
 
-FOLLOWUP_MARKERS = {
-    "hi": [
-        "अब", "फिर", "उसके बाद", "पहले", "वही", "और", "क्या करूं", "दवा", "कल",
-        "पिछले हफ्ते", "पिछली बार", "आपने बताया", "मैंने किया", "अब क्या",
-    ],
-    "en": [
-        "now", "then", "after that", "same", "again", "previous", "yesterday",
-        "tomorrow", "last week", "last time", "told me", "you said",
-        "you told me", "i did that", "did what you", "did as you", "what next",
-        "next step", "follow up", "follow-up", "stopped spreading", "improved",
-        "got better", "still seeing", "still have",
-    ],
-}
-
-
-def looks_like_followup(message: str) -> bool:
-    """Cheap follow-up detector for routing before any LLM call."""
-    text = (message or "").lower()
-    if len(text.split()) <= 5 and any(token in text for token in ["?", "क्या", "now", "again"]):
-        return True
-    markers = FOLLOWUP_MARKERS["hi"] + FOLLOWUP_MARKERS["en"]
-    return any(marker in text for marker in markers)
-
-
 async def get_or_create_thread(
     db: AsyncSession,
     farmer_id: str,
