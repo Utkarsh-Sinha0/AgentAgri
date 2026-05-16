@@ -37,12 +37,12 @@
     },
     "topic_tags": {
       "type": "array",
-      "description": "Semantic tags describing the agronomic topic. Pick from: fungal_disease, bacterial_disease, viral_disease, pest, insect, nutrient_deficiency, water_management, weather_damage, soil_health, weed, harvest, post_harvest, market, scheme, credit, insurance, general. 0-4 tags.",
+      "description": "1-3 semantic tags describing the agronomic topic. Pick the most specific tags that apply.",
       "items": {
         "type": "string",
-        "enum": ["fungal_disease", "bacterial_disease", "viral_disease", "pest", "insect", "nutrient_deficiency", "water_management", "weather_damage", "soil_health", "weed", "harvest", "post_harvest", "market", "scheme", "credit", "insurance", "general"]
+        "enum": ["disease", "pest", "nutrient_deficiency", "water_management", "weather_damage", "market", "scheme", "general"]
       },
-      "maxItems": 4
+      "maxItems": 3
     },
     "is_followup": {
       "type": "boolean",

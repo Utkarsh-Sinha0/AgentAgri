@@ -353,6 +353,23 @@ Entity extraction (use your own judgment — do not rely on keyword lookups):
 
 Do not echo keywords. Decide semantically.
 
+Examples (showing the kind of judgment expected — do not pattern-match strings, infer meaning):
+
+Example 1 — short follow-up phrase
+Message: "और बताओ"
+Reasoning: a bare "tell me more" with no new content only makes sense as a continuation of a prior advisory.
+Output: intent=general_chat, is_followup=true, crop_name="", topic_tags=[]
+
+Example 2 — symptom on leaves
+Message: "tomato ke patton par peele dhabbe ho rahe hain"
+Reasoning: yellow spots on leaves are a disease symptom on tomato. Specific crop, clear disease pattern.
+Output: intent=disease_diagnosis, crop_name="tomato", topic_tags=["disease"], is_followup=false
+
+Example 3 — clarifying question after an advisory
+Message: "kitna dalna hai?"
+Reasoning: "how much to apply?" only makes sense as a follow-up asking about dosage of something previously discussed.
+Output: intent=nutrient_advice, is_followup=true, crop_name="", topic_tags=["nutrient_deficiency"]
+
 Farmer message:
 {user_message}"""
 
