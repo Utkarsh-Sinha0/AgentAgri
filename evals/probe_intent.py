@@ -25,6 +25,7 @@ QUERIES = [
     "मेरे टमाटर के पौधे पर पीले धब्बे हैं",
     "PMFBY के लिए कब apply करूं",
     "और बताओ",
+    "मेरे बिहार के खेत में धान में blast हो रहा है",
 ]
 
 REQUIRED = {
@@ -32,13 +33,13 @@ REQUIRED = {
     "needs_retrieval",
     "language",
     "crop_name",
+    "state_or_region",
     "topic_tags",
     "is_followup",
 }
 ALLOWED_KEYS = REQUIRED | {
     "needs_tool_call",
     "crop_stage",
-    "state_or_region",
     "reason",
 }
 INTENTS = {

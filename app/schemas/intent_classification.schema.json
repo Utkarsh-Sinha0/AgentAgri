@@ -53,6 +53,6 @@
       "maxLength": 120
     }
   },
-  "required": ["intent", "needs_retrieval", "language", "crop_name", "topic_tags", "is_followup"],
+  "required": ["intent", "needs_retrieval", "language", "crop_name", "state_or_region", "topic_tags", "is_followup"],
   "additionalProperties": false
 }

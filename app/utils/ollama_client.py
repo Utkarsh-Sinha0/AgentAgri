@@ -347,7 +347,7 @@ Entity extraction (use your own judgment — do not rely on keyword lookups):
 - crop_name: the crop being discussed, lowercase English. Empty string if no crop is mentioned or implied.
 - crop_stage: growth stage if mentioned or clearly implied. Empty string otherwise.
 - state_or_region: Indian state/district/region if mentioned. Empty string otherwise.
-- topic_tags: 0-4 semantic tags from the enum that best describe the agronomic topic.
+- topic_tags: 1-3 semantic tags from the enum that best describe the agronomic topic.
 - is_followup: true if this message builds on a prior advisory (refers to "it", asks "why"/"how much", clarifies a previous answer); false if it stands alone.
 - language: hi / en / mixed based on the script and vocabulary used.
 
@@ -369,6 +369,11 @@ Example 3 — clarifying question after an advisory
 Message: "kitna dalna hai?"
 Reasoning: "how much to apply?" only makes sense as a follow-up asking about dosage of something previously discussed.
 Output: intent=nutrient_advice, is_followup=true, crop_name="", topic_tags=["nutrient_deficiency"]
+
+Example 4 — message naming a region
+Message: "मेरे बिहार के खेत में धान में blast हो रहा है"
+Reasoning: "मेरे बिहार के खेत" explicitly names Bihar as the state; the crop is rice (धान) with blast disease.
+Output: intent=disease_diagnosis, crop_name="rice", state_or_region="Bihar", topic_tags=["disease"], is_followup=false
 
 Farmer message:
 {user_message}"""
