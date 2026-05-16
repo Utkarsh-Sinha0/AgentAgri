@@ -187,6 +187,8 @@ async def _field_cards(db: AsyncSession, farmer: Farmer) -> list[dict[str, Any]]
             )
             tasks = [_serialize_task(task) for task in task_result.scalars().all()]
 
+        threads = await _threads_for_field(db, farmer.id, field.id)
+
         cards.append(
             {
                 "id": field.id,
@@ -201,9 +203,81 @@ async def _field_cards(db: AsyncSession, farmer: Farmer) -> list[dict[str, Any]]
                 "ndvi": [_serialize_ndvi(item) for item in ndvi],
                 "ndvi_trend": _ndvi_trend(ndvi),
                 "tasks": tasks,
+                "threads": threads,
             }
         )
     return cards
+
+
+async def _threads_for_field(
+    db: AsyncSession,
+    farmer_id: str,
+    field_id: str,
+    archived_limit: int = 5,
+    recent_turns_limit: int = 3,
+) -> dict[str, list[dict[str, Any]]]:
+    """Active and (limited) archived threads scoped to one field. Read-only."""
+    active_threads = (
+        await db.execute(
+            select(ConversationThread)
+            .where(
+                ConversationThread.farmer_id == farmer_id,
+                ConversationThread.field_id == field_id,
+                ConversationThread.is_active == True,  # noqa: E712
+            )
+            .order_by(desc(ConversationThread.updated_at))
+        )
+    ).scalars().all()
+    archived_threads = (
+        await db.execute(
+            select(ConversationThread)
+            .where(
+                ConversationThread.farmer_id == farmer_id,
+                ConversationThread.field_id == field_id,
+                ConversationThread.is_active == False,  # noqa: E712
+            )
+            .order_by(desc(ConversationThread.updated_at))
+            .limit(archived_limit)
+        )
+    ).scalars().all()
+
+    async def _rows(threads):
+        out = []
+        for thread in threads:
+            turns = (
+                await db.execute(
+                    select(ConversationTurn)
+                    .where(ConversationTurn.thread_id == thread.id)
+                    .order_by(desc(ConversationTurn.created_at))
+                    .limit(recent_turns_limit)
+                )
+            ).scalars().all()
+            summary = thread.running_summary or ""
+            if len(summary) > 240:
+                summary = summary[:240] + "..."
+            out.append(
+                {
+                    "id": thread.id,
+                    "title": thread.title,
+                    "crop_cycle_id": thread.crop_cycle_id,
+                    "is_active": thread.is_active,
+                    "turn_count": thread.turn_count,
+                    "running_summary": summary,
+                    "updated_at": thread.updated_at.isoformat() if thread.updated_at else None,
+                    "recent_turns": [
+                        {
+                            "user_message": (turn.user_message or "")[:200],
+                            "agent_response": (turn.agent_response or "")[:240],
+                            "risk_level": turn.risk_level,
+                            "created_at": turn.created_at.isoformat() if turn.created_at else None,
+                        }
+                        for turn in reversed(turns)
+                    ],
+                }
+            )
+        return out
+
+    return {"active": await _rows(active_threads), "archived": await _rows(archived_threads)}
 
 
 async def _latest_advisories(db: AsyncSession, farmer_id: str) -> list[dict[str, Any]]:
