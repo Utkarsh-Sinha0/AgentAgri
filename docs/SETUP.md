@@ -1,192 +1,298 @@
 # AgentAgri Setup
 
-## Prerequisites
+This document is the operator's manual: install, configure, swap models, swap the Telegram bot identity, switch databases, run the test suite, and ship to production.
 
-### Required: Ollama + Gemma 4 Model (Local AI)
+For per-package dependency justification see [DEPENDENCIES.md](DEPENDENCIES.md). For architecture see [ARCHITECTURE.md](ARCHITECTURE.md). For end-to-end action flows see [WORKFLOW.md](WORKFLOW.md).
 
-1. **Download Ollama** from [ollama.ai](https://ollama.ai)
-2. **Pull Gemma 4 model** (choose one):
+---
 
-```powershell
-# RECOMMENDED: Fast, 4GB, good quality
-ollama pull gemma4:2b
+## 1. Prerequisites
 
-# OR: High-quality, 8.9GB, slower
+| Component | Minimum | Recommended | Notes |
+|-----------|---------|-------------|-------|
+| Python | 3.11 | 3.12 | async/await + Pydantic 2 compatibility |
+| Ollama | 0.4.x | 0.5+ | hosts Gemma 4 locally; default at `http://localhost:11434` |
+| RAM | 12 GB | 16 GB+ | gemma4:e4b needs ~10 GB free; e2b fits in ~5 GB |
+| Disk | 15 GB | 30 GB+ | BGE-M3 (~2 GB) + reranker (~1.5 GB) + Gemma weights (~6 GB) + wiki corpus |
+| GPU | not required | NVIDIA 8 GB+ | speeds Ollama and BGE; CPU fallback works |
+| OS | Linux/macOS/Windows 10+ | — | tested on Windows 11 and Ubuntu 22.04 |
+
+**External accounts:**
+- Telegram bot token from [@BotFather](https://t.me/BotFather) (free, instant)
+- Optional: OpenWeather, IMD, AgMarknet keys for live MCP data; mock data ships in `data/seed/`
+
+---
+
+## 2. Quick Start (Local Dev)
+
+```bash
+git clone <repo-url> AgentAgri
+cd AgentAgri
+python -m venv .venv
+.venv\Scripts\activate                  # Windows
+# source .venv/bin/activate              # Linux/macOS
+pip install -r requirements.txt
+
+cp .env.example .env                     # then edit .env
 ollama pull gemma4:e4b
+ollama pull gemma4:e2b                   # fallback, smaller
 
-# OR: Balanced, 5GB
-ollama pull gemma4:e2b
+alembic upgrade head                     # creates tables in DATABASE_URL
+python -m app.seed_wiki                  # one-time corpus ingest
+
+# Start FastAPI dashboard + MCP servers + Telegram bot
+uvicorn app.main:app --reload --port 8000
+python -m app.mcp.weather_server         # in separate terminal
+python -m app.mcp.mandi_server
+python -m app.mcp.scheme_server
+python -m app.mcp.finance_server
+python -m app.bot.telegram_bot
 ```
 
-**Ollama will start automatically and listen on `http://localhost:11434`**
-
-### Optional: Local Development (Without Docker)
-
-For development without Docker, use:
-- Python 3.11+
-- Node.js 20+
-- PostgreSQL (or SQLite default)
-
-## 3-Command Docker Compose Quickstart
-
-### Setup
-
-```powershell
-copy .env.example .env
-docker-compose build
-docker-compose up
-```
-
-### How Docker Auto-Detects Your Ollama Instance
-
-When you run `docker-compose up`:
-
-1. **Docker network connects to your local Ollama** (`http://localhost:11434`)
-2. **FastAPI backend automatically discovers your Gemma 4 model**
-3. **Telegram bot automatically uses the connected model**
-4. **All services have healthchecks** to ensure proper startup
-
-**No environment variable changes needed!** Docker uses the default `OLLAMA_HOST=http://localhost:11434`
-
-### Access the System
-
-- **Web Dashboard**: `http://localhost:8000` (7-page professional UI)
-- **API Health Check**: `http://localhost:8000/health` (system status)
-- **Swagger API Docs**: `http://localhost:8000/docs` (interactive API testing)
-
-### What Gets Started
-
-The Docker Compose stack includes:
-- ✅ PostgreSQL database (persistent storage)
-- ✅ Redis cache (optional, for performance)
-- ✅ FastAPI backend (connects to your local Ollama)
-- ✅ 4 MCP microservices (weather, market prices, schemes, finance)
-- ✅ React PWA frontend (responsive dashboard)
-- ✅ Telegram bot service (connects to FastAPI)
-
-All services have healthchecks and will restart on failure.
-
-## Local Development
-
-```powershell
-venv\Scripts\python.exe -m pip install -r requirements.txt
-venv\Scripts\python.exe scripts\seed_data.py
-venv\Scripts\python.exe -m uvicorn app.main:app --reload
-```
-
-Build the PWA:
-
-```powershell
-cd pwa
-npm install
-npm run build
-```
-
-Note: `react-router-dom` registry installation was blocked in the current sandbox, so the PWA uses a local v6-style router compatibility shim at `pwa/src/vendor/react-router-dom.jsx`.
-
-## Environment Variables
-
-| Variable | Required | Default | Notes |
-|---|---:|---|---|
-| `APP_ENV` | yes | `development` | `development`, `test`, `demo`, or `production` |
-| `DATABASE_URL` | yes | SQLite dev DB | Use `postgresql+asyncpg://...` for Docker/production |
-| `OLLAMA_HOST` | yes | `http://localhost:11434` | Host URL for Ollama |
-| `OLLAMA_MODEL` | yes | `gemma4:e4b` | Primary model shown in the UI toggle |
-| `OLLAMA_FALLBACK_MODEL` | yes | `gemma4:e2b` | Fallback model shown in the UI toggle |
-| `AGRIMESH_REQUIRE_API_KEY` | yes | `true` | Compose sets `false` for dev quickstart |
-| `AGRIMESH_API_KEY` | production | empty | Required in production, minimum 32 chars |
-| `ALLOWED_ORIGINS` | production | localhost | Comma-separated CORS allowlist |
-| `ALLOWED_HOSTS` | production | localhost/testserver | Comma-separated trusted hosts |
-| `TELEGRAM_BOT_TOKEN` | production | empty | Required in production config validation |
-| `MAX_REQUEST_BYTES` | no | `2000000` | Request body limit |
-| `USE_GRAMMAR_DECODING` | no | `true` | Structured model output control |
-| `EVAL_PUBLIC_TOKEN` | no | empty | Optional narrow token for eval endpoints |
-
-## Telegram Bot Setup (Optional but Recommended)
-
-The Telegram bot automatically connects to AgentAgri and uses your Ollama instance for crop analysis.
-
-### 1. Create Telegram Bot
-
-1. Open Telegram app
-2. Search for **@BotFather**
-3. Send: `/newbot`
-4. Follow prompts to name your bot
-5. **Copy the bot token** (looks like `123456789:ABCDEFGhijklmnop`)
-
-### 2. Add Token to AgentAgri
-
-Edit your `.env` file:
-
-```env
-TELEGRAM_BOT_TOKEN=your_token_here
-```
-
-### 3. Restart Docker
-
-```powershell
-docker-compose down
-docker-compose up
-```
-
-### 4. Start Using the Bot
-
-In Telegram, find your bot and send:
-
-```
-/start          → Welcome & registration
-/demo           → Load demo farm with sample data
-📸 Photo        → Crop disease analysis (uses Gemma 4)
-/prices         → Check mandi prices
-/expense        → Log farming costs
-/finance        → View P&L
-/memory         → See field history
-/help           → All commands
-```
-
-**The bot automatically uses your Gemma 4 model from Ollama for all AI analysis.**
+Visit `http://localhost:8000` for the dashboard; message your bot on Telegram to talk to the agent.
 
 ---
 
-## Verification
+## 3. Environment Reference
 
-```powershell
-venv\Scripts\python.exe -m ruff check app tests scripts
-venv\Scripts\python.exe -m pytest tests -q
-venv\Scripts\python.exe -m py_compile app\main.py app\config.py app\models.py app\models_memory.py
-docker-compose config --quiet
-cd pwa; npm run build
+All settings live in `.env` (loaded by `app/config.py`). Production mode (`APP_ENV=production`) rejects placeholder API keys, SQLite URLs, demo session secrets, and `*` CORS.
+
+### 3.1 LLM (Ollama / Gemma 4)
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `OLLAMA_HOST` | `http://localhost:11434` | Ollama daemon URL |
+| `OLLAMA_MODEL` | `gemma4:e4b` | Primary model — used for planning, templating, verification |
+| `OLLAMA_FALLBACK_MODEL` | `gemma4:e2b` | Smaller model invoked if primary times out or OOMs |
+| `OLLAMA_NUM_CTX` | `16384` | Context window. Drop to 8192 if you only have 8 GB RAM |
+| `OLLAMA_NUM_BATCH` | `512` | Tokens per batch; raise on GPU, lower on CPU |
+| `OLLAMA_KEEP_ALIVE` | `-1` | Keep model resident forever (avoids cold-load) |
+| `USE_GRAMMAR_DECODING` | `1` | JSON grammar-constrained decoding for templates |
+
+### 3.2 Database
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `DATABASE_URL` | `sqlite+aiosqlite:///./data/agrimesh.db` | SQLAlchemy async DSN |
+
+### 3.3 Telegram
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `TELEGRAM_BOT_TOKEN` | _empty_ | From [@BotFather](https://t.me/BotFather). Required to start the bot |
+
+### 3.4 Retrieval
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `BGE_M3_MODEL` | `BAAI/bge-m3` | Dense embedder (in-process, sentence-transformers) |
+| `BGE_RERANKER_MODEL` | `BAAI/bge-reranker-v2-m3` | Cross-encoder reranker (FlagEmbedding) |
+| `RETRIEVAL_TOP_K` | `10` | Candidates returned by dense search |
+| `RERANKER_TOP_K` | `3` | Final passages after reranking |
+
+### 3.5 MCP Tool Servers
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `MCP_WEATHER_PORT` | `9001` | OpenWeather + IMD wrapper |
+| `MCP_MANDI_PORT` | `9002` | AgMarknet price feed |
+| `MCP_SCHEME_PORT` | `9003` | Govt scheme matcher (PM-KISAN, KCC, etc.) |
+| `MCP_FINANCE_PORT` | `9004` | Per-farmer cashflow + expense rollups |
+
+### 3.6 Feature Flags
+
+| Var | Default | Effect when `true` |
+|-----|---------|--------------------|
+| `USE_GEMMA_AUDIO` | `false` | Reserved for future Gemma audio variant |
+| `ENABLE_VOICE_STT` | `false` | Activates Whisper STT in `app/services/voice.py` |
+| `ENABLE_SMS` | `false` | Activates SMS fallback for farmers without Telegram |
+| `ENABLE_BHOJPURI` | `false` | Enables Bhojpuri translation path |
+
+### 3.7 Runtime & Security
+
+| Var | Default | Notes |
+|-----|---------|-------|
+| `APP_ENV` | `development` | Set to `production` for strict validation |
+| `ALLOWED_ORIGINS` | `localhost:8000,127.0.0.1:8000` | CORS allowlist — never `*` in production |
+| `ALLOWED_HOSTS` | `localhost,127.0.0.1,0.0.0.0,testserver` | Host header check |
+| `AGRIMESH_REQUIRE_API_KEY` | `false` | Require `X-API-Key` header on dashboard endpoints |
+| `AGRIMESH_API_KEY` | _empty_ | Generate with `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+| `MAX_REQUEST_BYTES` | `2000000` | Hard cap on upload size |
+
+---
+
+## 4. How to Change the LLM Model
+
+The agent talks to Ollama through `app/services/ollama_client.py`. Swapping models is **a single env change + a single pull**.
+
+### 4.1 Switch to another Gemma size
+
+```bash
+ollama pull gemma4:e2b           # download
+# in .env
+OLLAMA_MODEL=gemma4:e2b
+# restart the bot + dashboard
+```
+
+### 4.2 Swap to a non-Gemma model
+
+```bash
+ollama pull qwen2.5:7b           # or llama3.1:8b, mistral:7b, phi3:mini, etc.
+# in .env
+OLLAMA_MODEL=qwen2.5:7b
+OLLAMA_FALLBACK_MODEL=qwen2.5:3b
+OLLAMA_NUM_CTX=8192              # adjust to model's max context
+```
+
+**What changes automatically:** prompt routing, ReAct planning, template generation, verifier loop — all flow through the single client and the same env keys.
+
+**What you may need to tune:**
+
+- `USE_GRAMMAR_DECODING` — non-Gemma models on Ollama vary in JSON grammar support. Set to `0` if you see template output corruption; the agent will fall back to free-form generation + post-hoc JSON repair.
+- `OLLAMA_NUM_CTX` — match the model's published context window. Models that report 32k often degrade past 8k on CPU.
+- `OLLAMA_NUM_BATCH` — drop to 128 on CPU-only hosts to avoid timeouts on long prompts.
+
+### 4.3 Run two models on the same host
+
+Ollama serves all pulled models from one daemon. The primary stays warm (`OLLAMA_KEEP_ALIVE=-1`); the fallback loads on demand. Reserve ~14 GB RAM if you want both resident simultaneously.
+
+### 4.4 Run Ollama on a different machine
+
+```bash
+# in .env on the AgentAgri box
+OLLAMA_HOST=http://192.168.1.50:11434
+```
+
+No code change required. The client uses plain HTTP and tolerates higher latency.
+
+### 4.5 Switch to a hosted API (Claude, OpenAI, etc.)
+
+This is a code change, not a config change. Replace `app/services/ollama_client.py` with an adapter that exposes the same `generate()` / `chat()` interface; everything upstream is provider-agnostic. The repo intentionally pins to a local provider so farmers' data stays on-device.
+
+---
+
+## 5. How to Change the Telegram Bot / API
+
+### 5.1 Issue a new bot
+
+1. Open Telegram, message [@BotFather](https://t.me/BotFather).
+2. `/newbot` → name → username ending in `bot` (e.g. `agentagri_bot`).
+3. Copy the token (`123456789:ABC...`).
+4. In `.env` set `TELEGRAM_BOT_TOKEN=<token>` and restart `python -m app.bot.telegram_bot`.
+
+### 5.2 Migrate to a new bot identity (rotate token)
+
+1. Generate a new bot via BotFather.
+2. Update `TELEGRAM_BOT_TOKEN` and restart the bot process.
+3. Existing farmer records are keyed by **phone**, not Telegram chat ID — they re-bind on first `/start` from the new bot.
+4. Revoke the old token from BotFather to prevent dual-listening.
+
+### 5.3 Swap to webhook mode (production)
+
+The default is long-polling (works behind NAT, zero infra). For multi-instance deployments or low-latency, switch to webhooks:
+
+```python
+# app/bot/telegram_bot.py — replace run_polling() with:
+application.run_webhook(
+    listen="0.0.0.0",
+    port=8443,
+    url_path=os.environ["TELEGRAM_BOT_TOKEN"],
+    webhook_url=f"https://yourdomain.example/{os.environ['TELEGRAM_BOT_TOKEN']}",
+)
+```
+
+Then expose port 8443 behind TLS (Cloudflare Tunnel, nginx + certbot, or a managed load balancer).
+
+### 5.4 Replace Telegram with WhatsApp / SMS
+
+The bot module is thin — the agent core is messaging-agnostic. To target WhatsApp:
+
+1. Add `whatsapp-business-cloud-api` or Twilio SDK to `requirements.txt`.
+2. Create `app/bot/whatsapp_bot.py` mirroring the handler surface in `app/bot/telegram_bot.py` (one handler per command, plus text/photo/voice).
+3. Forward parsed messages to `AgentOrchestrator.process()` exactly as the Telegram bot does.
+4. Map WhatsApp's button payloads to the same `route_to_thread` callbacks.
+
+For SMS, flip `ENABLE_SMS=true` and wire your provider in `app/services/sms.py` (Twilio / Gupshup / Karix).
+
+---
+
+## 6. How to Change the Database
+
+Default is SQLite for zero-config dev. Production should use Postgres.
+
+```bash
+# .env
+DATABASE_URL=postgresql+asyncpg://agrimesh:secret@db.internal:5432/agrimesh
+# then
+alembic upgrade head
+```
+
+**Migration safety:** every schema change ships as an Alembic revision in `app/migrations/versions/`. Never edit existing revisions — add a new one. The reversibility rule applies (see [project memory](../README.md)).
+
+To move data from SQLite → Postgres:
+```bash
+python scripts/sqlite_to_postgres.py --src ./data/agrimesh.db --dst $DATABASE_URL
 ```
 
 ---
 
-## System Architecture Diagram
+## 7. Running the Test Suite
 
-```
-Your Computer:
-  Ollama (gemma4:2b)
-    ↓ (localhost:11434)
-  Docker Network
-    ├─ FastAPI Backend (Python)
-    │   ├─ Connects to Ollama
-    │   ├─ Serves PWA frontend
-    │   └─ Serves API endpoints
-    ├─ PostgreSQL Database (data storage)
-    ├─ Redis Cache (optional optimization)
-    ├─ 4 MCP Microservices
-    │   ├─ Weather Service
-    │   ├─ Market Prices Service
-    │   ├─ Schemes Service
-    │   └─ Finance Service
-    ├─ React Frontend (PWA)
-    │   └─ 7-page dashboard
-    └─ Telegram Bot Service
-        └─ Connects to FastAPI backend
+```bash
+# Full suite (excluding the one pre-existing flaky e2e test)
+pytest tests --ignore=tests/test_agent_e2e.py
 
-Farmer's Device:
-  Telegram App ↔ Bot ↔ FastAPI ↔ Ollama (Gemma 4)
-  Browser ↔ http://localhost:8000 ↔ FastAPI ↔ Ollama
+# Single file
+pytest tests/test_conversation_wiring.py -v
+
+# Memory & evidence regression
+pytest tests/test_memory_accuracy.py tests/test_evidence.py
+
+# Eval harness (synthetic 200 cases)
+python -m evals.run_eval --source synthetic --limit 200
+python -m evals.run_eval --source farmer_qa --limit 20
 ```
 
-**Everything runs locally. No cloud. No signup. No costs.**
+Baseline at `origin/main` HEAD `9c7af01`: **216 passed in 152.24s.**
 
+---
+
+## 8. Why the requirements file is long
+
+The dependency list (≈40 direct + transitives) reflects three things the project genuinely needs and won't shortcut:
+
+1. **Local LLM stack** — `ollama`, `httpx`, `transformers`, `torch`, `sentence-transformers`, `FlagEmbedding`. Running inference on the farmer's device keeps PII local; the price is a real ML runtime, not a hosted-API SDK.
+2. **Async-first web + tool layer** — `fastapi`, `uvicorn`, `pydantic`, `sqlalchemy[asyncio]`, `asyncpg`, `alembic`, `mcp`, `fastmcp`. Async is non-negotiable because the agent fans out to 4 MCP servers in parallel and streams Telegram replies.
+3. **Farmer-language + media pipeline** — `python-telegram-bot`, `Pillow`, `opencv-python-headless`, `indic-nlp-library`, `langdetect`, `lxml`. Photos for disease ID, mixed-script Hindi/Hinglish input, and structured wiki ingestion each pull a different toolchain.
+
+Plus the standard support cast: `argon2-cffi` (password hashing), `redis` (rate limiting), `pytest` + `pytest-asyncio` (216 tests). See [DEPENDENCIES.md](DEPENDENCIES.md) for per-package "why this and not that."
+
+---
+
+## 9. Production Checklist
+
+- [ ] `APP_ENV=production` set
+- [ ] `DATABASE_URL` points to Postgres, not SQLite
+- [ ] `AGRIMESH_API_KEY` generated and required on dashboard endpoints
+- [ ] `ALLOWED_ORIGINS` and `ALLOWED_HOSTS` enumerate real domains, no `*`
+- [ ] `TELEGRAM_BOT_TOKEN` is a production bot, not a dev clone
+- [ ] Ollama daemon kept warm with `OLLAMA_KEEP_ALIVE=-1`
+- [ ] MCP servers run under a process manager (systemd, supervisord)
+- [ ] Redis reachable for rate limiting (`REDIS_URL`)
+- [ ] Backups configured for the Postgres `farmers` / `conversation_threads` / `atoms` tables
+- [ ] Logs aggregated (LOG_LEVEL=INFO; structured JSON to stdout)
+- [ ] `alembic upgrade head` run during deploy
+
+---
+
+## 10. Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| Bot stays silent | Token wrong, or bot not started | `python -m app.bot.telegram_bot` and check stdout |
+| `Connection refused localhost:11434` | Ollama not running | `ollama serve` |
+| `model 'gemma4:e4b' not found` | Not pulled | `ollama pull gemma4:e4b` |
+| Slow first reply | Cold model load | Set `OLLAMA_KEEP_ALIVE=-1` |
+| `RuntimeError: cannot reuse already awaited coroutine` | Mixing sync + async DB session | Use `AsyncSession` only; never call `.commit()` on a sync session |
+| MCP tool times out | Server crashed | Check `python -m app.mcp.<name>_server` stdout; restart |
+| Tests hang on `pytest-asyncio` | Old plugin version | `pip install -U pytest-asyncio` (>=0.23) |
