@@ -244,22 +244,24 @@ second write.
 Each phase is a separate commit so we keep the reversibility rule
 (`feedback_reversibility`).
 
-## 11. Open questions (need user input before phase 1)
+## 11. Resolved design decisions (2026-05-16)
 
-1. **Confirm vs. immediate-with-Undo for `/newthread`** — Hindi farmers on
-   small screens; one tap may be safer than a two-step confirm. Pick one.
-2. **Rename** — Expose `/renamethread` in v1, or skip and rely on
-   auto-derived title? Skipping is simpler; rename adds one more state.
-3. **`/start` hint** — One-line text vs. inline button row that shows the most
-   recent thread? Buttons add density; text is less discoverable.
-4. **Cross-scope routing policy (§7.2 step 2)** — Should "active thread for a
-   different crop" win over "active thread for the current scope" when the
-   message crop disagrees with the active scope? Today this design says yes
-   only when the *current* scope has no active thread. A stricter policy is
-   "never cross scopes implicitly; tell the farmer to /threads switch."
-5. **Auto-archive visibility** — When `/newthread` archives the previous one,
-   should `/threads` show it by default or only under "Show archived"? Default
-   visibility helps recovery; hiding reduces clutter.
+1. **`/newthread` archive step** → **Two-step confirm.** Show
+   "इस बातचीत को बंद करें और नई शुरू करें? / Close this conversation and
+   start fresh?" before archiving. Safer for misclicks on small screens.
+2. **Rename in v1** → **No.** Title is auto-derived from crop + topic on
+   first turn (§7.4). `/renamethread` deferred to a future iteration.
+3. **`/start` hint** → **One-line text hint.** Append
+   "🗂 आपकी पिछली बातचीत जारी है। `/threads` से देखें।" when an active
+   thread exists. No inline buttons in `/start`.
+4. **Cross-scope routing** → **Only if current scope has no active
+   thread.** Matches the §7.2 draft: cross-scope crop match wins only as a
+   fallback. Keeps behavior predictable when LLM crop extraction is wrong.
+5. **Auto-archive visibility in `/threads`** → **Hidden by default.** Show
+   only active threads in the main list; expose archived ones under a
+   "पुराने दिखाएं / Show archived" inline button.
+
+These decisions are now binding for phase 1 of task #8.
 
 ---
 
