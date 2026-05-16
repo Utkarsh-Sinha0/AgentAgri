@@ -192,9 +192,16 @@ async def record_turn(
     retrieval_path: str,
     evidence_article_ids: list[str],
     memory_snapshot: str,
+    thread_id: str | None = None,
 ) -> ConversationTurn:
     """Persist one exchange and update the thread's rolling summary."""
-    thread = await get_or_create_thread(db, farmer_id, field_id, crop_cycle_id)
+    thread: ConversationThread | None = None
+    if thread_id is not None:
+        thread = await db.get(ConversationThread, thread_id)
+        if thread is not None and thread.farmer_id != farmer_id:
+            thread = None
+    if thread is None:
+        thread = await get_or_create_thread(db, farmer_id, field_id, crop_cycle_id)
     turn = ConversationTurn(
         id=str(uuid.uuid4()),
         thread_id=thread.id,

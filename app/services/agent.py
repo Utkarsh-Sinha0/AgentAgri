@@ -172,8 +172,9 @@ class AgentOrchestrator:
 
         # ── Step 1.5: Durable conversation routing ───────────────
         previous_article_ids: list[str] = []
+        routed_thread_id: str | None = None
         try:
-            from app.services.conversation import previous_evidence_article_ids
+            from app.services.conversation import previous_evidence_article_ids, route_to_thread
 
             detected_followup = detected_followup or llm_is_followup
             previous_article_ids = await previous_evidence_article_ids(
@@ -182,6 +183,14 @@ class AgentOrchestrator:
                 field_id=ctx.field_id,
                 crop_cycle_id=ctx.crop_cycle_id,
             )
+            routed_thread = await route_to_thread(
+                db,
+                farmer_id=ctx.farmer_id,
+                field_id=ctx.field_id,
+                crop_cycle_id=ctx.crop_cycle_id,
+                intent_crop_name=llm_crop_name or None,
+            )
+            routed_thread_id = routed_thread.id
         except Exception as exc:
             logger.warning(f"Conversation continuity lookup failed: {exc}")
 
@@ -381,6 +390,7 @@ class AgentOrchestrator:
                 evidence=evidence,
                 retrieval_path=retrieval_result.get("path", "none") if retrieval_result else "none",
                 detected_followup=detected_followup,
+                thread_id=routed_thread_id,
             )
 
         latency_ms = int((time.perf_counter() - t0) * 1000)
@@ -1443,6 +1453,7 @@ class AgentOrchestrator:
         evidence: EvidenceBundle,
         retrieval_path: str,
         detected_followup: bool,
+        thread_id: str | None = None,
     ) -> None:
         """Persist continuity and action impact graph after advisory creation."""
         try:
@@ -1463,6 +1474,7 @@ class AgentOrchestrator:
                 retrieval_path=retrieval_path,
                 evidence_article_ids=[a["id"] for a in evidence.wiki_articles],
                 memory_snapshot=evidence.memory_context,
+                thread_id=thread_id,
             )
             await build_action_impact_network(db, advisory_id)
             await db.commit()
