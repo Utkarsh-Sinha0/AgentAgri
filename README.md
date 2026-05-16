@@ -14,14 +14,11 @@
 ---
 
 > **New here?** Read in this order:
-> 1. [TODO_MAKE_IT_WORK.md](TODO_MAKE_IT_WORK.md) — fresh-clone → running bot runbook
-> 2. [docs/SETUP.md](docs/SETUP.md) — environment setup detail
-> 3. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — folder map + service roles
-> 4. [docs/WORKFLOW.md](docs/WORKFLOW.md) — the 14-step request lifecycle
-> 5. [docs/COLLABORATOR_GUIDE.md](docs/COLLABORATOR_GUIDE.md) — onboarding for a new collaborator
-> 6. [HANDOVER_2026-05-15.md](HANDOVER_2026-05-15.md) — current state of the eval pipeline (latest session)
-> 7. [HANDOVER.md](HANDOVER.md) — long-range sprint history + audit close-out
-> 8. [docs/FEATURES.md](docs/FEATURES.md) · [docs/API.md](docs/API.md) · [docs/MATURITY_PLAN.md](docs/MATURITY_PLAN.md) · [docs/ROADMAP_STT_TTS.md](docs/ROADMAP_STT_TTS.md)
+> 1. [docs/SETUP.md](docs/SETUP.md) — fresh-clone → running bot, environment setup
+> 2. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — folder map + service roles
+> 3. [docs/WORKFLOW.md](docs/WORKFLOW.md) — request lifecycle (mermaid diagrams)
+> 4. [docs/FEATURES.md](docs/FEATURES.md) — every shipped feature
+> 5. [docs/API.md](docs/API.md) · [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) · [docs/VISION.md](docs/VISION.md)
 
 ## ⚡ Getting Started (3 Steps)
 
@@ -74,9 +71,12 @@ When you install **Gemma 4 2B in Ollama**:
 ## 📚 Full Documentation
 
 - [Setup Guide](docs/SETUP.md) — Detailed installation & configuration
-- [Features](docs/FEATURES.md) — All 13 agricultural features
+- [Features](docs/FEATURES.md) — All shipped agricultural features
 - [API Reference](docs/API.md) — REST endpoints & responses
-- [Maturity Plan](docs/MATURITY_PLAN.md) — Roadmap & technical decisions
+- [Architecture](docs/ARCHITECTURE.md) — Folder map & service roles
+- [Workflow](docs/WORKFLOW.md) — Request lifecycle mermaid diagrams
+- [Dependencies](docs/DEPENDENCIES.md) — Why each package is pinned
+- [Vision](docs/VISION.md) — Roadmap and future direction
 
 ---
 
@@ -128,8 +128,8 @@ Detailed handoff documents:
 - [Setup guide](docs/SETUP.md)
 - [Feature guide](docs/FEATURES.md)
 - [API reference](docs/API.md)
-- [Product pitch and use cases](PRODUCT_PITCH_AND_USE_CASES.md)
-- [Developer spec and tester README](DEVELOPER_SPEC_AND_TESTER_README.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Vision and roadmap](docs/VISION.md)
 
 ---
 
