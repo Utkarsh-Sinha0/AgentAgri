@@ -48,11 +48,21 @@
       "type": "boolean",
       "description": "True if this message is a follow-up to a previous advisory (e.g. asks 'why', 'kitna', refers to 'it', or builds on prior context). False if the message stands alone."
     },
+    "referenced_action": {
+      "type": "string",
+      "description": "Short English label for the prior action the farmer is reporting back on, drawn from the message or recent advisory (e.g. 'drain', 'spray fungicide', 'apply urea', 'irrigation', 'scout'). Empty string if no prior action is referenced.",
+      "maxLength": 60
+    },
+    "referenced_problem": {
+      "type": "string",
+      "description": "Short English label for the prior problem the follow-up is about, drawn from the message or recent advisory (e.g. 'brown spot', 'blast', 'yellowing', 'BPH', 'flood'). Empty string if no prior problem is referenced.",
+      "maxLength": 60
+    },
     "reason": {
       "type": "string",
       "maxLength": 120
     }
   },
-  "required": ["intent", "needs_retrieval", "language", "crop_name", "state_or_region", "topic_tags", "is_followup"],
+  "required": ["intent", "needs_retrieval", "language", "crop_name", "state_or_region", "topic_tags", "is_followup", "referenced_action", "referenced_problem"],
   "additionalProperties": false
 }

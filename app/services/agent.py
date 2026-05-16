@@ -121,6 +121,12 @@ class AgentOrchestrator:
             except Exception as exc:
                 logger.error(f"Vision analysis failed: {exc}")
 
+        # Load conversation context early so the intent classifier can
+        # resolve follow-up references ("I did what you said") against the
+        # most recent advisory. The same string is reused at Step 6 so this
+        # is not a duplicate DB query.
+        conversation_context = await self._load_conversation_context(db, ctx)
+
         # ── Step 1: Intent classification (LLM-decided entities) ─
         intent: dict = {}
         llm_crop_name = ""
@@ -128,8 +134,14 @@ class AgentOrchestrator:
         llm_state = ""
         llm_topic_tags: list[str] = []
         llm_is_followup = False
+        llm_referenced_action = ""
+        llm_referenced_problem = ""
         try:
-            intent_result = await self.llm.classify_intent(ctx.message, ctx.language)
+            intent_result = await self.llm.classify_intent(
+                ctx.message,
+                ctx.language,
+                conversation_context=conversation_context,
+            )
             intent = intent_result.get("parsed", {}) or {}
             needs_retrieval = intent.get("needs_retrieval", True)
             needs_tools = intent.get("needs_tool_call", False)
@@ -138,10 +150,13 @@ class AgentOrchestrator:
             llm_state = (intent.get("state_or_region") or "").strip()
             llm_topic_tags = [t for t in (intent.get("topic_tags") or []) if t]
             llm_is_followup = bool(intent.get("is_followup", False))
+            llm_referenced_action = (intent.get("referenced_action") or "").strip()
+            llm_referenced_problem = (intent.get("referenced_problem") or "").strip()
             logger.info(
                 f"Intent: {intent.get('intent')}, retrieval={needs_retrieval}, tools={needs_tools}, "
                 f"crop='{llm_crop_name}', stage='{llm_crop_stage}', region='{llm_state}', "
-                f"tags={llm_topic_tags}, followup={llm_is_followup}"
+                f"tags={llm_topic_tags}, followup={llm_is_followup}, "
+                f"ref_action='{llm_referenced_action}', ref_problem='{llm_referenced_problem}'"
             )
         except Exception as exc:
             logger.error(f"Intent classification failed: {exc}")
@@ -245,10 +260,11 @@ class AgentOrchestrator:
         if "match_schemes" in tool_results:
             evidence.scheme_data = tool_results.get("match_schemes")
 
-        # Load memory context
+        # Load memory context (conversation_context was loaded before Step 1
+        # so the intent classifier could resolve follow-up references; reuse
+        # it here instead of re-querying).
         evidence.memory_context = await self._load_memory_context(db, ctx)
         profile_context = await self._load_personal_profile_context(db, ctx)
-        conversation_context = await self._load_conversation_context(db, ctx)
         evidence.memory_context = "\n".join(
             part for part in [profile_context, conversation_context, evidence.memory_context] if part
         )
@@ -283,7 +299,12 @@ class AgentOrchestrator:
             # follow-up turns score 0 on evidence_ok because the
             # clarification template has no continuity keywords.
             if detected_followup:
-                fu_response = self._build_followup_response(ctx, conversation_context)
+                fu_response = self._build_followup_response(
+                    ctx,
+                    conversation_context,
+                    referenced_action=llm_referenced_action,
+                    referenced_problem=llm_referenced_problem,
+                )
                 if fu_response is not None:
                     return await self._tool_only_response(
                         db, ctx, t0, fu_response, tool_results
@@ -1072,53 +1093,56 @@ class AgentOrchestrator:
         self,
         ctx: AgentContext,
         conversation_context: str,
+        *,
+        referenced_action: str = "",
+        referenced_problem: str = "",
     ) -> str | None:
         """Render a deterministic follow-up advisory when the farmer is
         reporting back on a prior action ("I did X you said, what next?").
 
-        Pulls the prior action/problem from the current message + the
-        recent conversation context, and produces a monitor/continue
-        message with explicit continuity keywords (monitor, continue,
-        follow up, good) so follow-up turns don't fall through to the
-        generic clarification template.
+        Prefers the LLM-extracted ``referenced_action`` / ``referenced_problem``
+        from intent classification. Falls back to a keyword scan over the
+        current message + recent conversation transcript only when both
+        LLM fields are empty (safety net for the small quantized model).
         """
         msg = (ctx.message or "").strip()
         if not msg:
             return None
         is_hindi = (ctx.language or "").lower().startswith("hi")
-        m_lower = msg.lower()
-        ctx_lower = (conversation_context or "").lower()
 
-        # Detect the prior action the farmer references (drain / spray /
-        # apply / urea / fungicide / fertilizer / irrigation), looking
-        # first in the farmer's own follow-up message and then in the
-        # recent conversation transcript.
-        action_keywords = [
-            ("drain", ["drain", "drained", "draining", "जल निकास"]),
-            ("spray", ["spray", "sprayed", "spraying", "छिड़काव"]),
-            ("urea", ["urea", "यूरिया"]),
-            ("fungicide", ["fungicide", "फफूंदनाशक"]),
-            ("fertilizer", ["fertilizer", "fertiliser", "खाद", "उर्वरक"]),
-            ("irrigation", ["irrigation", "irrigated", "सिंचाई"]),
-        ]
-        prior_action = None
-        for key, needles in action_keywords:
-            if any(n in m_lower for n in needles) or any(n in ctx_lower for n in needles):
-                prior_action = key
-                break
+        prior_action = referenced_action.strip() or None
+        prior_problem = referenced_problem.strip() or None
 
-        problem_keywords = [
-            ("brown spot", ["brown spot", "ब्राउन स्पॉट", "भूरे धब्बे"]),
-            ("blast", ["blast", "ब्लास्ट"]),
-            ("yellowing", ["yellow", "पीला", "पीलापन"]),
-            ("hopper", ["hopper", "bph", "हॉपर", "फुदका"]),
-            ("flood", ["flood", "बाढ़", "जलभराव"]),
-        ]
-        prior_problem = None
-        for key, needles in problem_keywords:
-            if any(n in m_lower for n in needles) or any(n in ctx_lower for n in needles):
-                prior_problem = key
-                break
+        # Keyword fallback: only if BOTH LLM fields are empty. Once the LLM
+        # provides at least one signal, trust it and skip the scan to avoid
+        # the keyword tables overriding the model's semantic choice.
+        if not prior_action and not prior_problem:
+            m_lower = msg.lower()
+            ctx_lower = (conversation_context or "").lower()
+            action_keywords = [
+                ("drain", ["drain", "drained", "draining", "जल निकास"]),
+                ("spray", ["spray", "sprayed", "spraying", "छिड़काव"]),
+                ("urea", ["urea", "यूरिया"]),
+                ("fungicide", ["fungicide", "फफूंदनाशक"]),
+                ("fertilizer", ["fertilizer", "fertiliser", "खाद", "उर्वरक"]),
+                ("irrigation", ["irrigation", "irrigated", "सिंचाई"]),
+            ]
+            for key, needles in action_keywords:
+                if any(n in m_lower for n in needles) or any(n in ctx_lower for n in needles):
+                    prior_action = key
+                    break
+
+            problem_keywords = [
+                ("brown spot", ["brown spot", "ब्राउन स्पॉट", "भूरे धब्बे"]),
+                ("blast", ["blast", "ब्लास्ट"]),
+                ("yellowing", ["yellow", "पीला", "पीलापन"]),
+                ("hopper", ["hopper", "bph", "हॉपर", "फुदका"]),
+                ("flood", ["flood", "बाढ़", "जलभराव"]),
+            ]
+            for key, needles in problem_keywords:
+                if any(n in m_lower for n in needles) or any(n in ctx_lower for n in needles):
+                    prior_problem = key
+                    break
 
         # Only fire if we found something concrete to reference. A bare
         # "what next?" with no signal still goes to clarification.

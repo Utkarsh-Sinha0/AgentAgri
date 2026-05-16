@@ -210,11 +210,31 @@ class OllamaClient:
 
     # ── Quick helpers ──────────────────────────────────────────────
 
-    async def classify_intent(self, user_message: str, language: str = "auto") -> dict:
-        """Fast intent classification (thinking OFF, grammar ON)."""
+    async def classify_intent(
+        self,
+        user_message: str,
+        language: str = "auto",
+        conversation_context: str = "",
+    ) -> dict:
+        """Fast intent classification (thinking OFF, grammar ON).
+
+        ``conversation_context`` is a short snippet of recent turns so the
+        LLM can resolve follow-up references ("I did what you said") to a
+        concrete referenced_action / referenced_problem instead of leaving
+        them blank.
+        """
+        ctx_block = (
+            f"\n\nRecent conversation (most recent advisory last):\n{conversation_context.strip()[:1200]}"
+            if conversation_context and conversation_context.strip()
+            else "\n\nRecent conversation: (none)"
+        )
         msgs = [
             {"role": "system", "content": AGENT_SYSTEM_PROMPT},
-            {"role": "user", "content": INTENT_CLASSIFICATION_PROMPT.format(user_message=user_message)},
+            {
+                "role": "user",
+                "content": INTENT_CLASSIFICATION_PROMPT.format(user_message=user_message)
+                + ctx_block,
+            },
         ]
         return await self.structured_chat(msgs, "intent_classification", thinking=False)
 
@@ -349,6 +369,8 @@ Entity extraction (use your own judgment — do not rely on keyword lookups):
 - state_or_region: Indian state/district/region if mentioned. Empty string otherwise.
 - topic_tags: 1-3 semantic tags from the enum that best describe the agronomic topic.
 - is_followup: true if this message builds on a prior advisory (refers to "it", asks "why"/"how much", clarifies a previous answer); false if it stands alone.
+- referenced_action: short English label for the prior action the farmer is reporting back on (e.g. "drain", "spray fungicide", "apply urea", "irrigation", "scout"). Resolve using BOTH the farmer's current message and the recent conversation context. Empty string if none.
+- referenced_problem: short English label for the prior problem the follow-up is about (e.g. "brown spot", "blast", "yellowing", "BPH", "flood"). Resolve from message + recent conversation. Empty string if none.
 - language: hi / en / mixed based on the script and vocabulary used.
 
 Do not echo keywords. Decide semantically.
@@ -373,7 +395,13 @@ Output: intent=nutrient_advice, is_followup=true, crop_name="", topic_tags=["nut
 Example 4 — message naming a region
 Message: "मेरे बिहार के खेत में धान में blast हो रहा है"
 Reasoning: "मेरे बिहार के खेत" explicitly names Bihar as the state; the crop is rice (धान) with blast disease.
-Output: intent=disease_diagnosis, crop_name="rice", state_or_region="Bihar", topic_tags=["disease"], is_followup=false
+Output: intent=disease_diagnosis, crop_name="rice", state_or_region="Bihar", topic_tags=["disease"], is_followup=false, referenced_action="", referenced_problem=""
+
+Example 5 — follow-up that references prior advice via conversation context
+Recent conversation (most recent advisory last): "Agent: Drain the field and monitor the brown spot patches over 5–7 days."
+Message: "मैंने पानी निकाल दिया, अब क्या?"
+Reasoning: the farmer is reporting they completed the prior "drain" action; the prior problem was brown spot. Resolve both labels from the recent advisory.
+Output: intent=disease_diagnosis, is_followup=true, crop_name="", referenced_action="drain", referenced_problem="brown spot", topic_tags=["disease"]
 
 Farmer message:
 {user_message}"""

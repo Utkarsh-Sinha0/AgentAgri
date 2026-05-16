@@ -21,11 +21,16 @@ FIELD_ID = "51f35978-7c11-49da-b852-ea77e1f23d26"
 CROP_CYCLE_ID = "04fbbcb2-cb6b-49aa-99f7-f4fac96767f2"
 PHONE = "1345155802"
 
-QUERIES = [
-    "मेरे टमाटर के पौधे पर पीले धब्बे हैं",
-    "PMFBY के लिए कब apply करूं",
-    "और बताओ",
-    "मेरे बिहार के खेत में धान में blast हो रहा है",
+# (message, conversation_context). Empty context = stand-alone message.
+QUERIES: list[tuple[str, str]] = [
+    ("मेरे टमाटर के पौधे पर पीले धब्बे हैं", ""),
+    ("PMFBY के लिए कब apply करूं", ""),
+    ("और बताओ", ""),
+    ("मेरे बिहार के खेत में धान में blast हो रहा है", ""),
+    (
+        "मैंने पानी निकाल दिया, अब क्या करूं?",
+        "Agent: Drain the field and monitor the brown spot patches over 5–7 days.",
+    ),
 ]
 
 REQUIRED = {
@@ -36,6 +41,8 @@ REQUIRED = {
     "state_or_region",
     "topic_tags",
     "is_followup",
+    "referenced_action",
+    "referenced_problem",
 }
 ALLOWED_KEYS = REQUIRED | {
     "needs_tool_call",
@@ -80,7 +87,14 @@ def validation_errors(parsed: dict[str, Any]) -> list[str]:
     for key in ("needs_retrieval", "needs_tool_call", "is_followup"):
         if key in parsed and not isinstance(parsed[key], bool):
             errors.append(f"{key} must be boolean, got {type(parsed[key]).__name__}")
-    for key in ("crop_name", "crop_stage", "state_or_region", "reason"):
+    for key in (
+        "crop_name",
+        "crop_stage",
+        "state_or_region",
+        "referenced_action",
+        "referenced_problem",
+        "reason",
+    ):
         if key in parsed and not isinstance(parsed[key], str):
             errors.append(f"{key} must be string, got {type(parsed[key]).__name__}")
     topic_tags = parsed.get("topic_tags")
@@ -104,9 +118,11 @@ async def main() -> None:
         print(f"field_id={FIELD_ID}")
         print(f"crop_cycle_id={CROP_CYCLE_ID}")
         print(f"phone_format=digits length={len(PHONE)}")
-        for query in QUERIES:
+        for query, conv_ctx in QUERIES:
             print("\n---")
             print(f"query={query}")
+            if conv_ctx:
+                print(f"conversation_context={conv_ctx}")
             ctx = AgentContext(
                 farmer_id=FARMER_ID,
                 field_id=FIELD_ID,
@@ -115,7 +131,11 @@ async def main() -> None:
                 language="auto",
             )
             try:
-                result = await orchestrator.llm.classify_intent(ctx.message, ctx.language)
+                result = await orchestrator.llm.classify_intent(
+                    ctx.message,
+                    ctx.language,
+                    conversation_context=conv_ctx,
+                )
                 parsed = result.get("parsed", {}) or {}
                 errors = validation_errors(parsed)
                 print(f"raw_content={result.get('content', '')}")
@@ -125,12 +145,16 @@ async def main() -> None:
                 print(f"topic_tags={parsed.get('topic_tags')}")
                 print(f"is_followup={parsed.get('is_followup')}")
                 print(f"state_or_region={parsed.get('state_or_region')}")
+                print(f"referenced_action={parsed.get('referenced_action')}")
+                print(f"referenced_problem={parsed.get('referenced_problem')}")
                 print(f"validation_error={'; '.join(errors) if errors else 'none'}")
             except Exception as exc:
                 print(f"crop_name=None")
                 print(f"topic_tags=None")
                 print(f"is_followup=None")
                 print(f"state_or_region=None")
+                print(f"referenced_action=None")
+                print(f"referenced_problem=None")
                 print(f"validation_error=exception: {exc.__class__.__name__}: {exc}")
                 traceback.print_exc()
 
