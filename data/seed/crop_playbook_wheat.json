@@ -1,0 +1,368 @@
+{
+  "crop": "wheat",
+  "season": "rabi",
+  "regions_applicable": ["Bihar", "Uttar Pradesh", "Punjab", "Madhya Pradesh", "Haryana"],
+  "total_cycle_days_low_high": [110, 150],
+  "stages": [
+    {
+      "name": "soil_preparation",
+      "stage_order": 1,
+      "duration_days_low_high": [7, 12],
+      "objective": "Create a fine, firm, weed-free seedbed with adequate moisture for uniform germination.",
+      "actions": [
+        "Plough once with disc harrow or cultivator to 15-20 cm depth.",
+        "Apply well-decomposed FYM/compost at 8-10 t/acre.",
+        "Perform 2-3 passes of rotavator/cultivator to obtain fine tilth.",
+        "Form field into small plots and apply pre-sowing irrigation if soil is dry.",
+        "Apply basal fertilizer (DAP 50 kg or 10:26:26 65 kg/acre) based on soil test.",
+        "Treat seed with carbendazim 2g/kg + imidacloprid 3ml/kg for termite and smut control.",
+        "Level field using laser leveler to prevent water stagnation."
+      ],
+      "inputs": [
+        {"item": "Tractor ploughing/rotavator", "quantity_per_acre": "2-3 passes", "cost_rs_low_high": [1200, 1800], "notes": "Rental basis"},
+        {"item": "FYM/Compost", "quantity_per_acre": "8-10 tonnes", "cost_rs_low_high": [2000, 3000], "notes": "If purchased; free if own"},
+        {"item": "DAP", "quantity_per_acre": "50 kg", "cost_rs_low_high": [1800, 2200], "notes": "Basal phosphorus"},
+        {"item": "Seed treatment chemicals", "quantity_per_acre": "per acre", "cost_rs_low_high": [80, 120], "notes": "Carbendazim + imidacloprid"}
+      ],
+      "cost_rs_per_acre_low_high": [4000, 6500],
+      "sustainable_alternatives": [
+        "Zero tillage: direct sowing with Happy Seeder without ploughing (saves Rs.1500/acre).",
+        "Incorporate paddy straw instead of burning (saves Rs.2500/acre on FYM).",
+        "Use Trichoderma viride 4g/kg seed instead of chemical fungicide."
+      ],
+      "common_issues": [
+        {"issue": "Cloddy seedbed", "symptoms": ["Poor seed-soil contact", "Patchy germination"], "remedy_cost_effective": "Increase rotavator passes.", "organic_option": "Apply extra FYM to improve tilth.", "preventive": "Plough at optimal moisture (field capacity)."},
+        {"issue": "Low soil moisture at sowing", "symptoms": ["Dry surface", "Delayed germination"], "remedy_cost_effective": "Pre-sowing irrigation.", "organic_option": "Mulch with paddy straw after sowing.", "preventive": "Harvest previous crop early to conserve moisture."},
+        {"issue": "Termites in dry soil", "symptoms": ["Hollowed stems", "Dead seedlings"], "remedy_cost_effective": "Seed treatment with chlorpyrifos 20 EC 4ml/kg.", "organic_option": "Neem oil seed treatment 5ml/kg.", "preventive": "Maintain soil moisture; avoid deep ploughing in dry conditions."}
+      ],
+      "checkpoints": ["Soil moisture at 5 cm depth should form a ball when squeezed.", "No clods larger than 2 cm.", "Field leveled to <2 cm variation."]
+    },
+    {
+      "name": "sowing",
+      "stage_order": 2,
+      "duration_days_low_high": [3, 7],
+      "objective": "Establish uniform plant stand at optimum depth and spacing for high yield potential.",
+      "actions": [
+        "Sow from 1-15 November for Bihar/UP (earlier in Punjab/Haryana) to avoid terminal heat.",
+        "Use seed rate 35-40 kg/acre for timely sown; 45-50 kg for late sown.",
+        "Sow at row spacing 20-22.5 cm with seed drill or Happy Seeder.",
+        "Place seed 5-6 cm deep for better moisture access.",
+        "Apply first irrigation immediately after sowing if dry (not if using Happy Seeder with residual moisture).",
+        "Check seed meter calibration to avoid over/under population."
+      ],
+      "inputs": [
+        {"item": "Certified seed (e.g., HD-2967, PBW-502)", "quantity_per_acre": "40 kg", "cost_rs_low_high": [1400, 1800], "notes": "Price varies by variety"},
+        {"item": "Sowing with seed drill (rent)", "quantity_per_acre": "1 day", "cost_rs_low_high": [600, 1000], "notes": "Happy Seeder rent similar"}
+      ],
+      "cost_rs_per_acre_low_high": [2000, 2800],
+      "sustainable_alternatives": [
+        "Broadcasting with paddy straw mulching (zero-till surface sowing) - cost Rs.500/acre.",
+        "Happy Seeder: sow into rice residue, saves tillage and conserves moisture.",
+        "Use farm-saved seed of improved variety after proper cleaning and treatment."
+      ],
+      "common_issues": [
+        {"issue": "Late sowing", "symptoms": ["Reduced tillering", "Terminal heat stress"], "remedy_cost_effective": "Increase seed rate by 25%, use heat-tolerant varieties (e.g., HD-3086).", "organic_option": "Apply jeevamrit to boost early vigor.", "preventive": "Plan sowing within optimal window."},
+        {"issue": "Seed too deep/shallow", "symptoms": ["Deep: poor emergence", "Shallow: bird theft, drying"], "remedy_cost_effective": "Adjust drill tine depth.", "organic_option": "N/A", "preventive": "Calibrate drill before sowing."},
+        {"issue": "Weed (Phalaris minor) competition", "symptoms": ["Wheat thinning", "Similar-looking grass"], "remedy_cost_effective": "Apply sulfosulfuron 75 WG @ 13.5g/acre or clodinafop.", "organic_option": "Mulching with straw (5 t/acre) suppresses weeds.", "preventive": "Use stale seedbed technique."}
+      ],
+      "checkpoints": ["Seed rate calibrated: 35-40 kg/acre.", "Row spacing 20-22.5 cm.", "Seed depth 5-6 cm."]
+    },
+    {
+      "name": "crown_root_initiation_cri",
+      "stage_order": 3,
+      "duration_days_low_high": [18, 22],
+      "objective": "Establish strong crown roots and initiate tillers for foundation of yield.",
+      "actions": [
+        "Apply first irrigation at 20-25 DAS (Crown Root Initiation stage).",
+        "Top-dress with urea 35 kg/acre at CRI if soil is light.",
+        "Scout for aphids and powdery mildew.",
+        "Hand weed if any broadleaf weeds escape herbicide."
+      ],
+      "inputs": [
+        {"item": "Urea (first top-dress)", "quantity_per_acre": "35 kg", "cost_rs_low_high": [200, 300], "notes": "Subsidized urea"},
+        {"item": "Irrigation (first)", "quantity_per_acre": "1 application", "cost_rs_low_high": [300, 500], "notes": "Diesel/electric cost"}
+      ],
+      "cost_rs_per_acre_low_high": [500, 800],
+      "sustainable_alternatives": [
+        "Apply jeevamrit (5%) through irrigation water for N (cost ~Rs.100/acre).",
+        "Use tensiometer to schedule irrigation (save water, cost neutral).",
+        "Incorporate Azolla as green manure in previous rice crop for residual N."
+      ],
+      "common_issues": [
+        {"issue": "Crown rot / root rot", "symptoms": ["Yellowing", "Wilting", "Poor tillers"], "remedy_cost_effective": "Drain excess water, apply carbendazim drench.", "organic_option": "Trichoderma drench 5g/litre.", "preventive": "Avoid waterlogging; use raised bed planting."},
+        {"issue": "Aphid infestation", "symptoms": ["Curled leaves", "Honeydew", "Sooty mold"], "remedy_cost_effective": "Spray imidacloprid 17.8 SL 0.5 ml/l.", "organic_option": "Neem oil 5ml/l + soap.", "preventive": "Encourage natural enemies (ladybird beetles)."},
+        {"issue": "Moisture stress at CRI", "symptoms": ["Stunted growth", "Reduced tillers"], "remedy_cost_effective": "Irrigation immediately.", "organic_option": "Mulch to conserve moisture.", "preventive": "Monitor soil moisture; irrigate at 20-25 DAS."}
+      ],
+      "checkpoints": ["Irrigation applied at 20-25 DAS.", "No standing water in field.", "Aphid population <5 per tiller."]
+    },
+    {
+      "name": "tillering",
+      "stage_order": 4,
+      "duration_days_low_high": [22, 28],
+      "objective": "Maximize productive tillers per plant to achieve target ear density.",
+      "actions": [
+        "Apply second irrigation at active tillering (40-45 DAS).",
+        "Second top-dress urea 35 kg/acre if needed (based on LCC).",
+        "Monitor for yellow rust and brown rust.",
+        "Control broadleaf weeds with 2,4-D sodium salt 80% WP @ 250g/acre if needed.",
+        "Provide one hoeing if zero-tillage not used."
+      ],
+      "inputs": [
+        {"item": "Urea (second dose)", "quantity_per_acre": "35 kg", "cost_rs_low_high": [200, 300], "notes": "Based on LCC reading"},
+        {"item": "2,4-D herbicide", "quantity_per_acre": "250 g", "cost_rs_low_high": [120, 180], "notes": "For broadleaf weeds"},
+        {"item": "Irrigation (second)", "quantity_per_acre": "1 application", "cost_rs_low_high": [300, 500], "notes": ""}
+      ],
+      "cost_rs_per_acre_low_high": [620, 980],
+      "sustainable_alternatives": [
+        "LCC-based N application (saves urea 25%, Rs.80/acre).",
+        "Cow urine spray (10%) as foliar N supplement (Rs.50/acre).",
+        "Use green manure (Sesbania) incorporation in previous kharif."
+      ],
+      "common_issues": [
+        {"issue": "Yellow rust (Puccinia striiformis)", "symptoms": ["Yellow stripes on leaves", "Powdery pustules"], "remedy_cost_effective": "Spray propiconazole 25 EC 1ml/l.", "organic_option": "No effective organic; plant resistant variety HD-3226.", "preventive": "Use resistant varieties; avoid late sowing."},
+        {"issue": "Phalaris minor resistance", "symptoms": ["Weed not controlled by clodinafop"], "remedy_cost_effective": "Rotate to sulfosulfuron + metsulfuron.", "organic_option": "Straw mulching at 5 t/acre.", "preventive": "Crop rotation with berseem or mustard."},
+        {"issue": "Lodging from excess N", "symptoms": ["Bent stems", "Floppy canopy"], "remedy_cost_effective": "Skip further N, provide support by bunching.", "organic_option": "Apply wood ash for K to strengthen stems.", "preventive": "Split N application; use LCC."}
+      ],
+      "checkpoints": ["10-12 productive tillers per plant.", "No yellow rust pustules on leaves.", "Weed-free field."]
+    },
+    {
+      "name": "jointing",
+      "stage_order": 5,
+      "duration_days_low_high": [15, 20],
+      "objective": "Support rapid stem elongation and ear formation while protecting from biotic stress.",
+      "actions": [
+        "Apply third irrigation at jointing (55-60 DAS).",
+        "Spray 0.2% manganese sulphate if soil is manganese deficient (alkaline soils).",
+        "Scout for brown rust and army worm.",
+        "Apply last dose of urea 18 kg/acre (if not applied earlier).",
+        "Support weak canopies with bamboo sticks if lodging risk."
+      ],
+      "inputs": [
+        {"item": "Urea (third dose)", "quantity_per_acre": "18 kg", "cost_rs_low_high": [100, 150], "notes": "Optional based on LCC"},
+        {"item": "MnSO4 (manganese sulphate)", "quantity_per_acre": "2 kg", "cost_rs_low_high": [80, 120], "notes": "For alkaline soils"},
+        {"item": "Irrigation (third)", "quantity_per_acre": "1 application", "cost_rs_low_high": [300, 500], "notes": ""}
+      ],
+      "cost_rs_per_acre_low_high": [480, 770],
+      "sustainable_alternatives": [
+        "Use wood ash (50 kg/acre) as K source for stem strength (Rs.100).",
+        "Wheat straw mulch to conserve moisture and reduce lodging.",
+        "Apply Panchagavya 3% for micronutrients."
+      ],
+      "common_issues": [
+        {"issue": "Brown rust (Puccinia recondita)", "symptoms": ["Round brown pustules on leaves"], "remedy_cost_effective": "Spray propiconazole 25 EC 1ml/l.", "organic_option": "No effective organic; use resistant varieties.", "preventive": "Use resistant varieties (HD-2967)."},
+        {"issue": "Army worm (Mythimna separata)", "symptoms": ["Leaves skeletonized", "Caterpillars in soil"], "remedy_cost_effective": "Spray chlorpyrifos 20 EC 2ml/l.", "organic_option": "Bacillus thuringiensis spray.", "preventive": "Install pheromone traps 3/acre."},
+        {"issue": "Stem elongation under moisture stress", "symptoms": ["Stunted internodes", "Small ears"], "remedy_cost_effective": "Irrigation immediately.", "organic_option": "Mulch to retain moisture.", "preventive": "Monitor soil moisture; irrigate at jointing."}
+      ],
+      "checkpoints": ["Stem elongation visible; internodes lengthening.", "No brown rust pustules on upper leaves.", "Army worm larvae <2 per square meter."]
+    },
+    {
+      "name": "booting",
+      "stage_order": 6,
+      "duration_days_low_high": [10, 14],
+      "objective": "Protect developing ear inside flag leaf sheath and ensure maximum spikelet fertility.",
+      "actions": [
+        "Apply irrigation at booting (70-75 DAS) - critical for grain number.",
+        "Spray 0.2% Borax + 0.5% urea on flag leaf to boost grain set.",
+        "Scout for black rust and karnal bunt.",
+        "Maintain field hygiene, uproot off-type plants."
+      ],
+      "inputs": [
+        {"item": "Borax", "quantity_per_acre": "400 g", "cost_rs_low_high": [60, 100], "notes": "For boron"},
+        {"item": "Irrigation (fourth)", "quantity_per_acre": "1 application", "cost_rs_low_high": [300, 500], "notes": ""}
+      ],
+      "cost_rs_per_acre_low_high": [360, 600],
+      "sustainable_alternatives": [
+        "Seaweed extract 2ml/l as micronutrient supplement (Rs.150/acre).",
+        "Skip irrigation if soil moisture sufficient due to mulch.",
+        "Apply vermiwash 5% for trace elements."
+      ],
+      "common_issues": [
+        {"issue": "Black rust (Puccinia graminis)", "symptoms": ["Black elongated pustules on stem and leaves"], "remedy_cost_effective": "Spray tebuconazole 250 EC 1ml/l.", "organic_option": "No effective organic; use resistant varieties.", "preventive": "Use resistant varieties (PBW-343)."},
+        {"issue": "Karnal bunt (Tilletia indica)", "symptoms": ["Fishy smell", "Black grains at harvest"], "remedy_cost_effective": "Spray propiconazole at booting.", "organic_option": "No effective organic; use resistant vars (PBW-343).", "preventive": "Use certified seed; seed treatment with carboxin."},
+        {"issue": "Frost damage at booting", "symptoms": ["White, dried ear inside sheath"], "remedy_cost_effective": "Light irrigation to raise temperature.", "organic_option": "Smoke cover in early morning.", "preventive": "Avoid very early sowing in frost-prone areas."}
+      ],
+      "checkpoints": ["Flag leaf fully emerged.", "No black rust pustules on stem.", "Ear development visible inside sheath."]
+    },
+    {
+      "name": "heading_flowering",
+      "stage_order": 7,
+      "duration_days_low_high": [8, 12],
+      "objective": "Achieve complete pollination and set maximum grains per ear.",
+      "actions": [
+        "Maintain optimum soil moisture (light irrigation if dry).",
+        "Spray 2% DAP + 1% K foliar on flag leaf for grain fill.",
+        "Monitor for powdery mildew and aphids.",
+        "Avoid pesticide sprays that kill pollinators early morning.",
+        "Remove yellow/mosaic virus-affected plants."
+      ],
+      "inputs": [
+        {"item": "DAP (foliar)", "quantity_per_acre": "2 kg", "cost_rs_low_high": [70, 100], "notes": "Foliar grade"},
+        {"item": "MOP (foliar)", "quantity_per_acre": "1 kg", "cost_rs_low_high": [25, 40], "notes": "Potassium"}
+      ],
+      "cost_rs_per_acre_low_high": [95, 140],
+      "sustainable_alternatives": [
+        "Panchagavya spray 3% as floral biostimulant (Rs.75/acre).",
+        "Avoid all chemical sprays during active bee visitation.",
+        "Use fish amino acid 2ml/l for micronutrients."
+      ],
+      "common_issues": [
+        {"issue": "Powdery mildew", "symptoms": ["White powdery coating on leaves"], "remedy_cost_effective": "Spray wettable sulphur 80 WP @ 2g/l.", "organic_option": "Milk spray (10%).", "preventive": "Use resistant varieties; avoid dense canopy."},
+        {"issue": "Heat stress during flowering", "symptoms": ["Poor seed set", "Shriveled grains"], "remedy_cost_effective": "Apply irrigation to cool canopy.", "organic_option": "Mulch to reduce soil temperature.", "preventive": "Timely sowing to avoid heat at flowering."},
+        {"issue": "Loose smut", "symptoms": ["Black powder replacing ear (visible at heading)"], "remedy_cost_effective": "No control this season; use seed treatment next year.", "organic_option": "Hot water seed treatment (52C for 10 min).", "preventive": "Use certified seed; seed treatment with carboxin."}
+      ],
+      "checkpoints": ["Ears fully emerged and flowering.", "No powdery mildew on flag leaf.", "Bee activity visible during morning."]
+    },
+    {
+      "name": "grain_filling",
+      "stage_order": 8,
+      "duration_days_low_high": [22, 28],
+      "objective": "Maximize grain size and weight through optimal nutrition and protection.",
+      "actions": [
+        "Irrigate at milk stage (about 105 DAS) - final irrigation.",
+        "Apply 2% potassium sulphate spray for grain hardiness.",
+        "Scout for pink stem borer and termites at base.",
+        "Install bird scaring ribbons to reduce grain loss."
+      ],
+      "inputs": [
+        {"item": "Potassium sulphate (foliar)", "quantity_per_acre": "2 kg", "cost_rs_low_high": [180, 250], "notes": "For grain filling"},
+        {"item": "Irrigation (final)", "quantity_per_acre": "1 application", "cost_rs_low_high": [300, 500], "notes": ""}
+      ],
+      "cost_rs_per_acre_low_high": [480, 750],
+      "sustainable_alternatives": [
+        "Crop residue mulching reduces evaporation, might skip last irrigation.",
+        "Vermiwash 5% for grain filling (Rs.100/acre).",
+        "Apply wood ash extract for potassium."
+      ],
+      "common_issues": [
+        {"issue": "Pink stem borer", "symptoms": ["Stem breakage", "White heads"], "remedy_cost_effective": "Apply carbofuran 3G granules in whorls.", "organic_option": "Neem cake 60 kg/acre as basal.", "preventive": "Clean cultivation; remove previous stubbles."},
+        {"issue": "Termites in maturing crop", "symptoms": ["Plants lodge easily", "Hollow stem"], "remedy_cost_effective": "Drench chlorantraniliprole 18.5 SC 2ml/litre.", "organic_option": "Neem oil drench.", "preventive": "Seed treatment with neem oil."},
+        {"issue": "Pre-mature ripening (terminal heat)", "symptoms": ["Forcing maturity", "Shriveled grains"], "remedy_cost_effective": "Harvest early if grain moisture drop fast.", "organic_option": "Mulch to keep soil cool.", "preventive": "Timely sowing; use heat-tolerant varieties."}
+      ],
+      "checkpoints": ["Grains in milk to dough stage.", "No lodging observed.", "Bird damage <5%."]
+    },
+    {
+      "name": "maturity_harvest",
+      "stage_order": 9,
+      "duration_days_low_high": [4, 7],
+      "objective": "Harvest wheat on time to avoid shattering and quality loss, and prepare for storage.",
+      "actions": [
+        "Harvest when grains are hard (break clean when bitten) and moisture 14-16%.",
+        "Use combine harvester or sickle (manual) to cut crop near ground.",
+        "Thresh and clean grain immediately using thresher or manually.",
+        "Sun-dry grain to 10-12% moisture for safe storage.",
+        "Grade using sieve to remove shriveled grains."
+      ],
+      "inputs": [
+        {"item": "Harvesting labor/combine rent", "quantity_per_acre": "5 person-days / combine 1 hour", "cost_rs_low_high": [1200, 1800], "notes": "Combine rental"},
+        {"item": "Threshing (if manual)", "quantity_per_acre": "2 hours", "cost_rs_low_high": [400, 600], "notes": "Thresher rental"}
+      ],
+      "cost_rs_per_acre_low_high": [1600, 2400],
+      "sustainable_alternatives": [
+        "Manual harvesting and threshing (low carbon, labor intensive).",
+        "Reaper binder attachment to tractor (rent ~Rs.800/acre).",
+        "Use pedal-operated thresher."
+      ],
+      "common_issues": [
+        {"issue": "Shattering at over-maturity", "symptoms": ["Grains falling", "Timothy heads open"], "remedy_cost_effective": "Harvest at physiological maturity (grains hard, straw green-brown).", "organic_option": "N/A", "preventive": "Monitor crop daily after dough stage."},
+        {"issue": "High grain moisture at harvest", "symptoms": [">16% moisture", "Risk of spoilage"], "remedy_cost_effective": "Spread on tarpaulin, turn hourly, sun-dry.", "organic_option": "N/A", "preventive": "Harvest only when moisture <16%."},
+        {"issue": "Combine harvest loss", "symptoms": ["Grain left in field", "Broken grain"], "remedy_cost_effective": "Adjust combine concave/speed.", "organic_option": "N/A", "preventive": "Calibrate combine before harvest."}
+      ],
+      "checkpoints": ["Grain moisture 14-16%.", "Straw golden and dry.", "No green weeds in field."]
+    },
+    {
+      "name": "post_harvest_storage",
+      "stage_order": 10,
+      "duration_days_low_high": [0, 0],
+      "objective": "Store grain safely to prevent moisture, pests and rodent damage for household consumption or market sale.",
+      "actions": [
+        "Dry grain to 10-12% moisture (test by biting or moisture meter).",
+        "Clean grain thoroughly, remove admixture and weed seeds.",
+        "Fumigate storage structure with aluminum phosphide (expert only) or use neem leaves.",
+        "Store in HDPE/Jute bags on wooden pallets.",
+        "Monitor stored grain monthly for temperature, pests."
+      ],
+      "inputs": [
+        {"item": "Storage bags (jute/HDPE)", "quantity_per_acre": "15 bags", "cost_rs_low_high": [300, 500], "notes": "Reusable"},
+        {"item": "Neem leaves/powder", "quantity_per_acre": "5 kg", "cost_rs_low_high": [40, 60], "notes": "Insect repellent"},
+        {"item": "Fumigation (if pest infestation)", "quantity_per_acre": "lumpsum", "cost_rs_low_high": [100, 200], "notes": "Aluminum phosphide"}
+      ],
+      "cost_rs_per_acre_low_high": [440, 760],
+      "sustainable_alternatives": [
+        "Hermetic storage bags (PICS bags) - no chemicals, reuseable (Rs.200/acre bag).",
+        "Diatomaceous earth (2 g/kg) as grain protectant.",
+        "Store with dried neem leaves as insect repellent."
+      ],
+      "common_issues": [
+        {"issue": "Khapra beetle (Trogoderma granarium)", "symptoms": ["Hairy larvae", "Grain weight loss"], "remedy_cost_effective": "Fumigate with aluminum phosphide.", "organic_option": "Heat treatment (50C for 1 hour).", "preventive": "Clean storage area; use neem powder."},
+        {"issue": "Lesser grain borer (Rhyzopertha dominica)", "symptoms": ["Powdery frass", "Adults inside grain"], "remedy_cost_effective": "Fumigate or apply neem powder 2g/kg.", "organic_option": "Neem powder 2% w/w.", "preventive": "Dry grain to 10% moisture."},
+        {"issue": "Rodent damage", "symptoms": ["Chewed bags", "Droppings"], "remedy_cost_effective": "Set traps, use zinc phosphide bait.", "organic_option": "Barn owl installation.", "preventive": "Maintain cleanliness; seal entry points."}
+      ],
+      "checkpoints": ["Grain moisture 10-12%.", "No live insects detected.", "Bags stacked on pallets away from walls."]
+    }
+  ],
+  "pest_calendar": [
+    {"pest": "Termites", "stage": "soil_preparation / sowing", "risk_window_days_after_sowing": [0, 10], "early_signs": ["Browned, hollow stems near base", "Dead seedlings"], "ipm_action": "Seed treatment with imidacloprid 3ml/kg; maintain soil moisture.", "chemical_last_resort": "Drench chlorantraniliprole 18.5 SC 2ml/l.", "etl_threshold": "5% damaged seedlings"},
+    {"pest": "Aphids", "stage": "crown_root_initiation_cri / tillering", "risk_window_days_after_sowing": [15, 45], "early_signs": ["Curled leaves", "Honeydew", "Sooty mold"], "ipm_action": "Encourage natural enemies (ladybird beetles); spray neem oil 5ml/l + soap.", "chemical_last_resort": "Imidacloprid 17.8 SL 0.5ml/l.", "etl_threshold": "10-15 aphids per tiller"},
+    {"pest": "Root rot / Crown rot", "stage": "crown_root_initiation_cri", "risk_window_days_after_sowing": [20, 40], "early_signs": ["Yellowing", "Wilting", "Poor root development"], "ipm_action": "Avoid waterlogging; use raised beds; seed treatment with Trichoderma.", "chemical_last_resort": "Carbendazim drench 1g/l.", "etl_threshold": "5% affected plants"},
+    {"pest": "Brown rust", "stage": "tillering / jointing", "risk_window_days_after_sowing": [30, 70], "early_signs": ["Round brown pustules on leaves"], "ipm_action": "Use resistant varieties (HD-2967, PBW-502); balanced N.", "chemical_last_resort": "Propiconazole 25 EC 1ml/l.", "etl_threshold": "10% leaf area infected"},
+    {"pest": "Yellow rust", "stage": "tillering / jointing", "risk_window_days_after_sowing": [35, 65], "early_signs": ["Yellow stripes", "Rows of pustules on leaves"], "ipm_action": "Early sowing; resistant varieties (HD-3226); avoid excessive N.", "chemical_last_resort": "Tebuconazole 250 EC 1ml/l.", "etl_threshold": "5% leaf area infected"},
+    {"pest": "Army worm", "stage": "jointing / booting", "risk_window_days_after_sowing": [50, 80], "early_signs": ["Leaves eaten from margins", "Caterpillars under litter"], "ipm_action": "Install pheromone traps 3/acre; spray Bacillus thuringiensis.", "chemical_last_resort": "Chlorpyrifos 20 EC 2ml/l.", "etl_threshold": "2 larvae per square meter"},
+    {"pest": "Black rust", "stage": "booting / heading_flowering", "risk_window_days_after_sowing": [60, 100], "early_signs": ["Black elongated pustules on stem"], "ipm_action": "Resistant varieties (PBW-343); avoid late sowing.", "chemical_last_resort": "Tebuconazole 250 EC 1ml/l.", "etl_threshold": "5% stem infected"},
+    {"pest": "Karnal bunt", "stage": "booting / heading_flowering", "risk_window_days_after_sowing": [70, 90], "early_signs": ["Black dusty grains", "Fishy odour at maturity"], "ipm_action": "Seed treatment with carboxin; resistant varieties.", "chemical_last_resort": "Propiconazole spray at booting.", "etl_threshold": "1% infected grains (quarantine significance)"},
+    {"pest": "Pink stem borer", "stage": "grain_filling", "risk_window_days_after_sowing": [80, 110], "early_signs": ["Stems break easily", "White heads"], "ipm_action": "Clean cultivation; remove previous stubbles; neem cake basal.", "chemical_last_resort": "Carbofuran 3G granules in whorls.", "etl_threshold": "5% white heads"},
+    {"pest": "Grain aphid (Sitobion avenae)", "stage": "grain_filling", "risk_window_days_after_sowing": [90, 120], "early_signs": ["Aphids on earheads", "Stickiness"], "ipm_action": "Natural enemies like ladybird beetles; neem oil 3%.", "chemical_last_resort": "Imidacloprid 17.8 SL 2ml/litre.", "etl_threshold": "10-15 aphids per earhead"},
+    {"pest": "Rats / Rodents", "stage": "maturity_harvest / post_harvest_storage", "risk_window_days_after_sowing": [100, 130], "early_signs": ["Cut earheads", "Grains in burrows"], "ipm_action": "Field sanitation; remove weeds; barn owl posts.", "chemical_last_resort": "Zinc phosphide bait (2%).", "etl_threshold": "5% crop damage"}
+  ],
+  "sustainable_practices": [
+    {"practice": "Zero-tillage wheat sowing with Happy Seeder", "benefit": "Conserves soil moisture, reduces fuel cost, prevents straw burning.", "how_to": "Sow directly into rice stubble using Happy Seeder attached to tractor.", "cost_savings_rs_per_acre": 1500},
+    {"practice": "Paddy straw mulching (5 t/acre)", "benefit": "Suppresses weeds, conserves moisture, adds organic matter.", "how_to": "Spread loose paddy straw evenly after sowing or use Happy Seeder.", "cost_savings_rs_per_acre": 2000},
+    {"practice": "Brown manuring with Sesbania", "benefit": "Adds nitrogen, improves soil health.", "how_to": "Sow Sesbania with wheat, then knock down with 2,4-D at 25-30 DAS.", "cost_savings_rs_per_acre": 800},
+    {"practice": "Integrated Nutrient Management (75% RDF + 25% FYM)", "benefit": "Reduces chemical fertilizer cost, improves soil carbon.", "how_to": "Replace 25% recommended NPK with well-decomposed FYM/compost.", "cost_savings_rs_per_acre": 500},
+    {"practice": "Balanced nitrogen using Leaf Color Chart (LCC)", "benefit": "Optimizes N use, reduces lodging and disease.", "how_to": "Match leaf color with LCC; apply urea only if color <4.", "cost_savings_rs_per_acre": 300},
+    {"practice": "IPM with pheromone traps for army worm", "benefit": "Reduces pesticide use, preserves natural enemies.", "how_to": "Install 3 pheromone traps per acre at jointing stage.", "cost_savings_rs_per_acre": 400},
+    {"practice": "Gypsum application for sodic soil reclamation", "benefit": "Improves soil structure, water infiltration.", "how_to": "Apply 0.5 t/acre gypsum before last ploughing.", "cost_savings_rs_per_acre": 0},
+    {"practice": "Laser land leveling", "benefit": "Saves irrigation water, improves nutrient use efficiency.", "how_to": "Use laser leveler once in 2-3 years.", "cost_savings_rs_per_acre": 500},
+    {"practice": "Crop rotation with pulse/legume", "benefit": "Breaks pest cycles, fixes nitrogen.", "how_to": "Rotate wheat with chickpea, lentil, or mung bean.", "cost_savings_rs_per_acre": 1000},
+    {"practice": "Seed treatment with Trichoderma / Bacillus subtilis", "benefit": "Controls soil-borne diseases, promotes growth.", "how_to": "Treat seed with Trichoderma viride 4g/kg or Bacillus subtilis 10g/kg before sowing.", "cost_savings_rs_per_acre": 50}
+  ],
+  "tools_and_machinery": [
+    {"tool": "Happy Seeder", "purpose": "Direct sowing into rice stubble with straw mulching", "cost_rs_low_high": [600, 1000], "rental_option": "Available from custom hiring centers"},
+    {"tool": "Zero till seed drill", "purpose": "Sowing without ploughing", "cost_rs_low_high": [500, 800], "rental_option": "Available from cooperatives"},
+    {"tool": "Rotavator", "purpose": "Land preparation, straw incorporation", "cost_rs_low_high": [500, 700], "rental_option": "Widely available"},
+    {"tool": "Laser leveler", "purpose": "Precision field leveling", "cost_rs_low_high": [700, 1000], "rental_option": "Available from CHCs"},
+    {"tool": "Combine harvester", "purpose": "Harvesting and threshing", "cost_rs_low_high": [1200, 1800], "rental_option": "Available from private operators"},
+    {"tool": "Thresher", "purpose": "Separating grain from chaff", "cost_rs_low_high": [400, 600], "rental_option": "Available locally"},
+    {"tool": "Pheromone traps (army worm)", "purpose": "Monitoring and mass trapping", "cost_rs_low_high": [50, 100], "rental_option": "Purchase from agri-input shops"}
+  ],
+  "harvest_signals": [
+    "Spike turns golden-yellow",
+    "Grain becomes hard - cannot be dented with thumbnail",
+    "Grain moisture 14-16%",
+    "Stem and leaves turn straw-colored and dry",
+    "No green tinge on glumes"
+  ],
+  "storage_guidance": {
+    "short_term_days": 180,
+    "moisture_pct_target": "10-12%",
+    "cold_storage_required": false,
+    "ambient_conditions": "Cool, dry, well-ventilated room; avoid direct sunlight and moisture ingress.",
+    "common_pests": ["Khapra beetle", "Lesser grain borer", "Rats"],
+    "treatment_low_cost": "Mix 2 kg neem powder per 100 kg grain; store on wooden pallets; use hermetic bags."
+  },
+  "post_harvest_value_addition": [
+    "Segregation of high-protein varieties for premium pricing",
+    "Durum wheat for semolina/ pasta market",
+    "FPO-based value addition (atta, suji, maida)",
+    "Branding and marketing under Bihar Organic",
+    "Storage at FCI godowns for MSP procurement"
+  ],
+  "msp_reference_rs_per_quintal": 2425,
+  "yield_target_quintal_per_acre_low_high": [14, 22],
+  "sources": [
+    "ICAR-IIWBR, Karnal",
+    "Directorate of Wheat Development, Ghaziabad",
+    "State Agriculture Universities (Bihar, Punjab, Haryana, MP, UP)",
+    "CACP MSP notifications 2025-26",
+    "PMFBY operational guidelines"
+  ]
+}

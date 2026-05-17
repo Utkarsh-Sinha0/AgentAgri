@@ -1,0 +1,400 @@
+{
+  "crop": "rice",
+  "region_focus": ["Bihar", "Eastern India"],
+  "season": "kharif",
+  "total_duration_days_low": 100,
+  "total_duration_days_high": 150,
+  "stages": [
+    {
+      "name": "soil_preparation",
+      "duration_days": 10,
+      "objective": "Create fine puddle, incorporate organic matter, level field",
+      "actions": [
+        "Plough field 2-3 times with tractor/cultivator to 15-20 cm depth",
+        "Apply well-decomposed FYM or compost at 10-12 t/acre",
+        "Flood field and puddle with 2-3 passes of puddler/country plough",
+        "Level field using laser leveler or wooden plank for uniform water depth",
+        "Repair bunds and channels to prevent water leakage",
+        "Apply basal fertilizer mix (DAP or SSP) before final puddling"
+      ],
+      "inputs": [
+        {"item": "Tractor ploughing", "quantity_per_acre": "2-3 passes", "approx_cost_rs": 1500},
+        {"item": "Puddling", "quantity_per_acre": "2 passes", "approx_cost_rs": 1200},
+        {"item": "FYM/Compost", "quantity_per_acre": "10-12 tonnes", "approx_cost_rs": 3000},
+        {"item": "DAP", "quantity_per_acre": "35 kg", "approx_cost_rs": 1400},
+        {"item": "SSP", "quantity_per_acre": "75 kg", "approx_cost_rs": 1100}
+      ],
+      "cost_per_acre_low_rs": 5500,
+      "cost_per_acre_high_rs": 8000,
+      "sustainable_alternatives": [
+        "Replace 50% inorganic P with rock phosphate (cost saving ~₹200/acre)",
+        "Incorporate dhaincha green manure 45 days before transplanting (saves ~₹1500/acre on FYM)",
+        "Use no-till DSR to eliminate puddling (saves ₹2700/acre)"
+      ],
+      "common_issues": [
+        {"issue": "Poor puddling", "symptoms": "Uneven water, hard pan not broken", "remedy_cost_effective": "Increase puddling passes", "organic_option": null, "cost_rs_per_acre": 200},
+        {"issue": "Excess water stagnation", "symptoms": "Drainage problem, iron toxicity later", "remedy_cost_effective": "Level with laser and provide drainage channel", "organic_option": null, "cost_rs_per_acre": 500},
+        {"issue": "Imbalanced basal nutrition", "symptoms": "Seedlings yellow, stunted", "remedy_cost_effective": "Apply correct DAP rate", "organic_option": "Use enriched compost", "cost_rs_per_acre": 300}
+      ],
+      "key_tips": [
+        "Puddling depth 15-20 cm ensures soft bed for roots",
+        "Apply P fertilizer based on soil test to avoid fixation",
+        "Incorporate green manure at flowering stage for best N contribution"
+      ]
+    },
+    {
+      "name": "nursery_raising",
+      "duration_days": 25,
+      "objective": "Produce healthy, vigorous seedlings",
+      "actions": [
+        "Select high-yielding, disease-tolerant variety (e.g., Rajendra Mahsuri-1, Sahbhagi Dhan)",
+        "Seed treatment with carbendazim 2g/kg seed or Trichoderma 4g/kg",
+        "Prepare raised nursery beds 10 m x 1.25 m with fine tilth",
+        "Sow pre-germinated seeds at 4-5 kg per 100 m² area",
+        "Apply seedling stage nutrients: 200g DAP + 100g MOP per bed",
+        "Irrigate daily, maintain thin film of water after 1 week",
+        "Spray 0.2% ZnSO₄ + 0.5% urea at 12-15 days for green color",
+        "Harden seedlings by gradual water withdrawal 5 days before uprooting"
+      ],
+      "inputs": [
+        {"item": "Seed (certified)", "quantity_per_acre": "8-10 kg", "approx_cost_rs": 600},
+        {"item": "Carbendazim/Trichoderma", "quantity_per_acre": "20 g", "approx_cost_rs": 20},
+        {"item": "DAP", "quantity_per_acre": "2 kg", "approx_cost_rs": 80},
+        {"item": "MOP", "quantity_per_acre": "1 kg", "approx_cost_rs": 30},
+        {"item": "ZnSO₄", "quantity_per_acre": "100 g", "approx_cost_rs": 20}
+      ],
+      "cost_per_acre_low_rs": 1300,
+      "cost_per_acre_high_rs": 2000,
+      "sustainable_alternatives": [
+        "Use SRI mat nursery (saves seed 90%, cost ~₹100/acre)",
+        "Treat with neem oil 3 ml/kg seed for pest prevention (cost ~₹15/acre)",
+        "Apply vermicompost in nursery bed instead of chemical DAP (cost ~₹150/acre)"
+      ],
+      "common_issues": [
+        {"issue": "Seedling blast", "symptoms": "Yellow lesions on leaves", "remedy_cost_effective": "Spray tricyclazole 75 WP @ 0.6g/l", "organic_option": "Spray neem oil 5ml/l", "cost_rs_per_acre": 100},
+        {"issue": "Thin, spindly seedlings", "symptoms": "Lodging, pale color", "remedy_cost_effective": "Reduce seed rate, increase light exposure", "organic_option": null, "cost_rs_per_acre": 0},
+        {"issue": "Zinc deficiency", "symptoms": "White spots on leaves, stunted", "remedy_cost_effective": "Spray 0.2% zinc sulphate", "organic_option": null, "cost_rs_per_acre": 20}
+      ],
+      "key_tips": [
+        "Use 25-day-old seedlings for transplanting; older seedlings tiller less",
+        "Nursery area should be 1/10th of main field",
+        "Raise nursery on high ground to avoid waterlogging"
+      ]
+    },
+    {
+      "name": "transplanting",
+      "duration_days": 2,
+      "objective": "Establish uniform stand with optimum density",
+      "actions": [
+        "Transplant 1-2 seedlings per hill (SRI) to 2-3 (conventional) at 20x15 cm spacing",
+        "Maintain 2-3 cm water depth during transplanting for weed suppression",
+        "Gap filling at 5-7 days after transplanting (DAT)",
+        "Apply first top-dressing of urea (if basal not given) at 7 DAT"
+      ],
+      "inputs": [
+        {"item": "Labor for transplanting", "quantity_per_acre": "10-12 person-days", "approx_cost_rs": 3000},
+        {"item": "Urea (first top-dress)", "quantity_per_acre": "35 kg", "approx_cost_rs": 300}
+      ],
+      "cost_per_acre_low_rs": 3300,
+      "cost_per_acre_high_rs": 4500,
+      "sustainable_alternatives": [
+        "Direct seeded rice (DSR): eliminate transplanting entirely (saves ₹3000/acre)",
+        "SRI with single seedling 25x25 cm (saves labor, increases yield potential)",
+        "Mechanical transplanting (rent ~₹1200/acre, reduces labor)"
+      ],
+      "common_issues": [
+        {"issue": "Deep transplanting", "symptoms": "Delayed tillering, thin stand", "remedy_cost_effective": "Plant at 2-3 cm depth", "organic_option": null, "cost_rs_per_acre": 0},
+        {"issue": "Gaps from dead seedlings", "symptoms": "Missing hills", "remedy_cost_effective": "Maintain extra seedlings and replant", "organic_option": null, "cost_rs_per_acre": 200},
+        {"issue": "Transplanting shock/ yellowing", "symptoms": "Pale seedlings 5-7 days", "remedy_cost_effective": "Apply 0.5% urea spray", "organic_option": "Jivamrit foliar spray", "cost_rs_per_acre": 50}
+      ],
+      "key_tips": [
+        "Transplant in afternoon to reduce shock",
+        "Use rope marker for uniform spacing",
+        "SRI: adopt cono-weeding after 10 days"
+      ]
+    },
+    {
+      "name": "vegetative",
+      "duration_days": 30,
+      "objective": "Promote rapid canopy development and root establishment",
+      "actions": [
+        "Apply second dose of urea (35 kg/acre) at active tillering (20-25 DAT)",
+        "Maintain 3-5 cm water level consistently",
+        "Conoweeding/ hand weeding at 10-15 DAT and 25-30 DAT",
+        "Monitor for stem borer and leaf folder",
+        "Apply zinc sulphate 10 kg/acre if deficiency appears",
+        "Spray neem oil 5ml/l as prophylactic"
+      ],
+      "inputs": [
+        {"item": "Urea (2nd dose)", "quantity_per_acre": "35 kg", "approx_cost_rs": 300},
+        {"item": "ZnSO₄ (if needed)", "quantity_per_acre": "10 kg", "approx_cost_rs": 200},
+        {"item": "Neem oil", "quantity_per_acre": "500 ml", "approx_cost_rs": 150},
+        {"item": "Conoweeder rent", "quantity_per_acre": "1 day", "approx_cost_rs": 100}
+      ],
+      "cost_per_acre_low_rs": 600,
+      "cost_per_acre_high_rs": 1200,
+      "sustainable_alternatives": [
+        "LCC-based N application (saves 20-30% urea, ₹100/acre)",
+        "Incorporate Azolla (20 q/acre) as green manure for N",
+        "Use pheromone traps for stem borer (5 traps/acre, ₹100)"
+      ],
+      "common_issues": [
+        {"issue": "Stem borer infestation", "symptoms": "Deadheart, white ears", "remedy_cost_effective": "Spray cartap hydrochloride 50 SP @ 500g/ha", "organic_option": "Apply neem cake 80kg/acre at transplanting", "cost_rs_per_acre": 250},
+        {"issue": "Nitrogen excess (lodging risk)", "symptoms": "Dark green, lush, weak stems", "remedy_cost_effective": "Skip additional N, drain water", "organic_option": null, "cost_rs_per_acre": 0},
+        {"issue": "Weed competition", "symptoms": "Reduced tillering, nutrient deficiency", "remedy_cost_effective": "Conoweed twice, apply bispyribac sodium 10% SC @ 200ml/acre", "organic_option": "Mulching with water hyacinth", "cost_rs_per_acre": 300}
+      ],
+      "key_tips": [
+        "AWD irrigation: irrigate when water drops 15 cm below soil surface",
+        "Install bird perches (7/acre) for insect control",
+        "Split top-dress urea into 2 applications to avoid lodging"
+      ]
+    },
+    {
+      "name": "tillering",
+      "duration_days": 20,
+      "objective": "Maximize productive tillers per hill",
+      "actions": [
+        "Maintain shallow water (2-3 cm) to encourage tillering",
+        "Weed management: cultural/ mechanical, avoid herbicide stress",
+        "Apply 3rd urea dose (if needed) @ 18 kg/acre at panicle initiation start",
+        "Foliar spray of 2% DAP + 1% K to boost tillers"
+      ],
+      "inputs": [
+        {"item": "Urea (3rd dose)", "quantity_per_acre": "18 kg", "approx_cost_rs": 150},
+        {"item": "DAP (foliar)", "quantity_per_acre": "2 kg", "approx_cost_rs": 80},
+        {"item": "MOP (foliar)", "quantity_per_acre": "1 kg", "approx_cost_rs": 30}
+      ],
+      "cost_per_acre_low_rs": 200,
+      "cost_per_acre_high_rs": 400,
+      "sustainable_alternatives": [
+        "Curd churning effluent (buttermilk) spray for growth promoters (cost ~₹50/acre)",
+        "Apply Jeevamrit (5% solution) to stimulate microbial activity"
+      ],
+      "common_issues": [
+        {"issue": "Thin tillering", "symptoms": "Less than 10 tillers/hill", "remedy_cost_effective": "Apply N top-dress immediately", "organic_option": "Use Panchagavya spray (3%)", "cost_rs_per_acre": 100},
+        {"issue": "Excess tillering (unproductive)", "symptoms": "Bunchy appearance, small panicles", "remedy_cost_effective": "Drain water to reduce N uptake", "organic_option": null, "cost_rs_per_acre": 0},
+        {"issue": "Brown spot (helminthosporium)", "symptoms": "Brown oval spots on leaves", "remedy_cost_effective": "Spray mancozeb 75 WP @ 2.5g/l", "organic_option": "Trichoderma foliar spray 5ml/l", "cost_rs_per_acre": 150}
+      ],
+      "key_tips": [
+        "Target 15-20 productive tillers/hill for good yield",
+        "Avoid standing water >5 cm after maximum tillering to control unproductive tillers"
+      ]
+    },
+    {
+      "name": "panicle_initiation",
+      "duration_days": 15,
+      "objective": "Ensure proper panicle development and spikelet formation",
+      "actions": [
+        "Maintain 3-5 cm water level (critical stage for water)",
+        "Apply K (MOP 20 kg/acre) to improve panicle strength",
+        "Spray boron (0.2% Borax) to prevent panicle sterility",
+        "Scout for sheath blight and BPH",
+        "Avoid any water stress during booting"
+      ],
+      "inputs": [
+        {"item": "MOP", "quantity_per_acre": "20 kg", "approx_cost_rs": 200},
+        {"item": "Borax", "quantity_per_acre": "400 g", "approx_cost_rs": 80},
+        {"item": "Labour for spraying", "quantity_per_acre": "1 day", "approx_cost_rs": 150}
+      ],
+      "cost_per_acre_low_rs": 400,
+      "cost_per_acre_high_rs": 600,
+      "sustainable_alternatives": [
+        "Use wood ash as K source (50 kg/acre, cost ~₹100)",
+        "Apply seaweed extract (2ml/l) for micronutrients (₹150/acre)"
+      ],
+      "common_issues": [
+        {"issue": "Sheath blight", "symptoms": "Water-soaked lesions on leaf sheath", "remedy_cost_effective": "Spray hexaconazole 5% SC @ 1ml/l", "organic_option": "Trichoderma + Pseudomonas foliar", "cost_rs_per_acre": 200},
+        {"issue": "BPH (brown plant hopper)", "symptoms": "Soothmold, dried plants", "remedy_cost_effective": "Spray imidacloprid 17.8 SL @ 0.5ml/l", "organic_option": "Release Anastatus parasitoid", "cost_rs_per_acre": 300},
+        {"issue": "Water deficit induced sterility", "symptoms": "Empty glumes", "remedy_cost_effective": "Maintain standing water", "organic_option": null, "cost_rs_per_acre": 0}
+      ],
+      "key_tips": [
+        "Boron application improves grain filling",
+        "This stage is most sensitive to water stress; keep sufficient water",
+        "Avoid nitrogen at this stage to prevent lodging"
+      ]
+    },
+    {
+      "name": "flowering",
+      "duration_days": 10,
+      "objective": "Achieve high pollination rate and spikelet fertility",
+      "actions": [
+        "Maintain 2-3 cm water to ensure humidity",
+        "Avoid pesticide sprays that harm pollinators (morning hours)",
+        "Apply foliar spray of 0.5% urea + 0.2% boron if weather is dry",
+        "Monitor for false smut and gundhi bug"
+      ],
+      "inputs": [
+        {"item": "Urea (foliar)", "quantity_per_acre": "1 kg", "approx_cost_rs": 15},
+        {"item": "Borax (if needed)", "quantity_per_acre": "200 g", "approx_cost_rs": 40}
+      ],
+      "cost_per_acre_low_rs": 50,
+      "cost_per_acre_high_rs": 150,
+      "sustainable_alternatives": [
+        "Flower visitor conservation: avoid all insecticides for 2 weeks",
+        "Use fish amino acid spray (2ml/l) as biostimulant"
+      ],
+      "common_issues": [
+        {"issue": "False smut (green smut)", "symptoms": "Orange-yellow balls on grains", "remedy_cost_effective": "Spray propiconazole 25 EC @ 1ml/l at booting", "organic_option": "No effective organic control; prevent by avoiding excess N", "cost_rs_per_acre": 150},
+        {"issue": "Gundhi bug", "symptoms": "Brown spots on grain, foul smell", "remedy_cost_effective": "Spray malathion 5% dust 10kg/acre", "organic_option": "Neem kernel extract 5%", "cost_rs_per_acre": 120},
+        {"issue": "Rain during flowering", "symptoms": "Poor pollination, empty grains", "remedy_cost_effective": "Drain excess water, spray 0.2% boron", "organic_option": null, "cost_rs_per_acre": 50}
+      ],
+      "key_tips": [
+        "Flowering usually occurs 25-30 days after panicle initiation",
+        "After 50% flowering, gradually reduce water",
+        "Do not apply granulated pesticides during flowering"
+      ]
+    },
+    {
+      "name": "grain_filling",
+      "duration_days": 25,
+      "objective": "Maximize grain size, weight, and quality",
+      "actions": [
+        "Maintain moist soil, not submerged (intermittent wetting)",
+        "Apply last micronutrient spray (Zn + B 0.2%) if delayed",
+        "Monitor for leaf folder and RTV (virus) vectors",
+        "Install bird perching poles",
+        "Drain water 10-15 days before harvest"
+      ],
+      "inputs": [
+        {"item": "ZnSO₄ (foliar)", "quantity_per_acre": "500 g", "approx_cost_rs": 25},
+        {"item": "Bird perches (bamboo)", "quantity_per_acre": "7 numbers", "approx_cost_rs": 30}
+      ],
+      "cost_per_acre_low_rs": 50,
+      "cost_per_acre_high_rs": 150,
+      "sustainable_alternatives": [
+        "Use vermiwash (5ml/l) for nutrient enrichment",
+        "Strategic irrigation with AWD (saves water, no cost change)"
+      ],
+      "common_issues": [
+        {"issue": "Leaf folder damage", "symptoms": "Folded leaves, white streaks", "remedy_cost_effective": "Spray chlorpyriphos 20 EC 2ml/l", "organic_option": "Neem oil + soap spray", "cost_rs_per_acre": 200},
+        {"issue": "Rice tungro virus (RTV)", "symptoms": "Stunting, yellow-orange leaves", "remedy_cost_effective": "Control leafhopper vector with imidacloprid", "organic_option": "Use resistant variety", "cost_rs_per_acre": 250},
+        {"issue": "High moisture (rain) delaying drying", "symptoms": "Sprouting in panicle", "remedy_cost_effective": "Harvest early at 22% moisture, dry mechanically", "organic_option": null, "cost_rs_per_acre": 0}
+      ],
+      "key_tips": [
+        "Stop irrigation when 80% grains are in hard dough stage",
+        "Check moisture by biting grain; if it breaks clean, it's ready",
+        "Yellowing of lower leaves is normal; do not add N"
+      ]
+    },
+    {
+      "name": "maturity_harvest",
+      "duration_days": 5,
+      "objective": "Harvest at right moisture with minimal losses",
+      "actions": [
+        "Harvest when 80% panicles golden yellow and moisture 20-22%",
+        "Use sickles or reaper to cut at ground level",
+        "Thresh immediately or within 24 hours",
+        "Clean grain with winnowing fan",
+        "Sun-dry to 14% moisture (thickness feels crisp)"
+      ],
+      "inputs": [
+        {"item": "Harvest labor", "quantity_per_acre": "5 person-days", "approx_cost_rs": 1500},
+        {"item": "Threshing machine rent", "quantity_per_acre": "1 hour", "approx_cost_rs": 500}
+      ],
+      "cost_per_acre_low_rs": 2000,
+      "cost_per_acre_high_rs": 3000,
+      "sustainable_alternatives": [
+        "Hand threshing (labor intensive, zero fuel cost)",
+        "Use pedal-operated thresher (rent ~₹200/acre)"
+      ],
+      "common_issues": [
+        {"issue": "Shattering loss", "symptoms": "Grains falling before harvest", "remedy_cost_effective": "Harvest promptly, avoid windy days", "organic_option": null, "cost_rs_per_acre": 0},
+        {"issue": "Sprouting grains", "symptoms": "Grains germinated on panicle", "remedy_cost_effective": "Harvest early, thresh and dry fast", "organic_option": null, "cost_rs_per_acre": 0},
+        {"issue": "High chaff/trash", "symptoms": "Dirty grain", "remedy_cost_effective": "Use cleaner winnowing", "organic_option": null, "cost_rs_per_acre": 50}
+      ],
+      "key_tips": [
+        "Harvest in morning to minimize shattering",
+        "Do not stack wet crop for long to avoid heat damage",
+        "Use tarpaulin during threshing to reduce rodent access"
+      ]
+    },
+    {
+      "name": "post_harvest_storage",
+      "duration_days": 0,
+      "objective": "Store paddy safely, preserve quality for MSP/market",
+      "actions": [
+        "Dry grain to 12-14% moisture (sun-dry or mechanical dryer)",
+        "Clean grain, remove broken grains and foreign matter",
+        "Fumigate storage area with aluminum phosphide (expert only) or neem leaves",
+        "Store in jute/ HDPE bags on wooden pallets, away from walls",
+        "Monitor for moisture and pests every 15 days"
+      ],
+      "inputs": [
+        {"item": "Grain bags (jute)", "quantity_per_acre": "20 bags", "approx_cost_rs": 500},
+        {"item": "Neem leaves/dried neem", "quantity_per_acre": "10 kg", "approx_cost_rs": 50},
+        {"item": "Wooden pallets (rent)", "quantity_per_acre": "lumpsum", "approx_cost_rs": 100}
+      ],
+      "cost_per_acre_low_rs": 500,
+      "cost_per_acre_high_rs": 1000,
+      "sustainable_alternatives": [
+        "Store with dried neem leaves as insect repellent (cost ₹50)",
+        "Use metal silo (long-term, zero chemical)"
+      ],
+      "common_issues": [
+        {"issue": "Rice weevil infestation", "symptoms": "Holes in grains, powder", "remedy_cost_effective": "Fumigate with aluminum phosphide (expert)", "organic_option": "Mix neem powder 2kg/quintal", "cost_rs_per_acre": 150},
+        {"issue": "Moisture migration/ heat damage", "symptoms": "Mold, caking", "remedy_cost_effective": "Dry grain to 12%, aerate", "organic_option": null, "cost_rs_per_acre": 0},
+        {"issue": "Rodent damage", "symptoms": "Chewed bags, droppings", "remedy_cost_effective": "Set traps, maintain cleanliness", "organic_option": "Use rat repellent plants (mint)", "cost_rs_per_acre": 50}
+      ],
+      "key_tips": [
+        "Store grain only after moisture <14%",
+        "Keep separate from old stock to avoid cross infestation",
+        "If selling for MSP, ensure moisture <=17% (varies by state) or face deductions"
+      ]
+    }
+  ],
+  "pest_calendar": [
+    {"days_after_sowing_low": 0, "days_after_sowing_high": 5, "pest_or_disease": "Seedling blast", "watch_for": "Small yellow lesions on leaves", "prevention": "Seed treatment with carbendazim or Trichoderma", "remedy_cost_effective": "Tricyclazole 75 WP @ 0.6g/l", "organic_option": "Neem oil 5ml/l"},
+    {"days_after_sowing_low": 20, "days_after_sowing_high": 40, "pest_or_disease": "Brown spot", "watch_for": "Brown oval spots with yellow halo", "prevention": "Balanced nitrogen, avoid water stress", "remedy_cost_effective": "Mancozeb 75 WP @ 2.5g/l", "organic_option": "Trichoderma foliar"},
+    {"days_after_sowing_low": 30, "days_after_sowing_high": 60, "pest_or_disease": "Bacterial leaf blight", "watch_for": "Water-soaked lesions, yellowing from leaf tip", "prevention": "Avoid excess N, use resistant varieties", "remedy_cost_effective": "Streptomycin sulphate + tetracycline spray", "organic_option": "Pseudomonas fluorescens"},
+    {"days_after_sowing_low": 30, "days_after_sowing_high": 80, "pest_or_disease": "Stem borer", "watch_for": "Deadheart, white earheads", "prevention": "Install pheromone traps 5/acre", "remedy_cost_effective": "Cartap hydrochloride 50 SP @ 500g/ha", "organic_option": "Neem cake 80 kg/acre basal"},
+    {"days_after_sowing_low": 40, "days_after_sowing_high": 70, "pest_or_disease": "Sheath blight", "watch_for": "Water-soaked oval lesions on leaf sheath", "prevention": "Reduce plant density, avoid heavy N", "remedy_cost_effective": "Hexaconazole 5% SC @ 1ml/l", "organic_option": "Trichoderma + Pseudomonas spray"},
+    {"days_after_sowing_low": 50, "days_after_sowing_high": 80, "pest_or_disease": "Brown plant hopper (BPH)", "watch_for": "Soothmold at stem base, yellowing", "prevention": "Use resistant vars, avoid excessive N", "remedy_cost_effective": "Imidacloprid 17.8 SL 0.5ml/l", "organic_option": "Release Anastatus kashmirensis"},
+    {"days_after_sowing_low": 50, "days_after_sowing_high": 90, "pest_or_disease": "Leaf folder", "watch_for": "Folded leaves, white streaks", "prevention": "Maintain open canopy, avoid thick planting", "remedy_cost_effective": "Chlorpyriphos 20 EC 2ml/l", "organic_option": "Neem oil + soap 5ml/l"},
+    {"days_after_sowing_low": 60, "days_after_sowing_high": 85, "pest_or_disease": "False smut", "watch_for": "Orange-yellow spores balls on panicle", "prevention": "Avoid excess N, especially at booting", "remedy_cost_effective": "Propiconazole 25 EC 1ml/l at booting", "organic_option": "No effective organic control currently"},
+    {"days_after_sowing_low": 60, "days_after_sowing_high": 95, "pest_or_disease": "Gundhi bug (earhead bug)", "watch_for": "Brown spots on grains, foul smell", "prevention": "Clean cultivation, remove alternate hosts", "remedy_cost_effective": "Malathion 5% dust 10kg/acre", "organic_option": "Neem kernel extract 5%"},
+    {"days_after_sowing_low": 70, "days_after_sowing_high": 100, "pest_or_disease": "Rice tungro virus (RTV)", "watch_for": "Stunting, yellow-orange leaf color", "prevention": "Use resistant varieties (Sahbhagi)", "remedy_cost_effective": "Control green leafhopper vector with imidacloprid", "organic_option": "Remove diseased plants, use barrier crops"}
+  ],
+  "sustainable_practices": [
+    "SRI method (System of Rice Intensification)",
+    "AWD (Alternate Wetting Drying)",
+    "Direct Seeded Rice (DSR)",
+    "Green manure (dhaincha/Sesbania)",
+    "IPM with pheromone traps and biological control",
+    "Vermicompost/ FYM for 50% N substitution",
+    "Leaf color chart (LCC) for need-based N",
+    "Neem-based botanicals for pest management",
+    "Azolla dual-cropping for N fixation",
+    "Laser land leveling for water uniformity"
+  ],
+  "tools_and_machinery": [
+    {"name": "Conoweeder", "use": "Weed control and soil aeration in SRI/transplanted rice", "rent_or_buy": "buy", "approx_cost_rs": 1200},
+    {"name": "Drum seeder", "use": "Pre-germinated seed sowing for DSR", "rent_or_buy": "rent", "approx_cost_rs": 400},
+    {"name": "Power weeder", "use": "Efficient weed management in rows", "rent_or_buy": "rent", "approx_cost_rs": 600},
+    {"name": "Laser leveler", "use": "Precision land leveling", "rent_or_buy": "rent", "approx_cost_rs": 800},
+    {"name": "Reaper", "use": "Quick harvesting of crop", "rent_or_buy": "rent", "approx_cost_rs": 1200},
+    {"name": "Thresher", "use": "Grain separation from straw", "rent_or_buy": "rent", "approx_cost_rs": 500},
+    {"name": "Pheromone traps (stem borer)", "use": "Insects monitoring and mass trapping", "rent_or_buy": "buy", "approx_cost_rs": 100}
+  ],
+  "storage_guidance": {
+    "moisture_target_pct_low": 12,
+    "moisture_target_pct_high": 14,
+    "short_term_method": "Sun-dried, store in jute bags with neem leaves on wooden pallets",
+    "long_term_method": "Dried to 12% moisture, store in metal silo or fumigated warehouse",
+    "cold_storage_required": false,
+    "common_storage_pests": ["rice weevil", "lesser grain borer", "rats"],
+    "storage_pest_prevention": "Mix 2 kg neem powder per quintal, maintain cleanliness and aeration"
+  },
+  "harvest_signals": [
+    "80% panicles golden yellow",
+    "Grain moisture ~20-22%",
+    "Stems bend with weight",
+    "Leaves turn yellow and dry"
+  ],
+  "post_harvest_value_addition": [
+    "Paddy parboiling for higher value",
+    "FPO aggregation and direct marketing",
+    "Premium variety segregation (basmati, organic, aromatic)",
+    "Rice bran oil extraction from husk",
+    "Branding and packaging for local markets"
+  ]
+}

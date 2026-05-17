@@ -1,0 +1,154 @@
+{
+  "msp": [
+    {
+      "state": "Bihar",
+      "crop": "rice",
+      "variety": "common",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2369,
+      "effective_date": "2025-06-01",
+      "source_url": "https://dbtagriculture.bihar.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Bihar",
+      "crop": "rice",
+      "variety": "grade_a",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2389,
+      "effective_date": "2025-06-01",
+      "source_url": "https://dbtagriculture.bihar.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Bihar",
+      "crop": "wheat",
+      "variety": null,
+      "season": "rabi",
+      "msp_rs_per_quintal": 2425,
+      "effective_date": "2025-10-01",
+      "source_url": "https://dbtagriculture.bihar.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Uttar Pradesh",
+      "crop": "rice",
+      "variety": "common",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2369,
+      "effective_date": "2025-06-01",
+      "source_url": "http://upagripardarshi.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Uttar Pradesh",
+      "crop": "rice",
+      "variety": "grade_a",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2389,
+      "effective_date": "2025-06-01",
+      "source_url": "http://upagripardarshi.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Uttar Pradesh",
+      "crop": "wheat",
+      "variety": null,
+      "season": "rabi",
+      "msp_rs_per_quintal": 2425,
+      "effective_date": "2025-10-01",
+      "source_url": "http://upagripardarshi.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Punjab",
+      "crop": "rice",
+      "variety": "common",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2369,
+      "effective_date": "2025-06-01",
+      "source_url": "https://agri.punjab.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Punjab",
+      "crop": "rice",
+      "variety": "grade_a",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2389,
+      "effective_date": "2025-06-01",
+      "source_url": "https://agri.punjab.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Punjab",
+      "crop": "wheat",
+      "variety": null,
+      "season": "rabi",
+      "msp_rs_per_quintal": 2425,
+      "effective_date": "2025-10-01",
+      "source_url": "https://agri.punjab.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Madhya Pradesh",
+      "crop": "rice",
+      "variety": "common",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2369,
+      "effective_date": "2025-06-01",
+      "source_url": "http://mpkrishi.mp.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Madhya Pradesh",
+      "crop": "rice",
+      "variety": "grade_a",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2389,
+      "effective_date": "2025-06-01",
+      "source_url": "http://mpkrishi.mp.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Madhya Pradesh",
+      "crop": "wheat",
+      "variety": null,
+      "season": "rabi",
+      "msp_rs_per_quintal": 2425,
+      "effective_date": "2025-10-01",
+      "source_url": "http://mpkrishi.mp.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Haryana",
+      "crop": "rice",
+      "variety": "common",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2369,
+      "effective_date": "2025-06-01",
+      "source_url": "http://agriharyana.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Haryana",
+      "crop": "rice",
+      "variety": "grade_a",
+      "season": "kharif",
+      "msp_rs_per_quintal": 2389,
+      "effective_date": "2025-06-01",
+      "source_url": "http://agriharyana.gov.in/",
+      "notes": "approx; verify against CACP"
+    },
+    {
+      "state": "Haryana",
+      "crop": "wheat",
+      "variety": null,
+      "season": "rabi",
+      "msp_rs_per_quintal": 2425,
+      "effective_date": "2025-10-01",
+      "source_url": "http://agriharyana.gov.in/",
+      "notes": "approx; verify against CACP"
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+{
+  "state_schemes": [
+    {
+      "id": "bkry_bihar",
+      "state": "Bihar",
+      "name": "Bihar Krishi Yantrikaran Yojana",
+      "name_local": "बिहार कृषि यंत्रीकरण योजना",
+      "description": "Subsidy scheme for small and marginal farmers to purchase agricultural machinery and equipment for better productivity.",
+      "applicable_crops": ["all"],
+      "benefit": "Subsidy up to 50% on selected farm machinery, with maximum limit based on equipment type.",
+      "eligibility": {
+        "land_owned_acres_max": 5,
+        "category": ["small", "marginal"],
+        "bpl_included": true
+      },
+      "apply_link": "https://dbtagriculture.bihar.gov.in/",
+      "helpline": null,
+      "notes": "Implementation through district agriculture offices; verify current scheme guidelines on portal."
+    },
+    {
+      "id": "das_bihar",
+      "state": "Bihar",
+      "name": "Diesel Anudan Yojana",
+      "name_local": "डीजल अनुदान योजना",
+      "description": "Provides diesel subsidy to farmers for irrigation pumps during drought or deficit rainfall periods to protect standing crops.",
+      "applicable_crops": ["rice", "wheat", "maize", "pulses"],
+      "benefit": "Direct transfer of diesel subsidy per acre, usually announced during kharif/rabi seasons as per need.",
+      "eligibility": {
+        "land_owned_acres_max": 10,
+        "irrigation_method": "pump",
+        "crop_affected": true
+      },
+      "apply_link": "https://dbtagriculture.bihar.gov.in/",
+      "helpline": "1800-180-1551",
+      "notes": "Seasonal; notifications appear on the Bihar Agriculture Department portal."
+    },
+    {
+      "id": "brfsy_bihar",
+      "state": "Bihar",
+      "name": "Bihar Rajya Fasal Sahayata Yojana",
+      "name_local": "बिहार राज्य फसल सहायता योजना",
+      "description": "State crop assistance scheme that provides compensation for crop loss due to natural calamities, replacing the previous PMFBY-based state contribution.",
+      "applicable_crops": ["rice", "wheat", "maize", "pulses", "oilseeds"],
+      "benefit": "Compensation up to Rs. 10,000 per acre for crop loss; premium and additional support borne by the state.",
+      "eligibility": {
+        "land_owned_acres_max": 10,
+        "loss_reason": ["drought", "flood", "hailstorm", "pest_attack"],
+        "registration_required": true
+      },
+      "apply_link": "https://dbtagriculture.bihar.gov.in/",
+      "helpline": null,
+      "notes": "Scheme details and enrollment on the Bihar Agril portal; verify campaign dates."
+    },
+    {
+      "id": "mkdky_up",
+      "state": "Uttar Pradesh",
+      "name": "Mukhyamantri Krishak Durghatna Kalyan Yojana",
+      "name_local": "मुख्यमंत्री कृषक दुर्घटना कल्याण योजना",
+      "description": "Accident insurance scheme for farmers covering death and disability due to accidents during agricultural operations.",
+      "applicable_crops": ["all"],
+      "benefit": "Insurance cover of Rs. 5 lakh for accidental death or total permanent disability, partial disability benefits as per rules.",
+      "eligibility": {
+        "age_group": "18-70",
+        "farmer_type": "all",
+        "land_ownership": "required"
+      },
+      "apply_link": "http://upagripardarshi.gov.in/",
+      "helpline": null,
+      "notes": "Registration through UP Agripardarshi portal; nominal premium or free under state budget."
+    },
+    {
+      "id": "up_ky_up",
+      "state": "Uttar Pradesh",
+      "name": "Uttar Pradesh Krishi Yantrikaran Yojana",
+      "name_local": "उत्तर प्रदेश कृषि यंत्रीकरण योजना",
+      "description": "Subsidy scheme for farmers to purchase agricultural implements like rotavator, seed drill, and power tillers.",
+      "applicable_crops": ["all"],
+      "benefit": "50% subsidy for SC/ST/women farmers, 40% for general category, on specified machinery with price caps.",
+      "eligibility": {
+        "land_owned_acres_max": 10,
+        "category_based_subsidy": true,
+        "group_purchase_allowed": true
+      },
+      "apply_link": "http://upagripardarshi.gov.in/",
+      "helpline": "1800-180-1551",
+      "notes": "Online application through departmental portal; scheme often launched in phases."
+    },
+    {
+      "id": "crm_punjab",
+      "state": "Punjab",
+      "name": "Crop Residue Management Scheme",
+      "name_local": "फसल अवशेष प्रबंधन योजना",
+      "description": "Provides subsidy on crop residue management machinery like Happy Seeder, Super SMS, and balers to prevent stubble burning.",
+      "applicable_crops": ["rice", "wheat"],
+      "benefit": "50% subsidy to individual farmers, 80% to cooperative societies/FPOs on approved equipment.",
+      "eligibility": {
+        "land_owned_acres_min": 2,
+        "farmer_type": ["individual", "fpo", "cooperative"],
+        "training_required": false
+      },
+      "apply_link": "https://agri.punjab.gov.in/",
+      "helpline": "0172-2215212",
+      "notes": "Implemented by Punjab Agriculture Department; apply via online portal during seasonal windows."
+    },
+    {
+      "id": "pbpk_punjab",
+      "state": "Punjab",
+      "name": "Pani Bachao Paisa Kamao",
+      "name_local": "पानी बचाओ पैसा कमाओ",
+      "description": "Pilot incentive scheme to encourage farmers for using less electricity for irrigation, saving groundwater.",
+      "applicable_crops": ["rice"],
+      "benefit": "Direct cash incentive per unit of electricity saved compared to baseline usage, credited to bank account.",
+      "eligibility": {
+        "crop": "rice",
+        "tariff_type": "agricultural",
+        "meter_installed": true,
+        "pilot_districts": ["Hoshiarpur", "Barnala"]
+      },
+      "apply_link": "https://agri.punjab.gov.in/",
+      "helpline": null,
+      "notes": "Pilot scheme; may not be available statewide. Check Punjab Agriculture portal for enrollment."
+    },
+    {
+      "id": "mkkk_mp",
+      "state": "Madhya Pradesh",
+      "name": "Mukhyamantri Kisan Kalyan Yojana",
+      "name_local": "मुख्यमंत्री किसान कल्याण योजना",
+      "description": "State income support scheme providing an additional Rs. 6,000 per year to farmers over and above PM-KISAN.",
+      "applicable_crops": ["all"],
+      "benefit": "Total Rs. 12,000 per year (PM-KISAN Rs. 6,000 + state Rs. 6,000) in three installments.",
+      "eligibility": {
+        "land_owned_acres_max": 5,
+        "pm_kisan_beneficiary": true,
+        "income_tax_payer_excluded": true
+      },
+      "apply_link": "http://mpkrishi.mp.gov.in/",
+      "helpline": "0755-2551743",
+      "notes": "Auto-enrollment for PM-KISAN beneficiaries; check MP Krishi portal for status."
+    },
+    {
+      "id": "bby_mp",
+      "state": "Madhya Pradesh",
+      "name": "Bhavantar Bhugtan Yojana",
+      "name_local": "भावांतर भुगतान योजना",
+      "description": "Price deficiency payment scheme that compensates farmers when market prices fall below MSP for notified crops.",
+      "applicable_crops": ["maize", "pulses", "oilseeds", "rice", "wheat"],
+      "benefit": "Difference between MSP and average market price (limited to state-specific cap) paid directly to farmer.",
+      "eligibility": {
+        "registered_trader_sale": true,
+        "crop_registration": "mandatory",
+        "land_record_verified": true
+      },
+      "apply_link": "http://mpkrishi.mp.gov.in/",
+      "helpline": null,
+      "notes": "Scheme active during specific seasons; check portal for notified crops and market yards."
+    },
+    {
+      "id": "mpmv_haryana",
+      "state": "Haryana",
+      "name": "Mera Pani Meri Virasat",
+      "name_local": "मेरा पानी मेरी विरासत",
+      "description": "Incentive scheme to encourage farmers to replace paddy with alternative crops like maize or pulses to save groundwater.",
+      "applicable_crops": ["maize", "pulses", "oilseeds", "horticulture"],
+      "benefit": "Rs. 7,000 per acre as incentive for diversifying from paddy to notified alternative crops.",
+      "eligibility": {
+        "replacing_crop": "rice",
+        "target_crop": ["maize", "pulses", "oilseeds", "horticulture"],
+        "land_owned_acres_max": 5,
+        "registration_required": true
+      },
+      "apply_link": "http://agriharyana.gov.in/",
+      "helpline": "1800-180-2117",
+      "notes": "Seasonal enrollment via Haryana Agril portal; verify current rates and eligible crops."
+    },
+    {
+      "id": "bbp_haryana",
+      "state": "Haryana",
+      "name": "Bhavantar Bharpai Yojana",
+      "name_local": "भावांतर भरपाई योजना",
+      "description": "Price compensation scheme for farmers selling vegetables and fruits below cost of production to ensure minimum income.",
+      "applicable_crops": ["horticulture"],
+      "benefit": "Compensation of difference between market price and state-declared cost of production for notified vegetables.",
+      "eligibility": {
+        "crop_type": "horticultural",
+        "registered_sale": true,
+        "farmer_group": "small_marginal"
+      },
+      "apply_link": "http://agriharyana.gov.in/",
+      "helpline": null,
+      "notes": "Implements through market committees; list of crops and base price notified periodically."
+    }
+  ]
+}
