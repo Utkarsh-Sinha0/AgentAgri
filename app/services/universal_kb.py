@@ -8,6 +8,7 @@ agent's retrieval step. Idempotent: re-loading is safe.
 from __future__ import annotations
 
 import json
+import re
 import threading
 from functools import lru_cache
 from pathlib import Path
@@ -40,6 +41,7 @@ def load_seed(force: bool = False) -> dict[str, Any]:
             "cold_storage": (_load_json("cold_storage_directory.json") or {}).get("cold_storage", []),
             "reference_manuals": (_load_json("reference_manuals.json") or {}).get("reference_manuals", []),
             "common_issue_memory": (_load_json("universal_memory_common_issues.json") or {}).get("common_issue_memory", []),
+            "encyclopedia": (_load_json("rice_encyclopedia_sections.json") or {}).get("rice_encyclopedia_sections", []),
             "playbooks": {
                 "rice": _load_json("crop_playbook_rice.json"),
                 "wheat": _load_json("crop_playbook_wheat.json"),
@@ -164,28 +166,70 @@ def get_common_issue_memory(crop: str | None = None, query: str | None = None, l
     return rows[:limit]
 
 
-def retrieve(crop: str | None = None, state: str | None = None, stage: str | None = None, query: str | None = None) -> list[dict]:
-    """Universal-KB retrieval. Returns metadata-tagged documents for the agent."""
-    docs: list[dict] = []
+def get_encyclopedia_sections(crop: str | None = None, query: str | None = None, limit: int = 3) -> list[dict]:
+    rows = load_seed().get("encyclopedia", []) or []
     if crop:
+        rows = [r for r in rows if _ci_eq(r.get("crop"), crop)]
+    if not query:
+        return rows[:limit]
+    q_tokens = {t for t in re.findall(r"[a-zA-Zऀ-ॿ]{3,}", query.lower()) if t}
+    if not q_tokens:
+        return rows[:limit]
+    scored: list[tuple[int, dict]] = []
+    for row in rows:
+        hay = f"{row.get('heading','')} {row.get('text','')}".lower()
+        score = sum(1 for tok in q_tokens if tok in hay)
+        if score:
+            scored.append((score, row))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [r for _, r in scored[:limit]]
+
+
+def retrieve(
+    crop: str | None = None,
+    state: str | None = None,
+    stage: str | None = None,
+    query: str | None = None,
+    allowed_types: set[str] | None = None,
+) -> list[dict]:
+    """Universal-KB retrieval. Returns metadata-tagged documents for the agent.
+
+    allowed_types restricts which doc_types are loaded. None = load all
+    (legacy behavior). Pass {"playbook","playbook_stage","official_manual",
+    "common_issue_memory"} for pest/disease queries to keep MSP/scheme noise
+    out of the prompt.
+    """
+    def _allow(t: str) -> bool:
+        return allowed_types is None or t in allowed_types
+
+    docs: list[dict] = []
+    if crop and (_allow("playbook") or _allow("playbook_stage")):
         pb = get_playbook(crop)
         if pb:
-            if stage:
+            if stage and _allow("playbook_stage"):
                 st = get_stage_guidance(crop, stage)
                 if isinstance(st, dict):
                     docs.append({"kind": "universal_kb", "doc_type": "playbook_stage", "crop": crop, "stage": stage, "content": st})
-            else:
+            elif _allow("playbook"):
                 docs.append({"kind": "universal_kb", "doc_type": "playbook", "crop": crop, "content": pb})
-    for row in get_msp(crop=crop or "", state=state):
-        docs.append({"kind": "universal_kb", "doc_type": "msp", "crop": row.get("crop"), "state": row.get("state"), "content": row})
-    for row in get_insurance(crop=crop, state=state):
-        docs.append({"kind": "universal_kb", "doc_type": "insurance", "crop": row.get("crop"), "state": row.get("state"), "content": row})
-    for row in get_state_schemes(state=state, crop=crop):
-        docs.append({"kind": "universal_kb", "doc_type": "scheme", "state": row.get("state"), "content": row})
-    for row in get_reference_manuals(crop=crop):
-        docs.append({"kind": "universal_kb", "doc_type": "official_manual", "crop": row.get("crop"), "content": row})
-    for row in get_common_issue_memory(crop=crop, query=query):
-        docs.append({"kind": "universal_kb", "doc_type": "common_issue_memory", "crop": row.get("crop"), "id": row.get("id"), "content": row})
+    if _allow("msp"):
+        for row in get_msp(crop=crop or "", state=state):
+            docs.append({"kind": "universal_kb", "doc_type": "msp", "crop": row.get("crop"), "state": row.get("state"), "content": row})
+    if _allow("insurance"):
+        for row in get_insurance(crop=crop, state=state):
+            docs.append({"kind": "universal_kb", "doc_type": "insurance", "crop": row.get("crop"), "state": row.get("state"), "content": row})
+    if _allow("scheme"):
+        for row in get_state_schemes(state=state, crop=crop):
+            docs.append({"kind": "universal_kb", "doc_type": "scheme", "state": row.get("state"), "content": row})
+    if _allow("official_manual"):
+        for row in get_reference_manuals(crop=crop):
+            docs.append({"kind": "universal_kb", "doc_type": "official_manual", "crop": row.get("crop"), "content": row})
+    if _allow("common_issue_memory"):
+        for row in get_common_issue_memory(crop=crop, query=query):
+            docs.append({"kind": "universal_kb", "doc_type": "common_issue_memory", "crop": row.get("crop"), "id": row.get("id"), "content": row})
+    if _allow("encyclopedia"):
+        for row in get_encyclopedia_sections(crop=crop, query=query):
+            docs.append({"kind": "universal_kb", "doc_type": "encyclopedia", "crop": row.get("crop"), "id": row.get("id"), "content": row})
     return docs
 
 

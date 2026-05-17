@@ -350,12 +350,23 @@ class AgentOrchestrator:
             except Exception:
                 pass
             should_load_kb = bool(ctx.crop_name) or intent.get("intent") in {"scheme_query", "market_query"}
+            intent_name = intent.get("intent")
+            # Scope KB doc-types to the intent so pest/disease answers don't
+            # get MSP/scheme cards stuffed into the LLM prompt (which the model
+            # then hallucinates a bridge to — "I'll give you MSP since you
+            # mentioned rice"). Allow everything for the explicit financial/
+            # scheme intents that need that data.
+            if intent_name in {"market_query", "scheme_query", "finance_query"}:
+                kb_allowed: set[str] | None = None
+            else:
+                kb_allowed = {"playbook", "playbook_stage", "official_manual", "common_issue_memory", "encyclopedia"}
             evidence.universal_kb_docs = (
                 universal_kb.retrieve(
                     crop=ctx.crop_name,
                     state=state_hint,
                     stage=ctx.crop_stage,
                     query=ctx.message,
+                    allowed_types=kb_allowed,
                 ) if should_load_kb else []
             ) or []
             if (

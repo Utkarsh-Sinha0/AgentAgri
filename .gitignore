@@ -27,7 +27,12 @@ evals/synthetic_results_*.json
 evals/synthetic_summary_*.json
 evals/synthetic_report_*.md
 
+# Local user uploads (photos sent through telegram bot)
+data/photos/
+download.*
+
 # Logs and OS/editor noise
+logs/
 *.log
 .DS_Store
 Thumbs.db

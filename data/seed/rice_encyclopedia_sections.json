@@ -1,0 +1,1308 @@
+{
+  "rice_encyclopedia_sections": [
+    {
+      "id": "rice_enc_1_1_the_staple_of_humanity_4",
+      "crop": "rice",
+      "heading": "1.1 The Staple of Humanity",
+      "level": 2,
+      "text": "Rice (*Oryza sativa* L.) is the primary food source for more than half of the world's population. It provides 20% of global calorie intake and is cultivated in over 100 countries across all continents except Antarctica. Global rice production exceeds 780 million tonnes annually from approximately 167 million hectares.",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_key_statistics_5",
+      "crop": "rice",
+      "heading": "Key Statistics",
+      "level": 3,
+      "text": "- **Global production**: ~780 Mt/year (milled rice equivalent)\n- **Area under cultivation**: ~167 million ha\n- **Major producers**: China, India, Indonesia, Bangladesh, Vietnam, Thailand, Myanmar, Philippines, Pakistan, Brazil\n- **Average yield**: ~4.7 t/ha (worldwide); ~2.7 t/ha (India); ~6.9 t/ha (China)\n- **Top export nations**: India, Thailand, Vietnam, Pakistan, USA\n- **Rice provides**: 20% of global per capita energy and 15% of protein",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_rice_classification_by_grain_type_6",
+      "crop": "rice",
+      "heading": "Rice Classification by Grain Type",
+      "level": 3,
+      "text": "| Type | Grain Length | Examples | Aroma | Cooking Characteristics |\n|------|-------------|----------|-------|------------------------|\n| Long-grain | 6-8 mm, slender | Basmati, Jasmine | Aromatic (Basmati) | Fluffy, separate grains |\n| Medium-grain | 5-6 mm, slightly round | Arborio, Calrose | Mild | Creamy, holds shape |\n| Short-grain | 4-5 mm, round | Sushi rice, Glutinous | Subtle | Sticky, clumps together |\n| Aromatic | Varies | Basmati, Jasmine, Thai fragrant | Strong aroma | Distinct flavor profile |\n| Glutinous (Waxy) | Short-medium | Sticky rice | None | Very sticky; used in desserts |\n| Pigmented | Varies | Black rice, Red rice | Nutty | High anthocyanin content |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_rice_ecosystems_global_classification_7",
+      "crop": "rice",
+      "heading": "Rice Ecosystems (Global Classification)",
+      "level": 3,
+      "text": "| Ecosystem | % of Global Area | Water Source | Typical Yield |\n|-----------|-----------------|--------------|---------------|\n| Irrigated lowland | 55% | Controlled irrigation | 5-8 t/ha |\n| Rainfed lowland | 25% | Monsoon rainfall | 2-4 t/ha |\n| Rainfed upland | 12% | Direct rainfall only | 1-2 t/ha |\n| Deepwater/floating | 6% | Flood waters up to 4m | 1-1.5 t/ha |\n| Tidal wetlands | 2% | Tidal irrigation | 2-3 t/ha |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_2_1_botanical_classification_9",
+      "crop": "rice",
+      "heading": "2.1 Botanical Classification",
+      "level": 2,
+      "text": "| Level | Classification |\n|-------|---------------|\n| Kingdom | Plantae |\n| Division | Magnoliophyta |\n| Class | Liliopsida |\n| Order | Poales |\n| Family | Poaceae (Gramineae) |\n| Subfamily | Oryzoideae |\n| Genus | *Oryza* |\n| Cultivated Species | *O. sativa* (Asian rice), *O. glaberrima* (African rice) |\n| Chromosome Number | 2n = 24 |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_subspecies_of_oryza_sativa_10",
+      "crop": "rice",
+      "heading": "Subspecies of *Oryza sativa*",
+      "level": 3,
+      "text": "| Subspecies | Characteristics | Region |\n|------------|---------------|--------|\n| *indica* | Long grains, wide leaves, low tillering, high temperature tolerance | Tropical Asia (India, Thailand, Vietnam, Philippines) |\n| *japonica* | Short/medium grains, narrow leaves, high tillering, cold tolerant | Temperate East Asia (Japan, Korea, China) |\n| *javanica* (tropical japonica) | Bold grains, tall stature, low tillering, vigorous | Indonesia, Philippines |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_root_system_12",
+      "crop": "rice",
+      "heading": "Root System",
+      "level": 3,
+      "text": "- **Fibrous root system** (no taproot)\n- **Seminal roots**: Develop from radicle after germination; function for 2-3 weeks\n- **Adventitious (crown) roots**: Develop from nodes below ground; primary root system\n- **Root hairs**: Dense near tips; absorb water and nutrients\n- **Aerenchyma tissue**: Air spaces in roots that allow oxygen transport to submerged roots\n- **Rooting depth**: 15-40 cm typically; up to 100 cm in well-drained soils",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_stem_culm_13",
+      "crop": "rice",
+      "heading": "Stem (Culm)",
+      "level": 3,
+      "text": "- Hollow internodes separated by solid nodes\n- Height: 0.5-2.0 m depending on variety and conditions\n- **Tillers**: Secondary shoots arising from basal nodes\n  - Productive tillers: Bear panicles\n  - Unproductive tillers: Do not bear panicles\n- **Internode elongation**: Begins at panicle initiation",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_leaves_14",
+      "crop": "rice",
+      "heading": "Leaves",
+      "level": 3,
+      "text": "- Alternate arrangement on culm\n- Components: Leaf sheath + leaf blade + ligule + auricles\n- **Flag leaf**: Uppermost leaf below panicle; critical for grain filling\n- **Leaf Color Chart (LCC)** used for N management: Ranges from yellow-green (1) to dark green (6)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_panicle_inflorescence_15",
+      "crop": "rice",
+      "heading": "Panicle (Inflorescence)",
+      "level": 3,
+      "text": "- Terminal, branched raceme\n- **Primary branches**: 8-15 per panicle\n- **Secondary branches**: 6-12 per primary branch\n- **Spikelets**: Each contains one floret (one grain per spikelet)\n- **Spikelet number**: 60-250 per panicle\n- **Grain**: Caryopsis (fruit where pericarp fused to seed coat)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_rice_grain_structure_16",
+      "crop": "rice",
+      "heading": "Rice Grain Structure",
+      "level": 3,
+      "text": "| Component | % of Brown Rice | Composition |\n|-----------|----------------|-------------|\n| Husk/hull | 18-20% (of paddy) | Cellulose, lignin, silica |\n| Bran layer | 5-8% | Fiber, oil, protein, vitamins |\n| Endosperm | 89-92% | Starch (80-85%), protein (7-10%) |\n| Germ/embryo | 2-3% | Oil, protein, vitamins |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_2_3_growth_stages_complete_development_17",
+      "crop": "rice",
+      "heading": "2.3 Growth Stages (Complete Development)",
+      "level": 2,
+      "text": "Rice development is divided into three main phases spanning 90-200+ days depending on variety.",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_phase_1_vegetative_stage_days_0_55_18",
+      "crop": "rice",
+      "heading": "Phase 1: Vegetative Stage (Days 0-55)",
+      "level": 3,
+      "text": "| Stage | Duration | Key Events | Management Focus |\n|-------|----------|------------|------------------|\n| **0. Seed germination** | 0-3 DAS | Seed imbibes water (25-30% moisture); radicle emerges | Good seedbed; adequate moisture |\n| **1. Seedling emergence** | 3-7 DAS | Coleoptile breaks soil; first leaf emerges | Shallow water (1-2 cm); bird control |\n| **2. Early vegetative** | 7-21 DAS | 2-4 leaves; seminal root system established | Nitrogen starter; shallow water |\n| **3. Active tillering** | 21-45 DAT | Tiller emergence (main shoot + tillers); root system expands | Water management; N top-dressing; weed control |\n| **4. Maximum tillering** | 45-55 DAT | Peak tiller number; some tillers die back | Drainage for pause; N management |\n\nNote: DAT = Days After Transplanting; DAS = Days After Sowing",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_phase_2_reproductive_stage_days_55_90_19",
+      "crop": "rice",
+      "heading": "Phase 2: Reproductive Stage (Days 55-90)",
+      "level": 3,
+      "text": "| Stage | Duration | Key Events | Management Focus |\n|-------|----------|------------|------------------|\n| **5. Panicle initiation** | 55-65 DAT | First sign: internode elongation (1-2 cm); panicle primordia visible | Maintain 5 cm water; K application; pest scouting |\n| **6. Panicle development** | 65-80 DAT | Panicle grows inside flag leaf sheath (10-12 days before heading) | Avoid stress; manage water |\n| **7. Booting** | 80-85 DAT | Panicle swells within flag leaf sheath | Maintain water; blast fungicide if needed |\n| **8. Heading** | 85-90 DAT | Panicle emerges from flag leaf sheath | Avoid nitrogen; protect from birds |\n| **9. Flowering/anthesis** | 90-95 DAT | Spikelets open 1-2 hours; pollination occurs | Optimal temperature 25-35°C; avoid rain during flowering |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_phase_3_ripening_phase_days_95_130_20",
+      "crop": "rice",
+      "heading": "Phase 3: Ripening Phase (Days 95-130+)",
+      "level": 3,
+      "text": "| Stage | Duration | Key Events | Management Focus |\n|-------|----------|------------|------------------|\n| **10. Milk stage** | 95-105 DAT | Grain fills with milky liquid (white); starch accumulation begins | Maintain water; avoid stress |\n| **11. Dough stage** | 105-120 DAT | Grain consistency changes from soft to hard dough | Drain water 10-14 days before harvest |\n| **12. Maturity** | 120-130+ DAT | Grain hardens; 20-25% moisture; hull turns golden brown | Harvest timing critical |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_thermal_time_requirements_gdd_growing_degree_days_21",
+      "crop": "rice",
+      "heading": "Thermal Time Requirements (GDD = Growing Degree Days)",
+      "level": 3,
+      "text": "| Stage | Temperature Range (°C) | GDD Accumulation |\n|-------|----------------------|------------------|\n| Seed germination | 25-35 (opt. 30) | 50-70 |\n| Seedling growth | 22-32 | 150-200 |\n| Active tillering | 25-32 | 350-450 |\n| Panicle initiation | 22-30 | 200-300 |\n| Booting/Heading | 25-32 | 150-200 |\n| Grain filling | 20-30 | 400-500 |\n| **Total (120-day variety)** | | **~1300-1800 GDD** |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_3_1_climate_requirements_23",
+      "crop": "rice",
+      "heading": "3.1 Climate Requirements",
+      "level": 2,
+      "text": "| Factor | Optimal Range | Critical Limits |\n|--------|---------------|-----------------|\n| Temperature (germination) | 25-35°C | Min 10°C; Max 45°C |\n| Temperature (vegetative) | 25-32°C day / 18-24°C night | Below 15°C slows growth; above 38°C causes stress |\n| Temperature (flowering) | 25-35°C | Below 20°C: spikelet sterility; Above 38°C: high sterility |\n| Temperature (grain filling) | 22-28°C day / 18-22°C night | High temps reduce grain weight and quality |\n| Humidity | 70-85% (flowering); 60-70% (ripening) | High humidity increases disease; low humidity increases water demand |\n| Solar radiation | 300-500 cal/cm²/day | Low radiation = poor tillering and yield |\n| Rainfall (irrigated) | 800-1200 mm/season | Well-distributed |\n| Rainfall (rainfed) | 1200-2500 mm/season | Must match crop water demand |\n| Wind | Calm to light breeze | Strong wind at flowering causes sterility; lodging |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_3_2_soil_requirements_24",
+      "crop": "rice",
+      "heading": "3.2 Soil Requirements",
+      "level": 2,
+      "text": "| Factor | Optimal | Tolerable Range |\n|--------|---------|-----------------|\n| Soil texture | Clay loam, silty clay loam | Sandy to heavy clay |\n| Soil depth | >25 cm | Minimum 15 cm |\n| pH | 5.5-6.5 (slightly acidic) | 4.5-8.0 |\n| Organic matter | >1.5% | >0.5% minimum |\n| CEC (cation exchange capacity) | >15 meq/100g | Higher is better for nutrient retention |\n| EC (salinity) | <2 dS/m | Tolerates up to 3-4 dS/m (some varieties up to 8-10 dS/m) |\n| Available N | >250 kg/ha | Highly responsive to N fertilizer |\n| Available P₂O₅ | >25 kg/ha | Low P common in acid soils |\n| Available K₂O | >150 kg/ha | Often sufficient in clay soils |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_soil_suitability_classification_for_rice_25",
+      "crop": "rice",
+      "heading": "Soil Suitability Classification for Rice",
+      "level": 3,
+      "text": "| Class | Description | Characteristics |\n|-------|-------------|-----------------|\n| Class I (Highly suitable) | Deep clay loam, good water-holding, pH 5.5-7.0, level land | Yields >5 t/ha with good management |\n| Class II (Moderately suitable) | Medium-textured, slight slope, moderate water-holding | Yields 3-5 t/ha |\n| Class III (Marginally suitable) | Sandy, shallow, saline, acidic, undulating | Yields 1.5-3 t/ha |\n| Class IV (Not suitable) | Gravelly, highly saline, very shallow, steep slopes | Not recommended |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_soil_problems_in_rice_fields_26",
+      "crop": "rice",
+      "heading": "Soil Problems in Rice Fields",
+      "level": 3,
+      "text": "| Problem | Cause | Management |\n|---------|-------|------------|\n| Iron toxicity | Low pH, poor drainage, reduced soil conditions | Drainage; lime; resistant varieties |\n| Salinity/Alkalinity | High salts in soil/irrigation water | Leaching; gypsum; salt-tolerant varieties (CSR series) |\n| Zinc deficiency | High pH, high P, low organic matter | Zinc sulfate application (25-50 kg/ha); Zn-enriched urea |\n| Sulfur deficiency | Continuous cropping with S-free fertilizers | Single superphosphate; gypsum; S-containing fertilizers |\n| Phosphorus fixation | Highly acidic or calcareous soils | Rock phosphate (acid soils); SSP; band placement |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_4_1_classification_by_duration_28",
+      "crop": "rice",
+      "heading": "4.1 Classification by Duration",
+      "level": 2,
+      "text": "| Category | Duration | Examples | Growing Season |\n|----------|----------|----------|----------------|\n| Very early | 80-95 days | Vandana, Anjali, Pusa Basmati 1509 | Short season, summer |\n| Early | 95-110 days | Pusa 44 (modified), PR 106, Swarna sub1 | Rainfed/short monsoon |\n| Medium | 110-130 days | Swarna, Samba Mahsuri, MTU 1010 | Main kharif season |\n| Late | 130-150 days | BPT 5204, Ranjit, Basmati 386 | Long duration, deep water |\n| Very late | >150 days | Jaldubi, traditional deepwater varieties | Flood-prone areas |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_upland_direct_seeded_varieties_30",
+      "crop": "rice",
+      "heading": "Upland (Direct Seeded) Varieties",
+      "level": 3,
+      "text": "- Adaptable to aerobic conditions\n- Deep root system, thick cuticle\n- Drought-tolerant\n- **Examples**: Vandana (India), NERICA 1-19 (Africa), IRAT series",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_lowland_irrigated_transplanted_varieties_31",
+      "crop": "rice",
+      "heading": "Lowland (Irrigated/Transplanted) Varieties",
+      "level": 3,
+      "text": "- Adapted to submerged/puddled conditions\n- High tillering ability\n- Responsive to high inputs\n- **Examples**: IR 64, Swarna, BPT 5204, Jaya",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_deepwater_floating_varieties_32",
+      "crop": "rice",
+      "heading": "Deepwater/Floating Varieties",
+      "level": 3,
+      "text": "- Can elongate with rising water (up to 4m)\n- Hollow, flexible stems\n- Nodal rooting ability\n- **Examples**: Jaldubi, Jalashree, Swarna sub1 (submergence tolerant)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_4_3_varieties_by_special_traits_33",
+      "crop": "rice",
+      "heading": "4.3 Varieties by Special Traits",
+      "level": 2,
+      "text": "| Trait | Definition | Example Varieties |\n|-------|-----------|-------------------|\n| **Hybrid rice** | F1 hybrids with 15-30% yield advantage | Arize 6444, PHB 71, KRH 2, PA 6444 |\n| **Aromatic rice** | Distinct popcorn-like fragrance (2-acetyl-1-pyrroline) | Basmati 370, Pusa Basmati 1121, Pusa Basmati 1509, Jeeraga Samba, Ambemohar |\n| **Submergence tolerant** | Survives 2 weeks complete submergence (SUB1 gene) | Swarna sub1, Samba Mahsuri sub1, IR 64 sub1 |\n| **Drought tolerant** | Maintain yield under water stress | Sahbhagi Dhan, Dular, Vandana, NERICA varieties |\n| **Salinity tolerant** | Tolerates EC up to 8-10 dS/m | CSR 27, CSR 30, Lunishree, Bhootnath |\n| **Zinc-enriched (biofortified)** | Higher grain zinc content | BRRI dhan 62, DRR Dhan 45 (Zinc Rice) |\n| **High protein** | >10% grain protein | CR Dhan 310, Improved varieties |\n| **Low glycemic index (GI)** | Suitable for diabetics | Basmati varieties, special selections |\n| **Bacterial blight resistant** | Contains Xa genes (Xa4, xa5, Xa7, Xa21) | Improved Samba Mahsuri, Ajay, Rajeshwari |\n| **Blast resistant** | Contains Pi genes | Tetep, IR 64, Improved varieties |\n| **Gall midge resistant** | Resistant to African/Asian gall midge | Phalguna, Kakatiya, Suraksha |\n| **Brown planthopper resistant** | Contains BPH resistance genes | PTB 33, IR 36, Mo 1, CO 45 |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_india_35",
+      "crop": "rice",
+      "heading": "India",
+      "level": 3,
+      "text": "| Variety | Type | Duration | Yield (t/ha) | Key Features |\n|---------|------|----------|-------------|--------------|\n| Pusa Basmati 1121 | Basmati, long grain (8.2mm) | 135-140 | 4.5-5.0 | World's longest rice grain |\n| Pusa Basmati 1509 | Basmati, early | 115-120 | 5.0-5.5 | Very early Basmati; excellent cooking |\n| Swarna (MTU 7029) | Non-Basmati, medium | 125-130 | 5.5-6.5 | Most widely grown in India; bold grain |\n| BPT 5204 (Samba Mahsuri) | Non-Basmati, fine | 135-140 | 5.0-6.0 | Premium table rice; Andhra specialty |\n| BPT 3291 (Sona Masuri) | Non-Basmati, fine | 130-135 | 5.0-5.5 | Popular in South India |\n| MTU 1010 (Cottondora Sannalu) | Non-Basmati | 115-120 | 5.5-6.5 | Early; high-yielding; drought escape |\n| NDR 359 | Non-Basmati | 90-95 | 4.5-5.0 | Very early; Bihar/Uttar Pradesh |\n| Jaya | Non-Basmati | 130-135 | 6.0-7.0 | First Indian high-yielding variety |\n| IR 64 | Non-Basmati | 125-130 | 5.0-6.0 | International standard; all-India |\n| Pusa 44 | Non-Basmati | 145-150 | 6.0-7.5 | Very high yield but long duration |\n| CR Dhan 200 (BINA dhan) | Non-Basmati | 125-130 | 5.5-6.0 | Boro rice; cold tolerant |\n| Pooja | Non-Basmati | 140-145 | 5.5-6.0 | Medium-slender; central India |\n| Ajay (CR 1009) | Submergence tolerant | 150-155 | 5.0-5.5 | Odisha/Assam flood areas |\n| Swarna sub1 | Submergence tolerant | 125-130 | 5.0-6.0 | Flood-tolerant version of Swarna |\n| Sahbhagi Dhan | Drought tolerant | 105-110 | 3.5-4.5 | Rainfed, upland |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_major_east_asian_varieties_36",
+      "crop": "rice",
+      "heading": "Major East Asian Varieties",
+      "level": 3,
+      "text": "| Variety | Country | Type | Yield | Features |\n|---------|---------|------|-------|----------|\n| IR 8 (Miracle Rice) | Philippines | Indica, semi-dwarf | 7-10 | Green Revolution variety |\n| IR 36 | Philippines | Indica | 5-8 | Multi-pest resistant |\n| Zhenshan 97 | China | Indica | 6-9 | Widely used in hybrids |\n| Nipponbare | Japan | Japonica | 5-7 | Reference genome variety |\n| Koshihikari | Japan | Japonica | 5-6.5 | Premium sushi rice |\n| Basmati 370 | Pakistan | Basmati | 3-4 | Traditional Basmati |\n| Super Basmati | Pakistan | Basmati | 4-5 | Improved Basmati |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_5_1_pre_planting_operations_38",
+      "crop": "rice",
+      "heading": "5.1 Pre-Planting Operations",
+      "level": 2,
+      "text": "| Operation | Purpose | Timing |\n|-----------|---------|--------|\n| **Summer/deep plowing** (Moldboard plow 20-25 cm depth) | Expose pests to predators and sun; improve percolation; incorporate residues | 1-2 months before planting (May-June in India) |\n| **Harrowing (2-3 passes)** | Break clods; level soil; incorporate weeds | Before puddling |\n| **Puddling** (wet tillage with 5-7 cm water) | Create soft seedbed; reduce percolation; control weeds; facilitate transplanting | Immediately before transplanting |\n| **Land leveling** (laser-guided preferred) | Uniform water depth; better weed control; even crop maturity | After puddling |\n| **Bund preparation** (raised boundaries 30-45 cm) | Retain water; prevent cross-contamination | During land prep |\n| **Drain/irrigation channel maintenance** | Water control; drainage | Before planting |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_objectives_of_puddling_40",
+      "crop": "rice",
+      "heading": "Objectives of Puddling",
+      "level": 3,
+      "text": "1. Soften soil for easy transplanting\n2. Reduce water percolation losses (create hard pan at 15-25 cm depth)\n3. Incorporate weeds and crop residues\n4. Create anaerobic conditions that suppress weed seed germination\n5. Reduce soil volume, increase bulk density",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_puddling_intensity_41",
+      "crop": "rice",
+      "heading": "Puddling Intensity",
+      "level": 3,
+      "text": "| Level | Operations | Effect |\n|-------|-----------|--------|\n| Light | 1-2 passes with cultivator in water | Minimal hard pan; moderate weed control |\n| Medium | 2-3 passes + planking | Good hard pan; good weed control |\n| Intensive | 3-4 passes + repeated planking | Excellent hard pan; excellent weed control |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_water_depth_during_puddling_42",
+      "crop": "rice",
+      "heading": "Water Depth During Puddling",
+      "level": 3,
+      "text": "- Too deep (>7 cm): Poor soil mixing, implements float\n- Too shallow (<3 cm): Implements drag, uneven puddling\n- Optimal: 5-7 cm standing water",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_5_3_zero_tillage_minimum_tillage_options_43",
+      "crop": "rice",
+      "heading": "5.3 Zero-Tillage / Minimum Tillage Options",
+      "level": 2,
+      "text": "For direct-seeded rice (DSR), puddling is avoided:\n\n| Method | Operations | Suitable for |\n|--------|-----------|-------------|\n| Zero-till DSR | Direct drilling into untilled soil | Where previous crop residue retained |\n| Reduced till DSR | 1-2 harrowings + seeding | Medium-textured soils |\n| Strip tillage | Till only seed row | Conservation agriculture systems |\n| Bed planting | Form raised beds, sow on beds | Heavy soils with drainage issues |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_advantages_46",
+      "crop": "rice",
+      "heading": "Advantages",
+      "level": 3,
+      "text": "- Best weed control (puddling + flooded conditions)\n- Uniform crop stand\n- Higher yield potential\n- Efficient water use (shorter field duration)\n- Nitrogen-efficient (ammonium form available in flooded soil)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_disadvantages_47",
+      "crop": "rice",
+      "heading": "Disadvantages",
+      "level": 3,
+      "text": "- High labor requirement (25-35 person-days/ha)\n- High nursery area requirement (1/10 of main field)\n- More water required for land preparation (puddling)\n- Higher seedling production costs\n- Transplanting shock (7-10 days recovery)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_types_of_dsr_49",
+      "crop": "rice",
+      "heading": "Types of DSR",
+      "level": 3,
+      "text": "| Type | Description | Water Management | Suitable For |\n|------|-------------|-----------------|--------------|\n| Dry DSR | Sowing dry seed into dry soil (like wheat) | Rainfed/irrigated as needed | Uplands, rainfed areas |\n| Wet DSR | Sowing pre-germinated seed onto puddled soil | Flooded after seedling establishment | Irrigated lowlands |\n| Aerobic rice | Sowing dry seed into well-drained soil | Intermittent irrigation | Water-scarce areas |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_advantages_of_dsr_50",
+      "crop": "rice",
+      "heading": "Advantages of DSR",
+      "level": 3,
+      "text": "- Labor saving (reduces 70-80% labor vs transplanting)\n- No nursery requirement\n- 25-40% less water (no puddling; reduced percolation)\n- Earlier maturity (7-10 days earlier than TPR)\n- Reduced methane emissions\n- Better root development (no transplant shock)\n- Mechanization-friendly",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_challenges_in_dsr_51",
+      "crop": "rice",
+      "heading": "Challenges in DSR",
+      "level": 3,
+      "text": "- Higher weed pressure (no puddling + no standing water initially)\n- More difficult crop establishment\n- Greater risk of poor stand if rains fail\n- Higher seed rate required (20-30 kg/ha vs 8-10 kg/ha for TPR)\n- Nitrogen management more complex (aerobic conditions → nitrate leaching)\n- Greater micronutrient deficiencies possible",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_seed_rate_comparison_52",
+      "crop": "rice",
+      "heading": "Seed Rate Comparison",
+      "level": 3,
+      "text": "| Method | Seed Rate (kg/ha) | Plant Spacing |\n|--------|------------------|---------------|\n| Transplanted — seedlings | 8-12 | 20×15 cm to 20×20 cm |\n| Dry DSR (drilling) | 20-30 | 20-25 cm rows |\n| Wet DSR (broadcasting) | 40-60 | Random |\n| SRI (young seedlings) | 5-7 | 25×25 cm or wider |\n| DSR with drum seeder | 20-25 | 20 cm rows |\n| DSR with precision seeder | 15-25 | Adjustable |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_core_principles_54",
+      "crop": "rice",
+      "heading": "Core Principles",
+      "level": 3,
+      "text": "1. **Young seedlings**: Transplant at 8-12 days old (2-leaf stage), not 25-35 days\n2. **Single seedling per hill**: No clumps of 3-4 seedlings\n3. **Wide spacing**: 25×25 cm or wider in square pattern\n4. **Alternate wetting and drying (AWD)**: No continuous flooding\n5. **Organic soil enrichment**: Compost, FYM, biofertilizers\n6. **Mechanical weeding**: Cono-weeder between rows (aerates soil)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_sri_benefits_research_validated_in_60_countries_55",
+      "crop": "rice",
+      "heading": "SRI Benefits (Research-validated in 60+ countries)",
+      "level": 3,
+      "text": "| Parameter | Conventional | SRI | Improvement |\n|-----------|-------------|-----|-------------|\n| Yield (t/ha) | 4-6 | 6-10 | 20-100% |\n| Seed required (kg/ha) | 40-60 | 5-7 | 85-90% reduction |\n| Water use (mm) | 1200-2000 | 600-1000 | 25-50% reduction |\n| Methane emissions | High | 40-60% lower | Significant reduction |\n| Input costs | Higher | 20-30% lower | Economic benefit |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_sri_spacing_recommendations_56",
+      "crop": "rice",
+      "heading": "SRI Spacing Recommendations",
+      "level": 3,
+      "text": "| Spacing | Plants/m² | Suitable For |\n|---------|-----------|--------------|\n| 25×25 cm | 16 | Most varieties, moderate fertility |\n| 30×30 cm | 11 | High fertility, high-tillering varieties |\n| 40×40 cm | 6 | Very fertile soils, long-duration varieties |\n| 25×20 cm | 20 | Medium fertility, moderate tillering |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_seed_production_58",
+      "crop": "rice",
+      "heading": "Seed Production",
+      "level": 3,
+      "text": "- Hybrid rice exploits heterosis (hybrid vigor)\n- 15-30% yield advantage over inbred varieties\n- Requires parental line multiplication (A line, B line, R line)\n- Seed production requires isolation (100-200 m from other rice)\n- Synchronized flowering of A and R lines critical\n- Seed yield: 1.5-2.5 t/ha (hybrid seed)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_hybrid_cultivation_management_59",
+      "crop": "rice",
+      "heading": "Hybrid Cultivation Management",
+      "level": 3,
+      "text": "| Factor | Recommendation |\n|--------|---------------|\n| Seed rate | 10-15 kg/ha (transplanted); 12-18 kg/ha (DSR) |\n| Seedling age | 18-22 days (slightly older than inbred) |\n| Plant spacing | 20×15 cm or 20×20 cm |\n| Nitrogen | 20-30% more than inbreds (150-200 kg N/ha) |\n| Water management | Continuous flooding preferred |\n| Panicles/m² | 300-400 target |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_6_5_transplanting_methods_compared_60",
+      "crop": "rice",
+      "heading": "6.5 Transplanting Methods Compared",
+      "level": 2,
+      "text": "| Method | Labor (person-days/ha) | Cost (relative) | Plant Establishment | Suitable Scale |\n|--------|----------------------|-----------------|---------------------|----------------|\n| Manual transplanting | 25-35 | Medium | Good | Small farms |\n| Mechanical transplanter (walk-behind) | 5-8 | High initial | Good | Medium farms |\n| Mechanical transplanter (riding) | 3-5 | Very high initial | Excellent | Large farms |\n| Parachute method (seedlings on trays, broadcast) | 8-12 | Medium | Variable | Any scale |\n| Drum seeder (wet DSR) | 3-5 | Low | Good in puddled soil | Medium-large |\n| Droni (manual seeding tube) | 10-12 | Very low | Moderate | Small farms |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_7_1_nursery_types_62",
+      "crop": "rice",
+      "heading": "7.1 Nursery Types",
+      "level": 2,
+      "text": "| Nursery Type | Area Ratio (Nursery:Main Field) | Seed Rate (kg/ha main) | Seedling Age (days) | Best For |\n|-------------|--------------------------------|------------------------|---------------------|----------|\n| **Wet-bed nursery** | 1:10 | 25-30 | 20-30 | Irrigated lowland |\n| **Dry-bed nursery** | 1:10 | 30-40 | 20-25 | Upland/rainfed |\n| **Modified mat nursery** | 1:40 | 8-10 | 12-15 | SRI |\n| **Dapog nursery** (banana leaves/polyethylene) | 1:100 | 8-10 | 10-12 | Mechanical transplanting |\n| **Ebb-tray nursery** | 1:80-100 | 8-10 | 10-14 | For mechanical transplanting |\n| **Paddy-on-tray** | 1:80 | 6-8 | 8-12 | SRI, mechanical |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_bed_preparation_64",
+      "crop": "rice",
+      "heading": "Bed Preparation",
+      "level": 3,
+      "text": "1. Select level, well-drained area near water source\n2. Pudddle soil thoroughly with 5 cm water\n3. Form raised beds: 1-1.2m wide, convenient length (15-20 m)\n4. Beds 10-15 cm above ground level\n5. Apply FYM/compost 5-10 t/ha (nursery area)\n6. Apply N:P₂O₅:K₂O at 50:50:50 kg/ha (nursery area)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_seed_treatment_65",
+      "crop": "rice",
+      "heading": "Seed Treatment",
+      "level": 3,
+      "text": "| Step | Detail |\n|------|--------|\n| 1. **Seed selection** | Use certified/truthfully labeled seed; 8-10 hours sun drying |\n| 2. **Floatation test** | Discard floaters in salt solution (1.04 specific gravity = 1 egg floating in water) |\n| 3. **Hot water treatment** | 52°C for 10 minutes (controls seed-borne blast) |\n| 4. **Fungicide treatment** | Carbendazim 2g/kg seed OR Carboxin + Thiram 2g/kg OR Trichoderma 4g/kg |\n| 5. **Soaking** | 12-24 hours in clean water |\n| 6. **Incubation** | Drain water; incubate in gunny bags for 24-48 hours until radicle appears |\n| 7. **Pre-germinated for wet DSR** | Continue incubation until radicle and plumule 1-2 mm |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_nursery_sowing_66",
+      "crop": "rice",
+      "heading": "Nursery Sowing",
+      "level": 3,
+      "text": "- Sow pre-germinated seed uniformly on bed surface\n- Cover with thin layer of fine soil/FYM\n- Maintain thin water layer (1-2 cm) in nursery channels (not on beds)\n- Top-dress with 20 kg N/ha as urea at 15 days after sowing",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_seedling_management_67",
+      "crop": "rice",
+      "heading": "Seedling Management",
+      "level": 3,
+      "text": "| Parameter | Conventional | SRI/Mechanical |\n|-----------|-------------|----------------|\n| Sowing density (g/m² nursery) | 50-80 | 10-15 |\n| Seedling height at transplanting (cm) | 15-25 | 8-15 |\n| Leaves at transplanting | 4-5 | 2-3 |\n| Age at transplanting (days) | 20-35 | 8-15 |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_age_of_seedlings_by_system_69",
+      "crop": "rice",
+      "heading": "Age of Seedlings by System",
+      "level": 3,
+      "text": "| System | Seedling Age (days) | Leaves | Reason |\n|--------|---------------------|--------|--------|\n| Conventional TPR (cool season) | 25-35 | 4-5 | Slow growth in low temps |\n| Conventional TPR (warm season) | 20-25 | 4-5 | Standard practice |\n| SRI | 8-12 | 2-3 | Reduce transplant shock, maximize tillering |\n| Hybrid rice | 18-22 | 3-4 | Vigor compensates for older seedlings |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_planting_depth_70",
+      "crop": "rice",
+      "heading": "Planting Depth",
+      "level": 3,
+      "text": "- Too deep (5+ cm): Reduced tillering, poor establishment\n- Too shallow (<1 cm): Seedlings float, poor anchoring\n- Optimal: 2-3 cm depth in puddled soil",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_number_of_seedlings_per_hill_71",
+      "crop": "rice",
+      "heading": "Number of Seedlings per Hill",
+      "level": 3,
+      "text": "| System | Seedlings/Hill | Reason |\n|--------|---------------|--------|\n| Conventional TPR | 3-4 | Compensate for mortality; quick canopy closure |\n| SRI | 1 | Maximize individual plant tillering potential |\n| Hybrid rice | 1-2 | Higher seed cost; hybrid vigor compensates |\n| Cold areas | 4-5 | Compensate for slow growth |\n| Saline areas | 4-5 | Compensate for poor establishment |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_spacing_recommendations_by_context_72",
+      "crop": "rice",
+      "heading": "Spacing Recommendations by Context",
+      "level": 3,
+      "text": "| Context | Spacing (cm) | Hills/m² | Seedlings/m² |\n|---------|-------------|----------|--------------|\n| Irrigated, high fertility | 20×15 | 33 | 100-132 |\n| Irrigated, medium fertility | 20×20 | 25 | 75-100 |\n| Rainfed, low fertility | 15×15 | 44 | 132-176 |\n| SRI, high fertility | 30×30 or 25×25 | 11-16 | 11-16 |\n| Hybrid rice | 20×15 | 33 | 33-66 |\n| Late transplanting | 15×10 | 67 | 200-268 |\n| Saline/alkaline soil | 15×10 | 67 | 268-335 |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_8_1_water_requirements_of_rice_74",
+      "crop": "rice",
+      "heading": "8.1 Water Requirements of Rice",
+      "level": 2,
+      "text": "Rice is the most water-intensive cereal crop, requiring 3,000-5,000 liters of water per kg of grain produced (including field evaporation and percolation).",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_water_balance_in_paddy_fields_75",
+      "crop": "rice",
+      "heading": "Water Balance in Paddy Fields",
+      "level": 3,
+      "text": "| Component | Typical Value (mm/season) |\n|-----------|---------------------------|\n| Land preparation (puddling + soaking) | 150-300 |\n| Evapotranspiration (ET) | 500-700 |\n| Percolation (depends on soil) | 200-800 |\n| Seepage (lateral movement) | 100-400 |\n| **Total water requirement** | **950-2200** |\n| Effective rainfall | Variable (0-1000+) |\n| Net irrigation requirement | Total - Effective rainfall |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_crop_stage_wise_water_requirement_120_day_variety_76",
+      "crop": "rice",
+      "heading": "Crop Stage-wise Water Requirement (120-day variety)",
+      "level": 3,
+      "text": "| Stage | Duration (days) | Water Depth (cm) | Days Between Irrigation |\n|-------|-----------------|------------------|------------------------|\n| Nursery | 25-30 | 2-3 (channel) | 1-2 |\n| Land preparation | 10-15 | 5-7 standing | — |\n| Transplanting-20 DAT | 20 | 3-5 standing | 2-5 |\n| 20-50 DAT | 30 | 5-7 standing | 3-7 |\n| 50-70 DAT (PI to heading) | 20 | 5-7 standing | 2-5 |\n| Flowering (5-7 days) | 7 | 5-10 standing | 2-3 |\n| Grain filling | 30 | 3-5 intermittent | 5-7 |\n| Ripening — 10 days before harvest | 15 | Drain field | — |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_continuous_flooding_traditional_78",
+      "crop": "rice",
+      "heading": "Continuous Flooding (Traditional)",
+      "level": 3,
+      "text": "- **Method**: Maintain 5-10 cm standing water throughout crop cycle\n- **Advantages**: Suppresses weeds; maintains anaerobic conditions for N retention; stable yields\n- **Disadvantages**: Highest water use; highest methane emissions; iron reduction in soil\n- **Water use**: 1500-2500 mm per season",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_alternate_wetting_and_drying_awd_79",
+      "crop": "rice",
+      "heading": "Alternate Wetting and Drying (AWD)",
+      "level": 3,
+      "text": "- **Method**: Allow water to recede naturally; irrigate when water level drops to 10-15 cm below soil surface\n\n- **AWD Tubes**: Perforated PVC tubes (30 cm long, 10 cm diameter) placed in field to monitor water table\n- **Water saving**: 15-35% compared to continuous flooding\n- **Methane reduction**: 30-70%\n- **No yield loss**: If water is reapplied before soil cracks (safe AWD)\n- **Sensitive period**: Do NOT practice AWD during flowering (15 days before to 10 days after heading)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_saturation_screening_80",
+      "crop": "rice",
+      "heading": "Saturation Screening",
+      "level": 3,
+      "text": "- **Method**: Keep soil saturated but no standing water (except during flowering)\n- **Water saving**: 25-50%\n- **Best for**: Heavy, poorly draining soils",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_mid_season_drainage_81",
+      "crop": "rice",
+      "heading": "Mid-Season Drainage",
+      "level": 3,
+      "text": "- **Method**: Drain field completely for 7-10 days at maximum tillering\n- **Purpose**: \n  - Controls unproductive tillers\n  - Reduces iron toxicity\n  - Allows oxygen to soil\n  - Suppresses pest buildup\n  - Prevents lodging\n- **Timing**: 40-50 DAT (just before panicle initiation)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_aerobic_rice_system_82",
+      "crop": "rice",
+      "heading": "Aerobic Rice System",
+      "level": 3,
+      "text": "- **Method**: Rice grown like wheat/maize with intermittent irrigation\n- **Water use**: 500-900 mm\n- **Best for**: Water-scarce regions\n- **Challenges**: Weed pressure higher; N management more difficult; yield 20-30% less than flooded",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_8_3_irrigation_systems_for_rice_83",
+      "crop": "rice",
+      "heading": "8.3 Irrigation Systems for Rice",
+      "level": 2,
+      "text": "| System | Water Use Efficiency | Suitability | Cost |\n|--------|---------------------|-------------|------|\n| Flood irrigation (basin) | 40-60% | Level fields, traditional | Low |\n| Border strip irrigation | 50-70% | Slightly sloped fields | Low |\n| Furrow irrigation (raised beds) | 55-75% | Bed-planted rice | Medium |\n| Sprinkler irrigation | 60-80% | Aerobic/upland rice | Medium-high |\n| Drip irrigation | 80-95% | Aerobic rice, high-value | High |\n| Subsurface drip | 85-95% | Permanent beds | Very high |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_8_4_rainfed_rice_water_management_84",
+      "crop": "rice",
+      "heading": "8.4 Rainfed Rice Water Management",
+      "level": 2,
+      "text": "| Water Regime | Typical Region | Coping Strategies |\n|-------------|----------------|-------------------|\n| **Drought-prone** (early or late season) | Central India, Africa | Drought-tolerant varieties; supplemental irrigation from ponds; direct seeding |\n| **Submergence-prone** (mid-season flooding) | Eastern India, Bangladesh, Mekong | Submergence-tolerant varieties (SUB1); deepwater varieties; early planting |\n| **Flash flood** (sudden, brief flooding) | Flood plains | SUB1 varieties; staggered planting; seedling recovery management |\n| **Deepwater** (prolonged >50cm) | Delta regions; Assam; Cambodia | Floating varieties; late planting |\n| **Tidal** (coastal) | Mangrove deltas | Salt-tolerant varieties; raised beds; tidal gates |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_8_5_drainage_management_85",
+      "crop": "rice",
+      "heading": "8.5 Drainage Management",
+      "level": 2,
+      "text": "Good drainage is essential even for lowland rice. Poor drainage leads to:\n- Iron toxicity\n- Sulfide toxicity (hydrogen sulfide)\n- Alcohol accumulation in roots\n- Reduced root respiration\n- Increased disease incidence (sheath rot, stem rot)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_drainage_systems_86",
+      "crop": "rice",
+      "heading": "Drainage Systems",
+      "level": 3,
+      "text": "| Type | Description | Spacing |\n|------|-------------|---------|\n| Surface drainage | Field channels, bund gaps | 20-50 m |\n| Subsurface drainage (tile/pipes) | BURIED perforated pipes | 10-30 m (clay) to 30-60 m (sandy) |\n| Open field drains | Peripheral channels | Field boundaries |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_total_nutrient_uptake_per_tonne_of_grain_including_straw_89",
+      "crop": "rice",
+      "heading": "Total Nutrient Uptake per Tonne of Grain (including straw)",
+      "level": 3,
+      "text": "| Nutrient | Uptake (kg/t grain) | In Grain (%) | In Straw (%) |\n|----------|---------------------|-------------|-------------|\n| Nitrogen (N) | 15-25 | 55-65 | 35-45 |\n| Phosphorus (P₂O₅) | 6-12 | 60-70 | 30-40 |\n| Potassium (K₂O) | 18-30 | 20-30 | 70-80 |\n| Zinc (Zn) | 0.03-0.06 | 60-70 | 30-40 |\n| Iron (Fe) | 0.2-0.4 | 20-30 | 70-80 |\n| Sulfur (S) | 3-6 | 40-50 | 50-60 |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_nitrogen_uptake_pattern_120_day_variety_90",
+      "crop": "rice",
+      "heading": "Nitrogen Uptake Pattern (120-day variety)",
+      "level": 3,
+      "text": "| Growth Stage | % of Total N Uptake |\n|-------------|---------------------|\n| Transplanting-25 DAT | 10-15% |\n| 25-55 DAT (tillering to PI) | 40-50% |\n| 55-95 DAT (PI to flowering) | 30-35% |\n| 95-120 DAT (grain filling) | 5-10% |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_general_guidelines_92",
+      "crop": "rice",
+      "heading": "General Guidelines",
+      "level": 3,
+      "text": "| Yield Target (t/ha) | N (kg/ha) | P₂O₅ (kg/ha) | K₂O (kg/ha) | ZnSO₄ (kg/ha) |\n|--------------------|-----------|--------------|-------------|----------------|\n| 4-5 | 80-100 | 40-50 | 40-50 | 25 (as needed) |\n| 5-6 | 100-120 | 45-55 | 45-55 | 25 |\n| 6-7 | 120-150 | 50-60 | 50-60 | 25 |\n| 7-8 | 150-180 | 55-65 | 55-70 | 25 |\n| Hybrid (>8) | 160-200 | 60-75 | 65-80 | 25 |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_nitrogen_split_application_critical_93",
+      "crop": "rice",
+      "heading": "Nitrogen Split Application (Critical)",
+      "level": 3,
+      "text": "| Split | Stage | % of Total N | Application Time |\n|-------|-------|-------------|-----------------|\n| 1st | Basal | 25-30% | At last puddling (incorporated into soil) |\n| 2nd | Active tillering | 35-40% | 20-25 DAT |\n| 3rd | Panicle initiation | 30-35% | 50-55 DAT (before booting) |\n| 4th (if needed) | Heading (foliar) | 5-10% | 65-70 DAT in sandy soils |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_leaf_color_chart_lcc_based_n_management_94",
+      "crop": "rice",
+      "heading": "Leaf Color Chart (LCC) Based N Management",
+      "level": 3,
+      "text": "- LCC reading ranges: 1 (pale yellow-green) to 6 (dark green)\n- Threshold: Apply N when reading ≤ 4 (for lowland rice) or ≤ 3 (for aerobic rice)\n- Application: 15-20 kg N/ha whenever reading falls below threshold\n- Timing: Weekly readings from 20 DAT to flowering",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_site_specific_nutrient_management_ssnm_95",
+      "crop": "rice",
+      "heading": "Site-Specific Nutrient Management (SSNM)",
+      "level": 3,
+      "text": "- Use of Nutrient Decision Support Tools (e.g., Rice Crop Manager, Nutrient Manager for Rice)\n- Based on:\n  - Target yield\n  - Indigenous nutrient supply (soil test)\n  - Crop N status (LCC or SPAD meter)\n  - Growth duration of variety",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_nitrogen_sources_97",
+      "crop": "rice",
+      "heading": "Nitrogen Sources",
+      "level": 3,
+      "text": "| Fertilizer | N % | Advantages | Limitations |\n|-----------|-----|------------|-------------|\n| Urea | 46% | High N content; cheapest | 30-50% loss through ammonia volatilization, denitrification, leaching |\n| Ammonium sulfate | 20.6% | Contains S (24%); less volatile than urea | Higher cost per kg of N |\n| DAP (Diammonium phosphate) | 18% | Also supplies P₂O₅ (46%) | Applied as basal mostly |\n| Calcium ammonium nitrate (CAN) | 25% | Quick availability; less loss | Costly; can leach |\n| Ammonium chloride | 25% | Cheap | High Cl may be problematic in sensitive areas |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_reducing_nitrogen_losses_98",
+      "crop": "rice",
+      "heading": "Reducing Nitrogen Losses",
+      "level": 3,
+      "text": "| Method | Loss Reduction | Implementation |\n|--------|---------------|----------------|\n| Deep placement (10 cm) | 40-60% | Supergranules or urea briquettes |\n| Split application | 20-30% | 3-4 splits instead of 1-2 |\n| Neem-coated urea | 15-25% | Nitrification inhibition |\n| Urease inhibitors (NBPT) | 30-50% | Reduce ammonia volatilization |\n| Nitrification inhibitors (DCD, DMPP) | 20-40% | Reduce denitrification and leaching |\n| Incorporation into soil | 30-40% | Reduce ammonia loss from surface |\n| Sulfur-coated urea | 20-30% | Slow-release formulation |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_phosphorus_sources_99",
+      "crop": "rice",
+      "heading": "Phosphorus Sources",
+      "level": 3,
+      "text": "| Fertilizer | P₂O₅ % | Notes |\n|-----------|--------|-------|\n| Single superphosphate (SSP) | 16% | Cheap; contains Ca (20%) and S (12%) |\n| Diammonium phosphate (DAP) | 46% | Widely used; also N source |\n| Triple superphosphate (TSP) | 46% | High concentration; no S |\n| Rock phosphate | 25-35% | Slow-release; for acid soils |\n| Bone meal | 20-25% | Organic; slow release |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_potassium_sources_100",
+      "crop": "rice",
+      "heading": "Potassium Sources",
+      "level": 3,
+      "text": "| Fertilizer | K₂O % | Notes |\n|-----------|-------|-------|\n| Muriate of potash (MOP/KCl) | 60% | Most common; cheap |\n| Sulfate of potash (SOP/K₂SO₄) | 50% | Also supplies S (17%); for saline areas |\n| Potassium nitrate (KNO₃) | 46% K₂O + 13% N | Water soluble; foliar |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_9_4_organic_nutrient_sources_101",
+      "crop": "rice",
+      "heading": "9.4 Organic Nutrient Sources",
+      "level": 2,
+      "text": "| Source | N (%) | P₂O₅ (%) | K₂O (%) | Application Rate | Notes |\n|--------|-------|----------|---------|-----------------|-------|\n| Farmyard manure (FYM) | 0.5-0.8 | 0.3-0.5 | 0.5-0.8 | 5-10 t/ha | Well-decomposed |\n| Compost | 0.8-1.5 | 0.4-0.8 | 0.8-1.5 | 5-10 t/ha | Quality varies |\n| Vermicompost | 1.5-2.5 | 1.0-1.5 | 1.0-2.0 | 2-5 t/ha | High quality |\n| Green manure | 2-3% on dry basis | — | — | Incorporate at 45-60 days | Sesbania, Crotalaria, Dhaincha |\n| Azolla | 3-5% (N) on dry basis | — | — | 1-2 t/ha fresh | Incorporate before transplanting |\n| Poultry manure | 2-3 | 2-3 | 1.5-2.5 | 2-4 t/ha | Strong; may burn if fresh |\n| Rice straw | 0.5-0.7 | 0.2-0.3 | 1.5-2.0 | 3-5 t/ha | Slow release; high K |\n| Mustard cake | 4-5 | 1.5-2.5 | 1.0-1.8 | 1-2 t/ha | Useful in organic rice |\n| Neem cake | 5-6 | 0.5-1.0 | 1.0-1.5 | 0.5-1 t/ha | Also acts as nitrification inhibitor |\n| Pressmud (sugar mill) | 1.0-2.0 | 0.5-1.0 | 2.0-3.0 | 5-10 t/ha | Contains micronutrients |\n| Biochar | Variable | Variable | Variable | 2-5 t/ha | Long-term carbon; improves CEC |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_9_5_biofertilizers_for_rice_102",
+      "crop": "rice",
+      "heading": "9.5 Biofertilizers for Rice",
+      "level": 2,
+      "text": "| Biofertilizer | Function | Application Method | Benefit |\n|---------------|----------|-------------------|---------|\n| **Azolla** | N-fixing cyanobacteria | Incorporate 0.5-1 t/ha before transplanting; dual cropping with rice | 20-30 kg N/ha per season |\n| **Blue-Green Algae (BGA)** | N-fixing (Anabaena, Nostoc) | Soil application 10 kg/ha; establish 7-10 days after transplanting | 15-30 kg N/ha |\n| **Azospirillum** | N-fixing bacteria | Seed treatment (600g in 1L water / 12 kg seed) OR soil application (5-10 kg/ha) | 15-30 kg N/ha equivalent |\n| **Phosphate-Solubilizing Bacteria (PSB)** | Solubilizes fixed P | Seed treatment OR soil application | 25-50% P fertilizer saving |\n| **Rhizobium (for green manure)** | N-fixing with Sesbania/Dhaincha | Seed treatment of green manure crop | Enhances green manure N contribution |\n| **Mycorrhiza (AM fungi)** | P uptake enhancement | Soil application | 20-50% P saving; improves Zn uptake |\n| **Potassium-Solubilizing Bacteria** | K release from minerals | Soil application | 15-25% K saving |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_integrated_nutrient_management_inm_approach_103",
+      "crop": "rice",
+      "heading": "Integrated Nutrient Management (INM) Approach",
+      "level": 3,
+      "text": "| Component | % of Total Nutrient Supply |\n|-----------|---------------------------|\n| Organic sources (FYM/compost) | 25-50% of N |\n| Green manure (Sesbania/Dhaincha) | 25-50% of N |\n| Biofertilizers | 15-25% of N + P |\n| Chemical fertilizers | 50-75% balance |\n| **Total saving**: 25-50% chemical fertilizer reduction possible with INM |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_common_deficiencies_in_rice_105",
+      "crop": "rice",
+      "heading": "Common Deficiencies in Rice",
+      "level": 3,
+      "text": "| Nutrient | Symptom | Critical Stage | Correction |\n|----------|---------|---------------|------------|\n| **Zinc (Zn)** | Brown blotches on lower leaves; stunted growth; delayed maturity | 15-30 DAT | ZnSO₄ 25 kg/ha basal; OR foliar 0.5% ZnSO₄ at 20, 35, 55 DAT |\n| **Iron (Fe)** | Interveinal chlorosis on young leaves (white/yellow) | Early vegetative | FeSO₄ 0.5-1% foliar spray; soil acidification |\n| **Manganese (Mn)** | Interveinal chlorosis with necrotic spots | Mid-vegetative | MnSO₄ 1% foliar spray |\n| **Sulfur (S)** | Uniform yellowing of young leaves; stunted | Early vegetative | SSP or ammonium sulfate as N source |\n| **Boron (B)** | Hollow grains; poor panicle exsertion | Reproductive | Borax 0.5% foliar at panicle initiation |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_grassy_weeds_108",
+      "crop": "rice",
+      "heading": "Grassy Weeds",
+      "level": 3,
+      "text": "| Weed Species | Common Name | Life Cycle | Management Notes |\n|-------------|-------------|-----------|------------------|\n| *Echinochloa crus-galli* | Barnyard grass | Annual | Most competitive; resistant to several herbicides |\n| *Echinochloa colona* | Jungle rice | Annual | Similar to E. crus-galli; common in DSR |\n| *Leptochloa chinensis* | Chinese sprangletop | Annual | Increasing problem in DSR in Asia |\n| *Echinochloa oryzoides* | Early watergrass | Annual | Primary rice mimic |\n| *Ischaemum rugosum* | Ribbed murainagrass | Annual | Problem in wet-seeded rice |\n| *Dactyloctenium aegyptium* | Crowfoot grass | Annual | Upland rice |\n| *Cynodon dactylon* | Bermuda grass | Perennial | Problematic in aerobic rice |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_sedge_weeds_109",
+      "crop": "rice",
+      "heading": "Sedge Weeds",
+      "level": 3,
+      "text": "| Weed Species | Common Name | Life Cycle | Management Notes |\n|-------------|-------------|-----------|------------------|\n| *Cyperus difformis* | Small-flowered umbrella sedge | Annual | Common in flooded rice |\n| *Cyperus iria* | Rice flatsedge | Annual | Common in DSR |\n| *Fimbristylis miliacea* | Globe fringerush | Annual | Problematic in DSR |\n| *Cyperus rotundus* | Purple nutsedge | Perennial | Most problematic sedge; tuber-forming |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_broadleaf_weeds_110",
+      "crop": "rice",
+      "heading": "Broadleaf Weeds",
+      "level": 3,
+      "text": "| Weed Species | Common Name | Life Cycle | Management Notes |\n|-------------|-------------|-----------|------------------|\n| *Monochoria vaginalis* | Heartleaf false pickerelweed | Annual | Common in flooded rice |\n| *Ludwigia hyssopifolia* | Seedbox | Annual | Problematic in DSR |\n| *Sphenoclea zeylanica* | Gooseweed | Annual | Toxic to livestock |\n| *Eclipta prostrata* | False daisy | Annual | Medicinal but competitive |\n| *Sagittaria trifolia* | Arrowhead | Perennial | Aquatic weed; tuber-forming |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_weedy_rice_111",
+      "crop": "rice",
+      "heading": "Weedy Rice",
+      "level": 3,
+      "text": "| Type | Characteristics | Problem |\n|------|---------------|---------|\n| O. sativa f. spontanea | Red pericarp; easy shattering | Most serious; mimics cultivated rice |\n| O. rufipogon | Perennial wild relative | Crosses with cultivated rice |\n| O. nivara | Annual wild species | Similar to cultivated rice |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_cultural_control_113",
+      "crop": "rice",
+      "heading": "Cultural Control",
+      "level": 3,
+      "text": "| Practice | Effect |\n|----------|--------|\n| **Puddling** | Suppresses 60-80% of weed seed germination |\n| **Standing water (5 cm)** | Suppresses most weeds except sedges and some broadleaves |\n| **Crop rotation** (rice-wheat, rice-pulse) | Breaks weed life cycles; reduces species adapted to rice |\n| **Higher seed rate / closer spacing** | Faster canopy closure; competitive suppression |\n| **Clean seed** | Prevents introduction of weedy rice and Echinochloa |\n| **Stale seedbed technique** | Prepare seedbed, allow weeds to emerge, kill before planting |\n| **Field sanitation** | Clean bunds and channels; prevent weed seed migration |\n| **Laser land leveling** | Uniform water depth = uniform weed suppression |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_mechanical_control_114",
+      "crop": "rice",
+      "heading": "Mechanical Control",
+      "level": 3,
+      "text": "| Tool/Method | Operation | Effectiveness |\n|-------------|-----------|---------------|\n| **Manual hand weeding** | Pull by hand | 80-95% (but labor-intensive: 40-60 person-days/ha) |\n| **Cono weeder** (SRI) | Between rows at 10-12 and 25-30 DAT | 80-90% + soil aeration benefit |\n| **Rotary weeder** | Between rows | 60-80% |\n| **Power weeder** (engine-operated) | Between rows | 70-85%; 5-8 person-days/ha |\n| **Inter-cultivation by bullocks** | Before top-dressing | 50-70% |\n| **Stale seedbed + Roundup** | Non-selective herbicide before planting | 90-100% |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_chemical_weed_control_115",
+      "crop": "rice",
+      "heading": "Chemical Weed Control",
+      "level": 3,
+      "text": "#### Pre-emergence Herbicides (applied within 0-3 DAS/DAT)\n\n| Herbicide | Dose (kg a.i./ha) | Weeds Controlled | Crop Safety Window |\n|-----------|-------------------|------------------|--------------------|\n| **Pretilachlor** | 0.3-0.45 | Grasses, sedges, some broadleaves | 0-3 DAT; standing water needed |\n| **Butachlor** | 1.0-1.5 | Grasses, sedges | 0-7 DAT |\n| **Anilofos** | 0.3-0.4 | Grasses, sedges | 0-7 DAT |\n| **Oxadiazon** | 0.25-0.5 | Broad spectrum | 0-3 DAT |\n| **Pendimethalin** | 0.75-1.0 | Grasses, some broadleaves | 0-3 DAT (dry soil + irrigation) |\n| **Pyrazosulfuron** | 0.015-0.02 | Broad spectrum | 0-7 DAT |\n| **Bensulfuron methyl** | 0.06-0.075 | Sedges, broadleaves | 0-10 DAT (use with pretilachlor or butachlor) |\n\n#### Post-emergence Herbicides (applied 15-30 DAT/DAS)\n\n| Herbicide | Dose (kg a.i./ha) | Weeds Controlled | Timing |\n|-----------|-------------------|------------------|--------|\n| **2,4-D (amine/sodium salt)** | 0.5-1.0 | Broadleaves, sedges | 20-30 DAT; drain field before spray |\n| **MCPA** | 0.5-0.75 | Broadleaves, sedges | 20-40 DAT |\n| **Bispyribac-sodium** | 0.02-0.03 | Grasses, sedges, broadleaves | 15-30 DAS/DAT; most common for DSR |\n| **Fenoxaprop-P-ethyl** | 0.06-0.09 | Grasses (Echinochloa, Leptochloa) | 15-25 DAT; for grass-specific control |\n| **Cyhalofop-butyl** | 0.08-0.1 | Grasses (Echinochloa) | 15-30 DAT |\n| **Penoxsulam** | 0.015-0.03 | Broad spectrum | 15-35 DAT |\n| **Ethoxysulfuron** | 0.015-0.025 | Broadleaves, sedges | 20-30 DAT |\n| **Trifloxysulfuron** | 0.01-0.015 | Broad spectrum | 20-30 DAT |\n| **Bentazone** | 1.0-1.5 | Broadleaves, sedges (contact) | 20-30 DAT |\n| **Halosulfuron-methyl** | 0.04-0.075 | Sedges (Cyperus spp.) | 20-40 DAT |\n| 2,4-D + Bispyribac tank mix | 0.5+0.025 | Broad spectrum | 20-25 DAT |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_integrated_weed_management_iwm_schedule_for_rice_116",
+      "crop": "rice",
+      "heading": "Integrated Weed Management (IWM) Schedule for Rice",
+      "level": 3,
+      "text": "| Time | Action | Method |\n|------|--------|--------|\n| **Before planting** | Stale seedbed OR summer plowing | Non-selective herbicide OR tillage |\n| **0-3 DAT** | Pre-emergence herbicide | Pretilachlor/Butachlor/Pyrazosulfuron |\n| **15-25 DAT** | 1st post-emergence (if needed) | Bispyribac or Fenoxaprop |\n| **20-30 DAT** | Manual weeding OR cono-weeding | Remove escaped weeds OR between-row cultivation |\n| **30-40 DAT** | 2nd post-emergence (if needed) | 2,4-D for broadleaves/sedges |\n| **Before canopy closes** | Ensure full canopy cover | Competition from crop itself |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_herbicide_resistance_management_117",
+      "crop": "rice",
+      "heading": "Herbicide Resistance Management",
+      "level": 3,
+      "text": "- Rotate herbicides with different modes of action (WSSA/HRAC groups)\n- Use pre-emergence + post-emergence sequence (not same group twice)\n- Do not apply same herbicide >2 seasons in a row\n- Integrate mechanical/cultural methods\n- For known resistant weeds (e.g., *Echinochloa* resistant to bispyribac), switch to MOA Group 1 (fenoxaprop) or Group 15 (pretilachlor)\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_11_1_disease_overview_119",
+      "crop": "rice",
+      "heading": "11.1 Disease Overview",
+      "level": 2,
+      "text": "Rice is vulnerable to over 70 diseases, of which about 15 cause economically significant damage. Global yield loss to diseases is estimated at 10-15% annually.\n\n| Disease Type | Number of Major Diseases | Estimated Annual Loss |\n|-------------|------------------------|----------------------|\n| Fungal | 10+ | 8-12% |\n| Bacterial | 3 | 2-5% |\n| Viral | 5+ | 1-3% |\n| Nematode | 3 | <1% |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_1_rice_blast_magnaporthe_grisea_pyricularia_oryzae_121",
+      "crop": "rice",
+      "heading": "1. Rice Blast (Magnaporthe grisea / Pyricularia oryzae)",
+      "level": 3,
+      "text": "**Most destructive rice disease worldwide** — can cause up to 100% loss in severe epidemics.\n\n| Aspect | Details |\n|--------|---------|\n| **Pathogen** | *Magnaporthe grisea* (anamorph: *Pyricularia oryzae*) |\n| **Favorable conditions** | Cool temps (24-28°C); high humidity (>90%); prolonged leaf wetness; high N fertilizer; cloudy/rainy weather |\n| **Survival** | On seed, crop residue, weed hosts; conidia spread by wind |\n\n**Symptoms by Plant Part:**\n\n| Plant Part | Symptom Description | Impact |\n|-----------|---------------------|--------|\n| **Leaf blast** | Diamond/elliptical lesions with gray centers and dark brown margins; lesions coalesce in severe cases | Reduced photosynthetic area; leaf death |\n| **Node blast** | Black, rotten node; breaks above the infected node | Panicle dies above infection |\n| **Neck blast** | Gray-brown lesion at panicle base; panicle turns white/grey | Complete grain loss in infected panicles |\n| **Panicle blast** | Lesions on branches of panicle | Partial or complete sterility |\n| **Seedling blast** | Seedlings killed before or after emergence | Poor stand establishment |\n\n**Management of Rice Blast:**\n\n| Method | Details |\n|--------|---------|\n| **Resistant varieties** | Most effective; but pathogen races evolve rapidly; need to rotate varieties |\n| **Seed treatment** | Carbendazim 2g/kg; Carboxin + Thiram 2g/kg; Hot water 52°C/10 min |\n| **Fungicide (preventive)** | Tricyclazole 0.06% (75% WP) at neck emergence; Edifenphos; Isoprothiolane; Pyroquilon |\n| **Fungicide (curative)** | Azoxystrobin 0.1%; Trifloxystrobin + Tebuconazole |\n| **Fungicide timing** | First spray at 5% neck emergence; second at 50% heading |\n| **Cultural** | Avoid excess N; manage water; avoid dense planting; remove crop residues |\n| **Biological** | *Trichoderma vi…",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_2_sheath_blight_rhizoctonia_solani_ag1_ia_122",
+      "crop": "rice",
+      "heading": "2. Sheath Blight (Rhizoctonia solani AG1-IA)",
+      "level": 3,
+      "text": "Second most important rice disease globally. Increasing with high N + dense planting.\n\n| Aspect | Details |\n|--------|---------|\n| **Pathogen** | *Rhizoctonia solani* anastomosis group AG1-IA |\n| **Favorable conditions** | High humidity (96-100%); temps 30-32°C; dense canopy; excess N; continuous flooding |\n| **Survival** | Sclerotia in soil and crop residue; wide host range |\n\n**Symptoms:**\n- Initially: Elliptical to irregular green-gray lesions on leaf sheaths near water line\n- Lesions enlarge, coalesce, center turns gray-white with brown border\n- Lesions spread to leaf blades\n- In severe cases: infection reaches flag leaf and panicle\n- Grains may be partially filled or chaffy\n\n**Management of Sheath Blight:**\n\n| Method | Details |\n|--------|---------|\n| **Resistant varieties** | No complete resistance available; some tolerance in improved varieties |\n| **Cultural** | Avoid excess N; wider spacing; balanced fertilization (K helps); avoid dense planting; remove infected stubble |\n| **Fungicides** | Hexaconazole 5% SC @ 1L/ha; Carbendazim 1 kg/ha; Azoxystrobin; Propiconazole; Tebuconazole; Thiophanate-methyl |\n| **Timing** | At first visible symptom (30-45 DAT); repeat at 10-15 day interval |\n| **Biological** | *Trichoderma harzianum*; *Pseudomonas fluorescens*; *Bacillus subtilis* |\n| **Biofungicides** | Validamycin 3% L @ 2.5 L/ha |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_3_sheath_rot_sarocladium_oryzae_123",
+      "crop": "rice",
+      "heading": "3. Sheath Rot (Sarocladium oryzae)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Pathogen** | *Sarocladium oryzae* |\n| **Favorable conditions** | High humidity; temps 25-30°C; rain at heading; spikelet sterility often associated |\n| **Importance** | In some regions, can surpass sheath blight in severity |\n\n**Symptoms:**\n- Gray-brown lesions on uppermost leaf sheath enclosing panicle\n- Sheath rots; panicle partially or completely fails to emerge\n- Infected panicles have discolored, chaffy grains\n- White powdery growth inside sheath in advanced stages\n\n**Management:**\n- Seed treatment: Carbendazim 2g/kg seed\n- Field sanitation\n- Avoid excessive N at heading\n- Spray: Carbendazim 1 kg/ha at booting\n- *Trichoderma* application reduces severity",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_4_brown_spot_cochliobolus_miyabeanus_bipolaris_oryzae_124",
+      "crop": "rice",
+      "heading": "4. Brown Spot (Cochliobolus miyabeanus / Bipolaris oryzae)",
+      "level": 3,
+      "text": "**Historical importance**: Caused the Bengal Famine of 1943 (significant contributor).\n\n| Aspect | Details |\n|--------|---------|\n| **Pathogen** | *Cochliobolus miyabeanus* (anamorph: *Bipolaris oryzae*) |\n| **Favorable conditions** | Nutrient deficiency (especially K); drought stress; temps 25-30°C; high humidity |\n| **Survival** | On seed, crop residue, soil |\n\n**Symptoms:**\n- **Leaves**: Small, oval, dark brown spots with gray center; numerous spots coalesce\n- **Grains**: Brown/black discoloration of glumes (pecky rice)\n- **Panicles**: Blackening of spikelets\n\n**Management:**\n- Balanced fertilization (especially K: 40-60 kg K₂O/ha)\n- Resistant varieties\n- Seed treatment: Carbendazim; hot water\n- Spray: Mancozeb 2.5 g/L; Edifenphos; Propiconazole; Tebuconazole; Azoxystrobin\n- *Pseudomonas fluorescens* application",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_5_stem_rot_magnaporthe_salvinii_sclerotium_oryzae_125",
+      "crop": "rice",
+      "heading": "5. Stem Rot (Magnaporthe salvinii / Sclerotium oryzae)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Pathogen** | *Magnaporthe salvinii* (anamorph: *Sclerotium oryzae*) |\n| **Favorable conditions** | Continuous flooding; high N; dense planting; infected crop residue |\n\n**Symptoms:**\n- Small black lesions on outer leaf sheath near water line\n- Lesions enlarge; sclerotia form inside stem\n- Stems rot at base; lodging occurs\n- Panicles may be unfilled or mature prematurely\n- Affected plants show white panicles (like stem borer)\n\n**Management:**\n- Remove and burn infected stubble\n- Avoid excess N\n- Maintain proper water depth (not too deep)\n- Field drainage during mid-season\n- Fungicide: Carbendazim; Hexaconazole; Propiconazole",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_6_false_smut_ustilaginoidea_virens_126",
+      "crop": "rice",
+      "heading": "6. False Smut (Ustilaginoidea virens)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Pathogen** | *Ustilaginoidea virens* |\n| **Favorable conditions** | High humidity at flowering; high N; cool, rainy weather |\n\n**Symptoms:**\n- Individual grains replaced by large (up to 2 cm) yellow-green balls\n- Balls turn black-green with age; surface cracks\n- Balls contain fungal spores (greenish-black)\n- Only a few grains per panicle affected usually\n\n**Management:**\n- Avoid excess N\n- Drain field before flowering\n- Remove smut balls before they burst (reduce inoculum)\n- Fungicide: Copper oxychloride 0.25%; Propiconazole 0.1%; at booting",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_7_narrow_brown_leaf_spot_cercospora_oryzae_sphaerulina_oryzina_127",
+      "crop": "rice",
+      "heading": "7. Narrow Brown Leaf Spot (Cercospora oryzae / Sphaerulina oryzina)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Pathogen** | *Cercospora oryzae* |\n| **Condition** | Warm, humid; late-season disease |\n\n**Symptoms:**\n- Narrow, linear, tan-brown lesions parallel to leaf veins\n- Short (1-4 mm); numerous per leaf\n- On leaf sheaths also\n- Premature leaf senescence\n\n**Management:**\n- Moderately resistant in many varieties\n- Mancozeb or carbendazim if severe",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_8_leaf_scald_microdochium_oryzae_rhynchosporium_oryzae_128",
+      "crop": "rice",
+      "heading": "8. Leaf Scald (Microdochium oryzae / Rhynchosporium oryzae)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Pathogen** | *Monographella albescens* (anamorph: *Microdochium oryzae*) |\n| **Condition** | High humidity; excess N; in rice-wheat systems |\n\n**Symptoms:**\n- Zig-zag pattern on leaf margins\n- Water-soaked lesions at leaf tips, moving down\n- Gray center with brown margins\n- Premature leaf drying\n\n**Management:**\n- Balanced N\n- Mancozeb; Carbendazim; Propiconazole",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_1_bacterial_leaf_blight_xanthomonas_oryzae_pv_oryzae_130",
+      "crop": "rice",
+      "heading": "1. Bacterial Leaf Blight (Xanthomonas oryzae pv. oryzae)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Pathogen** | *Xanthomonas oryzae* pv. *oryzae* |\n| **Favorable conditions** | High humidity; temps 28-34°C; heavy rain; wind; wounds from storms; high N |\n| **Survival** | In seed, crop residue, irrigation water |\n| **Yield loss** | 20-50% in severe cases |\n\n**Symptoms:**\n- **Leaf blight** (most common): Water-soaked to yellow-orange lesions starting from leaf tips/margins; lesions extend downward with wavy margins; in later stages, dried white/yellow leaves\n- **Kresek** (seedling blight): Complete wilting and yellowing of seedlings (most destructive phase)\n- **Pale yellow exudate**: Bacterial ooze visible as droplets on infected leaves\n\n**Management of Bacterial Leaf Blight:**\n\n| Method | Details |\n|--------|---------|\n| **Resistant varieties** | Most effective; race-specific resistance (Xa genes); varieties with Xa4 + xa5 + Xa21 recommended |\n| **Cultural** | Avoid high N; avoid standing water near root zone during flooding; clean seed; remove crop residue |\n| **Copper sprays** | Copper oxychloride 0.25%; copper hydroxide |\n| **Antibiotic** | Streptocycline (streptomycin 15% + tetracycline 1.5%) @ 3g/10L water; limited efficacy |\n| **Biological** | *Pseudomonas fluorescens*; *Bacillus subtilis*; bacteriophages |\n| **Seed treatment** | Hot water 52°C/30 min; streptomycin |\n| **Fungicide** | Isoprothiolane + tricyclazole + streptocycline mix |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_2_bacterial_leaf_streak_xanthomonas_oryzae_pv_oryzicola_131",
+      "crop": "rice",
+      "heading": "2. Bacterial Leaf Streak (Xanthomonas oryzae pv. oryzicola)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Symptoms** | Narrow, translucent, water-soaked streaks between leaf veins (1-2 mm wide); yellow exudate; lesions turn greyish |\n| **Management** | Similar to BLB; seed treatment critical; copper sprays |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_3_sheath_brown_rot_grain_rot_pseudomonas_glumae_p_fuscovaginae_132",
+      "crop": "rice",
+      "heading": "3. Sheath Brown Rot / Grain Rot (Pseudomonas glumae / P. fuscovaginae)",
+      "level": 3,
+      "text": "- Emerging disease in Asia and Americas\n- Panicle discoloration; unfilled grains\n- Seed treatment with mercurial compounds (banned in many countries) formerly used\n- Copper-based sprays; avoid high N",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_1_rice_tungro_disease_rtd_134",
+      "crop": "rice",
+      "heading": "1. Rice Tungro Disease (RTD)",
+      "level": 3,
+      "text": "**Most important viral disease in South and Southeast Asia**\n\n| Aspect | Details |\n|--------|---------|\n| **Pathogen** | Rice tungro bacilliform virus (RTBV) + Rice tungro spherical virus (RTSV) — vectored by green leafhopper |\n| **Vector** | Green leafhopper (*Nephotettix virescens*) |\n| **Favorable** | High vector populations; abundant weed hosts |\n\n**Symptoms:**\n- Stunted plants\n- Yellow-orange discoloration of leaves (from tip downward)\n- Reduced tillering\n- Delayed flowering; incomplete panicle emergence\n- Discolored (brown) grains\n\n**Management:**\n- Resistant/tolerant varieties\n- Control leafhopper vectors (see pest section)\n- Synchronized planting (avoid staggered planting)\n- Remove infected plants (rogue)\n- Eliminate weed hosts from bunds",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_2_rice_grassy_stunt_virus_rgsv_135",
+      "crop": "rice",
+      "heading": "2. Rice Grassy Stunt Virus (RGSV)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Vector** | Brown planthopper (*Nilaparvata lugens*) |\n| **Symptoms** | Extreme stunting; excessive tillering (grass-like); yellow-green leaves with rusty spots; no or sterile panicles |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_3_rice_ragged_stunt_virus_rrsv_136",
+      "crop": "rice",
+      "heading": "3. Rice Ragged Stunt Virus (RRSV)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Vector** | Brown planthopper |\n| **Symptoms** | Stunting; ragged leaf margins (leaf ragged); vein swelling; delayed growth |\n\n**Management for BPH-vectored viruses:** Control BPH (see pest section)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_4_rice_dwarf_virus_137",
+      "crop": "rice",
+      "heading": "4. Rice Dwarf Virus",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Vector** | Green rice leafhopper and zigzag leafhopper |\n| **Symptoms** | Dwarfing; white chlorotic spots along veins; poor panicle exsertion |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_11_5_nematode_diseases_138",
+      "crop": "rice",
+      "heading": "11.5 Nematode Diseases",
+      "level": 2,
+      "text": "| Nematode | Symptoms | Management |\n|----------|----------|------------|\n| **Root-knot nematode** (*Meloidogyne graminicola*) | Root galls; stunting; yellowing; yield loss 10-60% | Resistant varieties; crop rotation (non-host); bioagents (*Pasteuria penetrans*, *Trichoderma*) |\n| **White tip nematode** (*Aphelenchoides besseyi*) | Leaf tip whitening (1-5 cm); reduced panicle size; increased sterility | Hot water seed treatment (53°C/15 min); clean seed |\n| **Ufra nematode** (*Ditylenchus angustus*) | Leaf yellowing from base; distorted panicles | Field drying; resistant varieties |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_12_1_insect_pest_overview_140",
+      "crop": "rice",
+      "heading": "12.1 Insect Pest Overview",
+      "level": 2,
+      "text": "More than 100 insect species attack rice globally. About 20 are economically significant. Annual loss from insects is estimated at 15-25%.\n\n| Pest Group | Examples | Damage Type | Critical Stage |\n|-----------|----------|-------------|----------------|\n| Stem borers | Yellow stem borer, Striped stem borer | Larvae bore stems; dead hearts + white heads | Vegetative to reproductive |\n| Planthoppers | Brown planthopper, White-backed planthopper | Sap-sucking; hopperburn; virus vectors | Vegetative to heading |\n| Leafhoppers | Green leafhopper | Sap-sucking; virus vectors | Vegetative growing |\n| Leaf feeders | Leaf folder, Rice hispa, Caseworm | Leaf feeding; reduced photosynthesis | Vegetative |\n| Grain feeders | Rice bug, Stink bug | Sucking grains; pecky rice | Grain filling |\n| Root feeders | Rice water weevil, Root aphid | Root pruning; stunting | Early vegetative |\n| Miscellaneous | Gall midge, Thrips, Mealybug | Shoot deformation; general stress | Early vegetative |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_yellow_stem_borer_scirpophaga_incertulas_most_important_rice_insect_pest_142",
+      "crop": "rice",
+      "heading": "Yellow Stem Borer (Scirpophaga incertulas) — Most Important Rice Insect Pest",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Distribution** | South and Southeast Asia (monophagous — feeds only on rice) |\n| **Damage symptoms** | **Dead heart**: Central leaf whorl dries and dies (vegetative stage); **White head**: Panicle emerges white and empty (reproductive stage) |\n| **Life cycle** | Egg (6-8 days) → Larva (25-40 days, 5-6 instars) → Pupa (6-9 days) → Adult (3-5 days) → Total 45-60 days; 3-5 generations per season |\n| **Favorable** | High N; dense planting; continuous cropping; high humidity |\n\n**Symptoms Timeline:**\n| Symptom | When to Observe | Stage Affected |\n|---------|----------------|---------------|\n| Egg masses on leaf tips (brown, hairy) | Early to mid-vegetative | Prevention stage |\n| Dead hearts (central leaf dry, brown) | 25-50 DAT | Vegetative |\n| White heads (empty, white panicles) | Heading onwards | Reproductive |\n| Stem with bore holes + frass | Any stage | Confirm diagnosis |\n\n**Management:**\n\n| Method | Details |\n|--------|---------|\n| **Cultural** | Remove dead hearts and white heads; clip leaf tips at transplanting (remove egg masses); summer plowing destroys pupae; avoid excess N; synchronized planting |\n| **Light traps** | 1 trap/ha; monitor adult activity |\n| **Pheromone traps** | 5-8 traps/ha for mass trapping AND monitoring |\n| **Biological** | *Trichogramma japonicum* (egg parasitoid) — release 100,000/ha 4-5 times at weekly intervals starting 15 DAT; *Tetrastichus schoenobii* |\n| **Bt sprays** | *Bacillus thuringiensis* (Bt kurstaki) for larval control |\n| **Chemical — Granules** | Cartap hydrochloride 4G @ 25 kg/ha; Carbofuran 3G @ 33 kg/ha; Fipronil 0.3G @ 33 kg/ha |\n| **Chemical — Sprays** | Chlorantraniliprole 0.4 ml/L of water; Flubendiamide; Rynaxypyr; Thiamethoxam; Novaluron |\n| **Timing** | Apply when ETL is r…",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_striped_stem_borer_chilo_suppressalis_143",
+      "crop": "rice",
+      "heading": "Striped Stem Borer (Chilo suppressalis)",
+      "level": 3,
+      "text": "- Distribution: Temperate and subtropical Asia, Europe, Middle East\n- Polyphagous (attacks maize, sorghum, sugarcane also)\n- Similar damage but larvae are cream-colored with dark head (VS YSB: yellow/dark brown)\n- Similar management",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_white_stem_borer_scirpophaga_innotata_144",
+      "crop": "rice",
+      "heading": "White Stem Borer (Scirpophaga innotata)",
+      "level": 3,
+      "text": "- Important in Indonesia and Philippines\n- Similar to YSB but adapted to rainfed conditions",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_brown_planthopper_nilaparvata_lugens_bph_146",
+      "crop": "rice",
+      "heading": "Brown Planthopper (Nilaparvata lugens) — BPH",
+      "level": 3,
+      "text": "**Most serious planthopper pest; causes hopperburn and transmits viral diseases**\n\n| Aspect | Details |\n|--------|---------|\n| **Type** | Sap-sucking (phloem feeder); uses stylet mouthparts |\n| **Distribution** | Throughout Asia; tropical and subtropical |\n| **Forms** | **Brachypterous** (short-winged, colonizing, high reproductive rate); **Macropterous** (long-winged, migratory) |\n| **Life cycle** | Egg (7-10 days) → Nymph (5 instars, 12-18 days) → Adult (15-25 days) → Total 25-35 days; multiple overlapping generations |\n| **Favorable** | High humidity; high N; close plant spacing; continuous cropping; insecticide-induced resurgence |\n\n**Damage Types:**\n| Type | Description |\n|------|-------------|\n| **Direct feeding** | Remove phloem sap; reduce plant vigor; cause wilting and yellowing |\n| **Hopperburn** | Circular patches of dried/brown plants; starts from center of field; severe = complete crop loss |\n| **Honeydew** | Secretion encourages sooty mold; reduces photosynthesis |\n| **Virus transmission** | Vectors rice grassy stunt (RGSV) and ragged stunt (RRSV) |\n\n**Monitoring:**\n| Method | Timing | Threshold (ETL) |\n|--------|--------|-----------------|\n| Visual count | Weekly, early morning | 5-10 hoppers/hill (vegetative); 10-20/hill (reproductive) |\n| Sweep net | 10 sweeps/plot | >100/10 sweeps |\n| Sticky trap (yellow) | Continuous | Population monitoring |\n| Light trap | Nightly | Population monitoring |\n\n**Management:**\n\n| Method | Details |\n|--------|---------|\n| **Resistant varieties** | Most effective; BPH-resistant varieties with BPH1-BPH38 genes; but BPH biotypes evolve rapidly |\n| **Cultural** | Avoid continuous cropping (fallow period breaks cycle); avoid excess N; wide spacing; field drainage (BPH thrives in humid canopy) |\n| **Conserve natural enemies** |…",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_white_backed_planthopper_sogatella_furcifera_wbph_147",
+      "crop": "rice",
+      "heading": "White-Backed Planthopper (Sogatella furcifera) — WBPH",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Damage** | Similar to BPH but less severe; hopperburn possible |\n| **Distinction** | White band across mesonotum; more migratory than BPH |\n| **Management** | Similar to BPH; lower resistance risk; many chemicals effective |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_green_leafhopper_nephotettix_virescens_glh_149",
+      "crop": "rice",
+      "heading": "Green Leafhopper (Nephotettix virescens) — GLH",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Importance** | Vector of Rice Tungro Virus (most important viral disease) |\n| **Damage** | Direct feeding (minor); primarily important as virus vector |\n| **Favorable** | High N; abundant weed hosts; warm, humid |\n\n**Management:**\n| Method | Details |\n|--------|---------|\n| **Monitoring** | Sweep net; 1 sweep/second; ETL: 10 GLH/sweep (lowlands) or 5 GLH/sweep (if tungro present) |\n| **Resistant varieties** | GLH resistance genes (Grh1-Grh6) |\n| **Chemical** | Imidacloprid; Thiamethoxam; Ethiprole; avoid pyrethroids |\n| **Biological** | *Anagrus* spp. (egg parasitoid); spiders |\n| **Cultural** | Staggered planting; remove weed hosts; synchronize planting |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_rice_leaf_folder_cnaphalocrocis_medinalis_151",
+      "crop": "rice",
+      "heading": "Rice Leaf Folder (Cnaphalocrocis medinalis)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Damage** | Larvae fold leaves longitudinally; feed on green tissue inside fold; leaves turn white (scorched appearance) |\n| **Favorable** | Dense canopy; high humidity; high N |\n| **Importance** | Increasing in intensity with high-yielding varieties |\n\n**Management:**\n- ETL: 1-2 damaged leaves/hill OR 20% leaf damage at vegetative stage\n- Conserve natural enemies: *Trichogramma chilonis*; *Apanteles*; spiders\n- Chemical: Chlorantraniliprole; Flubendiamide; Cartap hydrochloride\n- Avoid excess N\n- Biological: *Bacillus thuringiensis*; *Beauveria bassiana*",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_rice_hispa_dicladispa_armigera_152",
+      "crop": "rice",
+      "heading": "Rice Hispa (Dicladispa armigera)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Damage** | Adult scrapes green tissue between leaf veins; larvae mine leaves (blotch mines) |\n| **Favorable** | Dense planting; high humidity; early season |\n| **Importance** | Outbreaks in wet season in Asia |\n\n**Management:**\n- Light traps\n- Clip and destroy affected leaves (reduce eggs)\n- Chemical: Carbaryl; Chlorpyrifos; Spinosad",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_rice_caseworm_nymphula_depunctalis_153",
+      "crop": "rice",
+      "heading": "Rice Caseworm (Nymphula depunctalis)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Damage** | Larvae cut leaf pieces, make tubular cases; float on water; feed on leaves |\n| **Favorable** | Stagnant water; shaded fields |\n| **Management** | Drain field 2-3 days; Carbaryl |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_rice_skipper_rice_swarming_caterpillar_spodoptera_mauritia_mythimna_spp_154",
+      "crop": "rice",
+      "heading": "Rice Skipper / Rice Swarming Caterpillar (Spodoptera mauritia, Mythimna spp.)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Damage** | Caterpillars cut seedlings at base; can strip fields overnight |\n| **Management** | Flood fields briefly to drown larvae; *Bt*; Chlorantraniliprole; early detection critical |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_12_6_gall_midge_orseolia_oryzae_155",
+      "crop": "rice",
+      "heading": "12.6 Gall Midge (Orseolia oryzae)",
+      "level": 2,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Damage** | Maggot feeds at growing point → produces tubular gall (silver shoot) instead of leaf; no panicle develops from affected tiller |\n| **Distribution** | South and Southeast Asia; Africa (*O. oryzivora*) |\n| **Favorable** | High humidity; continuous flooding; continuous cropping |\n\n**Management:**\n- Resistant varieties most effective (gall midge biotypes exist)\n- Remove and destroy affected tillers\n- Crop rotation with non-host (pulse, oilseed)\n- Chemical: Carbofuran 3G; Phorate; Fipronil\n- Biological: *Platygaster oryzae* (parasitic wasp)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_rice_bug_gundhi_bug_leptocorisa_oratorius_157",
+      "crop": "rice",
+      "heading": "Rice Bug / Gundhi Bug (Leptocorisa oratorius)",
+      "level": 3,
+      "text": "| Aspect | Details |\n|--------|---------|\n| **Damage** | Adults and nymphs suck milk from developing grains → pecky rice, empty grains, discolored grains |\n| **Favorable** | Late-planted fields; nearby weed hosts (*Imperata*, grasses) |\n| **Yield loss** | 10-30% in endemic areas |\n\n**Management:**\n- Early planting\n- Remove weed hosts\n- Net sweeping\n- Chemical: Imidacloprid; Thiamethoxam; Malathion; Lambda-cyhalothrin",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_12_8_other_important_pests_158",
+      "crop": "rice",
+      "heading": "12.8 Other Important Pests",
+      "level": 2,
+      "text": "| Pest | Damage | Management |\n|------|--------|------------|\n| **Rice thrips** (*Stenchaetothrips biformis*) | Leaf curling; silvery streaks; stunted seedlings | Apply seed treatment (Imidacloprid); drain field briefly |\n| **Rice root weevil** | Larvae feed on roots; stunting | Drain field; Carbofuran |\n| **Rice mealybug** | On stems, leaf sheaths; honeydew | Conserve natural enemies; Imidacloprid |\n| **Rice ear-cutting caterpillar** (*Mythimna separata*) | Cuts panicle bases at grain filling | Flood field; chlorpyrifos |\n| **Springtails** (*Sminthurus viridis*) | Seedling damage in DSR | Chemical seed treatment |\n| **Termites** | DSR; cut roots at seedling stage | Seed treatment with chlorpyrifos |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_13_1_principles_of_rice_ipm_160",
+      "crop": "rice",
+      "heading": "13.1 Principles of Rice IPM",
+      "level": 2,
+      "text": "Rice IPM aims to maintain pest populations below economic injury levels through an integrated approach:\n\n1. **Grow a healthy crop** — Proper nutrition, water management, and variety selection\n2. **Conserve natural enemies** — Avoid unnecessary insecticides\n3. **Observe fields regularly** — Weekly scouting from planting to harvest\n4. **Farmers as experts** — Train farmers to understand their fields",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_13_2_natural_enemies_in_rice_ecosystems_161",
+      "crop": "rice",
+      "heading": "13.2 Natural Enemies in Rice Ecosystems",
+      "level": 2,
+      "text": "| Natural Enemy | Preys On | Conservation Strategy |\n|--------------|----------|----------------------|\n| **Spiders** (wolf spiders, jumping spiders, orb weavers) | BPH, WBPH, GLH, leaf folder | Provide refuge; avoid broad-spectrum insecticides |\n| **Mirid bug** (*Cyrtorhinus lividipennis*) | BPH and GLH eggs (most important BPH predator) | Avoid early-season spraying; maintain humidity |\n| **Ground beetles** (*Ophionea*, *Chlaenius* spp.) | Stem borer larvae; caterpillars | Mulch; reduce tillage |\n| **Damselflies and dragonflies** | Adult stem borers, planthoppers | Provide perching sites (bamboo stakes) |\n| **Coccinellid beetles** (ladybugs) | Aphids, planthoppers | Flowering plants on bunds |\n| **Staphylinid rove beetles** | Maggots, larvae in soil | Reduce tillage |\n| ***Trichogramma* wasps** | Stem borer eggs | Conservation; augmentative release |\n| ***Tetrastichus* wasp** | Stem borer eggs | Conservation |\n| ***Anagrus* wasp** | GLH eggs | Conservation |\n| ***Platygaster* wasp** | Gall midge | Conservation |\n| **Entomopathogenic fungi** (*Beauveria*, *Metarhizium*) | BPH, WBPH, stem borers | Avoid fungicides that kill beneficial fungi |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_13_3_ipm_decision_making_calendar_162",
+      "crop": "rice",
+      "heading": "13.3 IPM Decision-Making Calendar",
+      "level": 2,
+      "text": "| Growth Stage (DAT) | Monitoring Focus | Key Action | Chemical Treatment (Only if ETL exceeded) |\n|--------------------|-----------------|------------|---------------------------------------|\n| **0-20 DAT** | Seedling establishment; early weeds | Pre-emergence herbicide; conserve spiders | — |\n| **20-40 DAT** | Stem borer (dead hearts); leaf folder; BPH; weeds | 1st post-emergence herbicide if needed; manual weeding | Cartap; Chlorantraniliprole (stem borer) |\n| **40-60 DAT** | BPH; stem borer; leaf folder; disease scouting | Drain field 7 days (max tillering); K application | Pymetrozine (BPH); Avoid: pyrethroids |\n| **60-80 DAT** | Panicle initiation; BPH; blast | Drainage; blast fungicide if needed | BPH: Dinotefuran; Blast: Tricyclazole |\n| **80-100 DAT** | Flowering; neck blast; rice bugs | Avoid chemical use during flowering! | — |\n| **100-120 DAT** | Grain filling; rice bugs; rodents | Rodent control; drain for harvest | — |\n| **Post-harvest** | Rodents; stubble management | Summer plowing; remove residue | — |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_13_4_economic_threshold_levels_etl_for_major_rice_pests_163",
+      "crop": "rice",
+      "heading": "13.4 Economic Threshold Levels (ETL) for Major Rice Pests",
+      "level": 2,
+      "text": "| Pest | Growth Stage | ETL |\n|------|-------------|-----|\n| Yellow stem borer | Vegetative | 1 egg mass/m² OR 5% dead hearts |\n| Yellow stem borer | Reproductive | 1 moth/m² OR 2 egg masses/m² |\n| Striped stem borer | Vegetative | 1 egg mass/m² OR 5% dead hearts |\n| BPH | Vegetative | 5-10 hoppers/hill |\n| BPH | Reproductive | 10-20 hoppers/hill |\n| WBPH | Vegetative | 10-20 hoppers/hill |\n| GLH | Vegetative | 10 GLH/net sweep (+ Tungro: 5/sweep) |\n| Leaf folder | Vegetative | 1-2 damaged leaves/hill OR 20% leaf damage |\n| Rice hispa | Vegetative | 1 adult/hill OR 20% damaged leaves |\n| Gall midge | Vegetative | 1% silver shoots |\n| Rice bug | Grain filling | 5 bugs/10 sweeps OR 1 bug/m² at milky stage |\n| Fall armyworm | Seedling | 1 larva/2 plants |\n| Rice thrips | Seedling | 60/12 wet hand sweeps (nursery) |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_13_5_rodent_management_164",
+      "crop": "rice",
+      "heading": "13.5 Rodent Management",
+      "level": 2,
+      "text": "| Species | Damage | Management |\n|---------|--------|------------|\n| Rice field rat (*Rattus argentiventer*) | Cuts tillers; damages stored grain | Burrow fumigation (aluminum phosphide); zinc phosphide baiting; bromadiolone (for chronic); trap-barrier system (TBS) |\n| Bandicoot rat (*Bandicota bengalensis*) | Extensive burrowing; stem cutting | Deep plowing; flooding burrows; natural predators (snakes, owls) — install owl perches (T-shaped posts) |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_trap_barrier_system_tbs_165",
+      "crop": "rice",
+      "heading": "Trap-Barrier System (TBS)",
+      "level": 3,
+      "text": "- Plastic fence barrier around 100 m² area\n- 10-15 multi-catch traps at gaps\n- Placed before planting; catches dispersing rodents\n- Highly effective for community-level management\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_indicators_of_maturity_168",
+      "crop": "rice",
+      "heading": "Indicators of Maturity",
+      "level": 3,
+      "text": "| Indicator | Description |\n|-----------|-------------|\n| **Grain color** | 80-85% of grains turn golden yellow/straw color |\n| **Grain moisture** | 20-24% (optimal for harvesting) — NOT 14% (that's for storage) |\n| **Panicle** | Drooping; grains hard |\n| **Days after heading** | 25-35 days depending on variety and temperature |\n| **Window of harvest** | Too early = higher broken % in milling; Too late = shattering losses + rodent/bird damage |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_delayed_harvest_consequences_169",
+      "crop": "rice",
+      "heading": "Delayed Harvest Consequences",
+      "level": 3,
+      "text": "| Problem | Cause | Loss |\n|---------|-------|------|\n| Shattering | Over-mature grains fall off panicles | 5-15% yield loss |\n| Rodent/bird damage | Extended exposure | 3-10% |\n| Lodging | Dry, brittle stems break | 5-30% |\n| Grain discoloration | Prolonged wetting | Quality downgrade |\n| Cracking | Re-wetting of dry grain | Poor milling quality |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_14_2_harvesting_methods_170",
+      "crop": "rice",
+      "heading": "14.2 Harvesting Methods",
+      "level": 2,
+      "text": "| Method | Description | Labor | Grain Loss | Cost |\n|--------|-------------|-------|------------|------|\n| **Manual (sickle)** | Cut at 15-20 cm above ground; 3-5 days to harvest 1 ha | 40-60 person-days/ha | 1-3% | Low |\n| **Manual + threshing frame** | Same + manual beating | 50-70 | 2-5% | Low |\n| **Mechanical reaper** | Walk-behind or self-propelled; cuts only | 5-8 | 1-2% | Medium |\n| **Combine harvester** | Cuts + threshes + cleans + bags in one pass | 2-3 | 2-5% | High (fastest) |\n| **Mini-combine** | For small fields; same as full combine | 2-3 | 2-5% | Medium-high |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_combine_harvester_considerations_171",
+      "crop": "rice",
+      "heading": "Combine Harvester Considerations",
+      "level": 3,
+      "text": "- Requires proper field drainage before harvest\n- Moisture optimum: 20-24% (too wet = clogging; too dry = grain cracking)\n- Adjust fan speed and sieve setting to minimize grain loss\n- Uniform ripening essential",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_14_3_threshing_172",
+      "crop": "rice",
+      "heading": "14.3 Threshing",
+      "level": 2,
+      "text": "| Method | Capacity | Grain Damage | Requirements |\n|--------|----------|-------------|-------------|\n| Manual beating on frame | 100-200 kg/day | Low | 5-10 people |\n| Pedal thresher | 200-400 kg/day | Low | 1-2 people |\n| Power thresher (axial flow) | 500-1000 kg/hour | Low-medium | 5-8 HP engine |\n| Combine (integrated) | 2-5 t/hour | Medium | Complex machinery |\n| Animal trampling | 200-300 kg/day | Low | 3-5 bullocks |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_importance_of_proper_drying_174",
+      "crop": "rice",
+      "heading": "Importance of Proper Drying",
+      "level": 3,
+      "text": "| Moisture Content | Condition |\n|-----------------|-----------|\n| >22% | Unsafe; spoilage within 48 hours |\n| 18-22% | Short-term storage (2-4 days) |\n| 14-18% | Medium-term storage (2-4 weeks) |\n| 12-14% | Safe for 3-6 months |\n| <14% | Safe for long-term (6-12+ months) |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_drying_methods_175",
+      "crop": "rice",
+      "heading": "Drying Methods",
+      "level": 3,
+      "text": "| Method | Capacity | Drying Time | Quality | Cost |\n|--------|----------|-------------|---------|------|\n| **Sun drying (mat)** | Small (1-5 t) | 2-3 days | Fair-good; variable | Very low |\n| **Sun drying (concrete floor)** | Medium (5-20 t) | 2-3 days | Fair; UV damage possible | Low |\n| **Solar bubble dryer** | 1-5 t | 8-16 hours | Good; consistent | Medium |\n| **Batch dryer** | 5-50 t | 6-12 hours | Good-excellent | Medium-high |\n| **Continuous flow dryer** | 50-500 t/d | 2-4 hours | Excellent | High |\n| **Re-circulating batch dryer** | 10-50 t | 4-8 hours | Excellent (lowest crack %) | High |\n| **In-store dryer** | Storage structure integrated | 48-72 hours | Good | Medium |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_sun_drying_best_practices_176",
+      "crop": "rice",
+      "heading": "Sun Drying Best Practices",
+      "level": 3,
+      "text": "- Spread grain 2-5 cm thick\n- Stir every 1-2 hours for uniform drying\n- Cover grain during heavy sun (12-2 PM) to avoid cracking\n- Collect into heaps overnight to prevent re-moistening\n- Target: 14% moisture for storage (use moisture meter)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_mechanical_drying_temperature_guide_177",
+      "crop": "rice",
+      "heading": "Mechanical Drying Temperature Guide",
+      "level": 3,
+      "text": "| End Use | Maximum Air Temp | Recommended |\n|---------|-----------------|-------------|\n| Seed rice | 43°C | Do not exceed 43°C |\n| Parboiled rice | 60°C | - |\n| Milling rice | 54°C | 38-54°C; avoid above 54°C |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_the_3_hour_rule_178",
+      "crop": "rice",
+      "heading": "The 3-Hour Rule",
+      "level": 3,
+      "text": "After threshing, paddy should begin drying within 3 hours:\n- >22% moisture: Start drying immediately\n- 3-6 hours delay: Acceptable if spread in thin layer\n- >6 hours delay: Milling quality declines; discoloration begins",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_storage_types_180",
+      "crop": "rice",
+      "heading": "Storage Types",
+      "level": 3,
+      "text": "| Structure | Capacity (tons) | Duration | Pros | Cons |\n|-----------|----------------|----------|------|------|\n| **Traditional bin** (bamboo/mud) | 1-5 | 3-6 months | Low cost | Rodent access; moisture |\n| **Metal silo** (galvanized / steel) | 1-100 | 6-24 months | Airtight; rodent-proof | Cost; condensation |\n| **Concrete bin** | 10-1000 | 12-36 months | Durable; large capacity | High cost; permanent |\n| **Plastic/fabric hermetic bags** | 0.05-1 | 12-36 months | Very effective; portable | Small capacity; puncture risk |\n| **IRRI Super Bag** (hermetic) | 1 | 12-18 months | Kills insects without chemicals | Must seal properly |\n| **Hot air hermetic storage** | 1-50 | 24-36+ | Best quality preservation | High cost; complex |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_storage_losses_181",
+      "crop": "rice",
+      "heading": "Storage Losses",
+      "level": 3,
+      "text": "| Loss Type | Cause | % Loss (6 months) | Prevention |\n|-----------|-------|-------------------|------------|\n| Insects | Weevils, borers, moths | 5-20% | Hermetic storage; fumigation |\n| Rodents | Rats, mice | 2-10% | Proofing; baiting |\n| Moisture | High humidity; leakage | 2-5% | Sealed storage; proper drying |\n| Molds | Fungi (*Aspergillus*, *Penicillium*) | 1-5% | Dry to <14% moisture |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_hermetic_storage_advantages_182",
+      "crop": "rice",
+      "heading": "Hermetic Storage Advantages",
+      "level": 3,
+      "text": "- Oxygen depletion (by grain respiration) kills insects naturally\n- No chemical fumigants needed\n- Preserves germination and milling quality\n- Prevents re-wetting\n- Most recommended for small-to-medium farmers",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_14_6_parboiling_traditional_process_for_milling_quality_improvement_183",
+      "crop": "rice",
+      "heading": "14.6 Parboiling (Traditional Process for Milling Quality Improvement)",
+      "level": 2,
+      "text": "| Step | Time | Temperature | Purpose |\n|------|------|-------------|---------|\n| 1. Soaking paddy in hot water | 8-12 hrs | 60-70°C | Gelatinize starch; soften hull |\n| 2. Steaming | 20-30 min | 100°C | Complete gelatinization; kill microbes |\n| 3. Drying | 1-3 days | Sun or mechanical | Reduce to 14% moisture |\n| 4. Milling | Standard | — | Higher head rice recovery (70-80% vs 50-60%) |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_benefits_of_parboiling_184",
+      "crop": "rice",
+      "heading": "Benefits of Parboiling",
+      "level": 3,
+      "text": "- Head rice yield increases 10-20%\n- Grain harder, less broken during milling\n- Grains become more nutritious (B vitamins move from bran into endosperm)\n- Grains less sticky when cooked\n- Insects less likely to attack (harder grain)\n- Taste preferred in many markets",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_drawbacks_185",
+      "crop": "rice",
+      "heading": "Drawbacks",
+      "level": 3,
+      "text": "- Color darkens (not preferred for white rice markets)\n- Cooking time longer\n- Requires equipment and fuel\n- Disposal of soaking water (pollution issue)\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_milling_steps_188",
+      "crop": "rice",
+      "heading": "Milling Steps",
+      "level": 3,
+      "text": "| Step | Product | % of Paddy Weight |\n|------|---------|-------------------|\n| 1. Pre-cleaning | Clean paddy | 100 (minus impurities) |\n| 2. De-husking (shelling) | Brown rice + husk | Husks = 18-22% |\n| 3. Husk separation | Brown rice | 78-82% of original |\n| 4. Whitening/polishing | White rice + bran | Bran = 5-8% |\n| 5. Grading and separation | Head rice + broken | Brokens: 5-25% |\n| 6. Color sorting | Sorted white rice | Quality improvement |\n| **Final** | **Milled rice** | **55-70%** |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_rice_grades_based_on_head_rice_recovery_189",
+      "crop": "rice",
+      "heading": "Rice Grades Based on Head Rice Recovery",
+      "level": 3,
+      "text": "| Grade | Head Rice (%) | Broken (%) | Uses |\n|-------|---------------|--------|------|\n| Premium | >70% heads | <5% brokens | Export, premium market |\n| Grade A | 60-70% heads | 5-15% brokens | Retail market |\n| Grade B | 50-60% heads | 15-25% brokens | Domestic consumption |\n| Grade C | <50% heads | >25% brokens | Processing (flour, feed) |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_15_2_by_products_and_their_uses_190",
+      "crop": "rice",
+      "heading": "15.2 By-Products and Their Uses",
+      "level": 2,
+      "text": "| By-Product | % of Paddy | Uses |\n|-----------|-----------|------|\n| **Hulls/Husks** | 18-22% | Fuel (rice husk boilers); cattle feed (low value); silica source (for cement, solar panels); bedding; biochar; insulation |\n| **Rice bran** | 5-8% | Edible oil extraction (14-20% oil); animal feed (defatted bran); wax; phytic acid |\n| **Broken rice** | 5-25% | Rice flour (noodles, bakery); animal feed; brewing; snacks (rice cakes) |\n| **Rice straw** | 100-120% of grain weight | Cattle feed (poor quality); mushroom cultivation (paddy straw mushrooms); mulching; biochar; composting; paper/board; bioethanol |\n| **Rice husk ash** (from burning) | 20% of husk weight | Cement substitute (pozzolanic); silica gel; filter media; fertilizer |\n| **Rice bran oil** | 1-1.5% of paddy weight | Cooking oil (high smoke point); cosmetics; industrial uses |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_drought_stress_193",
+      "crop": "rice",
+      "heading": "Drought Stress",
+      "level": 3,
+      "text": "| Growth Stage | Critical Period | Effect | Mitigation |\n|-------------|-----------------|--------|------------|\n| Seedling | 0-10 DAS | Poor germination; stand failure | Direct seeding with good soil moisture; drought-tolerant varieties |\n| Active tillering | 20-40 DAT | Reduced tillering; stunting | Supplementary irrigation; mulching |\n| **Panicle initiation** | **55-65 DAT** (most sensitive) | Spikelet sterility; yield loss 30-60% | Ensure irrigation at PI; drought-tolerant varieties |\n| **Flowering** | **85-95 DAT** (most sensitive) | Complete spikelet sterility if severe stress | Irrigation critical; avoid stress at this stage |\n| Grain filling | 100-120 DAT | Reduced grain weight; chalky grains | Supplementary irrigation |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_submergence_flood_stress_194",
+      "crop": "rice",
+      "heading": "Submergence/Flood Stress",
+      "level": 3,
+      "text": "| Type | Water Depth | Duration | Effect | Management |\n|------|-------------|----------|--------|------------|\n| **Transient flash flood** | Complete submergence | 4-10 days | Stunting; death if prolonged (>10 days) | SUB1 varieties; re-establish if >50% damaged |\n| **Stagnant flooding** | 25-50 cm | 1-4 weeks | Reduced tillering; etiolation | Stagnant-flood-tolerant varieties |\n| **Deepwater flooding** | 50-400 cm | 1-4 months | Stem elongation; few tillers | Deepwater varieties with elongation ability |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_salinity_stress_195",
+      "crop": "rice",
+      "heading": "Salinity Stress",
+      "level": 3,
+      "text": "| Salinity Level | ECe (dS/m) | Effect | Tolerant Varieties |\n|---------------|-----------|--------|-------------------|\n| Low | 2-4 | Slight yield reduction | Most varieties |\n| Moderate | 4-6 | 25-50% yield loss | CSR 27, CSR 30, CSR 36, Lunishree, Pokkali |\n| High | 6-8 | 50-75% yield loss | Very few tolerant varieties |\n| Extreme | >8 | Near complete loss | Limited traditional varieties (Pokkali, Nona Bokra) |\n\n**Salinity Management:**\n- Flush fields with fresh water to leach salts\n- Use salt-tolerant varieties\n- Avoid stress at seedling stage (most sensitive)\n- Gypsum application for sodic soils\n- Raised beds for coastal saline areas\n- Mulching to reduce evaporation",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_temperature_stress_196",
+      "crop": "rice",
+      "heading": "Temperature Stress",
+      "level": 3,
+      "text": "| Stress | Threshold | Effect | Management |\n|--------|-----------|--------|------------|\n| **Low temperature** (seedling) | <15°C | Poor growth; yellowing | Cold-tolerant varieties (japonica type); raise water level |\n| **Low temperature** (flowering) | <20°C for >1 hour | Spikelet sterility (male sterility) | Select varieties with cold tolerance; plant at optimal time |\n| **High temperature** (flowering) | >38°C for >2 hours | Spikelet sterility | Plant early; use heat-tolerant varieties |\n| **High temperature** (grain filling) | >35°C day | Chalky grain; poor quality | Early planting; avoid late-maturing varieties |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_16_2_physiological_disorders_197",
+      "crop": "rice",
+      "heading": "16.2 Physiological Disorders",
+      "level": 2,
+      "text": "| Disorder | Symptoms | Cause | Management |\n|----------|----------|-------|------------|\n| **Straight head** | Panicles erect; empty spikelets; chalky grains | Low temperature at PI; also associated with Zn deficiency | Balanced nutrition; planting at normal time; Zn application |\n| **Panicle exsertion failure** | Panicle trapped in sheath | Boron deficiency; sheath rot disease; low temperature | Borax 0.5% foliar; disease control |\n| **Chalkiness** | White, opaque areas in grains | High temperature during grain filling; excess N | Avoid late planting; moderate N; select varieties with low chalkiness |\n| **Unfilled grains** | High % of sterile/hollow spikelets | Temperature stress; B deficiency; poor pollination | Genetic × environment interaction; manage specific factor |\n| **Hollow grain / Grain discoloration** | Empty hulls; brown/black spots | False smut; grain rot; insect feeding | Disease management; grain-sucking bug control |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_17_1_major_rice_based_cropping_systems_199",
+      "crop": "rice",
+      "heading": "17.1 Major Rice-Based Cropping Systems",
+      "level": 2,
+      "text": "| System | Region | Description |\n|--------|--------|-------------|\n| **Rice-Wheat** | India (Indo-Gangetic Plains), Pakistan, Bangladesh, Nepal, China | Most important in South Asia; rice in kharif (monsoon), wheat in rabi (winter); 13.5 million ha |\n| **Rice-Rice** | South India, Bangladesh, Sri Lanka, Vietnam | Double rice cropping per year; boro (winter) + aus/aman (summer) in Bangladesh |\n| **Rice-Pulse** | Central/East India (rice-blackgram, rice-lentil, rice-chickpea) | Nitrogen fixation benefit; break pest cycles |\n| **Rice-Oilseed** (rice-mustard, rice-groundnut, rice-sesame) | India, Bangladesh | Mustard has deep taproot; breaks hardpan |\n| **Rice-Maize** | Bangladesh, Philippines, Myanmar | Emerging system; crop diversification |\n| **Rice-Vegetable** | Peri-urban areas | High-income; high management |\n| **Rice-Fallow** | Rainfed uplands (Central India, Africa) | Low productivity; fallow period used for pasture/grazing |\n| **Triple Rice** (Rice-Rice-Rice) | Vietnam (Mekong Delta), Philippines, China | Highly intensive; three crops/year; high pest pressure |\n| **Rice-Aquaculture** | China, Vietnam, India (Kerala) | Fish/prawns with rice; integrated system |\n| **Rice-Duck** | China, Japan, Korea, Bangladesh (traditional) | Ducks control weeds and pests; manure fertilizes rice |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_17_2_rotational_principles_200",
+      "crop": "rice",
+      "heading": "17.2 Rotational Principles",
+      "level": 2,
+      "text": "| Rotation Benefit | Mechanism |\n|-----------------|-----------|\n| Pest cycle disruption | Soil-borne diseases (sheath blight, nematodes) decline during non-rice crop |\n| Weed shift | Different crops favor different weeds; rotation keeps any one weed from dominating |\n| Nutrient balance | Rice depletes K and Zn; pulses fix N; oilseeds break hardpan |\n| Organic matter management | Rice straw returned; wheat/maize residue different quality |\n| Water saving | Non-rice crops use less water; groundwater recharge during non-rice season |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_recommended_rotation_period_between_rice_crops_201",
+      "crop": "rice",
+      "heading": "Recommended Rotation Period Between Rice Crops",
+      "level": 3,
+      "text": "- **Minimum**: 3-4 months fallow/non-rice crop\n- **Optimal**: 6-12 months\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_18_1_rice_seasons_in_india_203",
+      "crop": "rice",
+      "heading": "18.1 Rice Seasons in India",
+      "level": 2,
+      "text": "| Season | Sowing | Harvest | States | Area | % of Total |\n|--------|--------|---------|--------|------|------------|\n| **Kharif** (main) | June-July | Oct-Dec | All states | ~35 M ha | ~75% |\n| **Rabi** | Nov-Dec | April-May | Andhra, Telangana, Tamil Nadu, Karnataka, Odisha, WB | ~7 M ha | ~15% |\n| **Summer** | Jan-Feb | May-June | Assam, Odisha, West Bengal, Kerala | ~3 M ha | ~6% |\n| **Boro** (winter) | Nov-Dec | May-June | Eastern India (Assam, WB, Bihar, Odisha, NE states) | ~2 M ha | ~4% |\n| **Jayad** (autumn) | May-June | Sep-Oct | Odisha, West Bengal, Jharkhand | ~1 M ha | ~2% |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_18_2_state_wise_major_varieties_204",
+      "crop": "rice",
+      "heading": "18.2 State-wise Major Varieties",
+      "level": 2,
+      "text": "| State | Major Varieties | Area (M ha) | Key Differences |\n|-------|----------------|-------------|-----------------|\n| **West Bengal** | Swarna, Samba Mahsuri, Pooja, Satabdi, Banskathi, Rasi, IR 64 | 5.9 | Largest rice state; multiple seasons; traditional varieties important |\n| **Uttar Pradesh** | Swarna, Pusa 44, Pant Dhan 4, Sarjoo 52, Basmati varieties | 5.9 | Second largest; dominant player in Basmati |\n| **Punjab** | PR 114, PR 118, PR 121, Pusa 44, Basmati 386 | 3.1 | High input-high yield; water table crisis due to rice |\n| **Andhra Pradesh** | BPT 5204 (Samba Mahsuri), MTU 1010, MTU 7029 (Swarna), BPT 3291 (Sona Masuri) | 2.2 | Premium non-Basmati rice specialty |\n| **Telangana** | MTU 1010, BPT 5204, RNR 15048 (Telongu Sona), Jaya | 2.0 | Fine-grained rice culture |\n| **Odisha** | Swarna, Pooja, CR 1009 (Ajay), Pratikshya, Naveen, Swarna sub1 | 4.2 | Flood-prone; SUB1 varieties important |\n| **Bihar** | Swarna, Rajendra varieties, Pusa 44, NDR 359 | 3.5 | Rainfed dominant |\n| **Chhattisgarh** | Swarna, Mahamaya, Danteshwari, Kalinga III | 3.8 | High proportion of traditional varieties |\n| **Tamil Nadu** | IR 64, ADT 36, ADT 43, CO 43, TKM 9, White Ponni | 2.0 | Short-duration high-yield systems |\n| **Assam** | Swarna, Ranjit, Bahadur, Jaldubi, traditional glutinous varieties | 2.5 | Flood/boro; rice culture center |\n| **Karnataka** | IR 64, MTU 1010, Jaya, Cauveri varieties | 1.5 | Cauvery delta important |\n| **Maharashtra** | Swarna, Rasi, Indrayani, Ambemohar | 1.5 | Traditional varieties for local markets |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_the_rice_wheat_system_206",
+      "crop": "rice",
+      "heading": "The Rice-Wheat System",
+      "level": 3,
+      "text": "- Dominant cropping system covering ~10 M ha\n- **Challenges**: \n  - Groundwater depletion (Punjab: 3-5 ft/year drop)\n  - Straw burning (air pollution crisis)\n  - Herbicide-resistant weeds (*Phalaris minor* in wheat, *Echinochloa* in rice)\n  - Pest resistance (BPH to imidacloprid)",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_conservation_agriculture_alternatives_207",
+      "crop": "rice",
+      "heading": "Conservation Agriculture Alternatives",
+      "level": 3,
+      "text": "| Practice | Adoption | Benefits |\n|----------|----------|----------|\n| Direct-Seeded Rice (DSR) | Increasing in Punjab | 25-40% water saving; labor saving; earlier maturity |\n| Happy Seeder (direct drill in rice straw) | Supported by government | No burning; seeding wheat in standing rice straw |\n| Laser Land Leveling | Widespread adoption | 20-30% water saving; uniform crop |\n| Short-duration varieties (PR 126, PR 121) | Growing | 10-15 days shorter = less water |\n| Delayed transplanting (after June 15) | Government regulation | Avoids peak evaporation; but risk of cold stress at heading |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_18_4_system_of_rice_intensification_sri_in_india_208",
+      "crop": "rice",
+      "heading": "18.4 System of Rice Intensification (SRI) in India",
+      "level": 2,
+      "text": "| State | SRI Adoption (ha) | Key Results |\n|-------|-------------------|-------------|\n| Tamil Nadu | >100,000 | 5-7 t/ha (vs 3-4 conventional); 40% water saving |\n| Andhra Pradesh | >50,000 | 6-8 t/ha; promoted by government |\n| Odisha | >50,000 | 4-6 t/ha in rainfed areas |\n| Bihar | >30,000 | 4-6 t/ha with less input |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_18_5_rat_leakage_problem_in_indian_rice_storage_209",
+      "crop": "rice",
+      "heading": "18.5 Rat Leakage Problem in Indian Rice Storage",
+      "level": 2,
+      "text": "Traditional storage structures (mud bins, bamboo bins) in India have rat leakage losses of 3-10%. Improved hermetic storage (metal bins, Super Bags) reduces this to <1%.\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_a_rice_pest_identification_quick_guide_211",
+      "crop": "rice",
+      "heading": "A. Rice Pest Identification Quick Guide",
+      "level": 2,
+      "text": "| Symptom | Likely Pest / Disease | Growth Stage | Action |\n|---------|---------------------|-------------|--------|\n| Central leaf dry, brown (dead heart) | Stem borer | Vegetative | Apply granular insecticide |\n| White, empty panicle (white head) | Stem borer | Reproductive | Late; consider next season |\n| Circular patches of dead plants; plants heavily laden with small insects at base | BPH hopperburn | Any | Drain field; pymetrozine spray |\n| Leaves folded with white feeding marks | Leaf folder | Vegetative | Bt; chlorantraniliprole |\n| Silver shoots instead of leaves | Gall midge | 20-50 DAT | Resistant variety next time; roguing |\n| Scraped leaf surface (white parallel lines) | Rice hispa | Early vegetative | Clip leaves; carbaryl |\n| Leaf tip whitening (young plants) | Thrips | Nursery/early | Seed treatment; imidacloprid |\n| Milky grains with discolored spots near base | Rice bug | Grain filling | Net sweeping; insecticide |\n| Caterpillar cuts seedlings at base | Armyworm | 10-30 DAS | Flood field; insecticide |\n| Diamond-shaped lesions on leaves | Leaf blast | Vegetative-reproductive | Reduce N; tricyclazole |\n| Elliptical lesions on sheaths near water line | Sheath blight | Reproductive | Balanced K; hexaconazole |\n| Yellow-orange wavy lesions from leaf tip | Bacterial leaf blight | Any | Resistant variety; copper spray |\n| Grain replaced by green-yellow balls | False smut | Post-flowering | Remove smut balls; next season management |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_b_fertilizer_recommendation_quick_guide_india_212",
+      "crop": "rice",
+      "heading": "B. Fertilizer Recommendation Quick Guide (India)",
+      "level": 2,
+      "text": "| Yield Target (t/ha) | Urea (kg/ha) | SSP (kg/ha) | MOP (kg/ha) | ZnSO₄ (kg/ha) |\n|--------------------|-------------|-------------|-------------|----------------|\n| 4-5 | 180-220 | 250-310 | 80-90 | 25 (if needed) |\n| 5-6 | 220-260 | 280-340 | 90-100 | 25 |\n| 6-7 | 260-330 | 310-370 | 100-110 | 25 |\n| 7-8 | 330-390 | 340-400 | 110-120 | 25 |\n\n**Note**: Urea based on general recommendation (adjust according to local soil test). For DAP, reduce urea proportionally (1 kg DAP = 0.4 kg urea + 2.2 kg SSP). For organic farming, reduce by 25-50% with FYM 10 t/ha + Azolla + BGA.",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_c_water_management_quick_guide_213",
+      "crop": "rice",
+      "heading": "C. Water Management Quick Guide",
+      "level": 2,
+      "text": "| Stage | Water Depth | Frequency | Special Notes |\n|-------|-------------|-----------|---------------|\n| 0-20 DAT | 3-5 cm standing | Maintain continuously | Critical for weed suppression |\n| 20-40 DAT | 5-7 cm standing | Maintain | Top-dress into standing water |\n| 40-45 DAT | Drain completely | Once only | Mid-season drainage (max tillering) |\n| 45-55 DAT | 5 cm standing | Maintain | Re-flood after drainage |\n| 55-75 DAT | 5-7 cm standing | Maintain | Critical period (PI to flowering); do not stress |\n| 75-90 DAT | 3-5 cm (AWD allowed) | Intermittent | After flowering, AWD safe |\n| 90-100 DAT | 3 cm or moist | Intermittent | Grain filling |\n| 100-110 DAT | Drain | Once | 10-14 days before harvest |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_d_seed_replacement_rate_by_variety_type_214",
+      "crop": "rice",
+      "heading": "D. Seed Replacement Rate by Variety Type",
+      "level": 2,
+      "text": "| Variety Type | Seed Rate (kg/ha) — Transplanted | Seed Rate (kg/ha) — DSR | Replacement Frequency |\n|-------------|----------------------------------|------------------------|----------------------|\n| Inbred (certified) | 25-40 kg/ha | 30-50 kg/ha | Every 3 years (or every year for best results) |\n| Hybrid | 10-15 kg/ha | 15-20 kg/ha | Every year (fresh hybrid seed) |\n| Basmati | 15-20 kg/ha | 20-30 kg/ha | Every 2-3 years |\n| SRI | 5-7 kg/ha | — | Same as inbred |\n| Traditional varieties | 40-60 kg/ha | 50-80 kg/ha | May be saved annually (not hybrids) |",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    },
+    {
+      "id": "rice_enc_e_npk_deficiency_diagnosis_215",
+      "crop": "rice",
+      "heading": "E. NPK Deficiency Diagnosis",
+      "level": 2,
+      "text": "| Deficiency | Location on Plant | Leaf Color | Other Symptoms | Corrective Action |\n|-----------|------------------|------------|----------------|-------------------|\n| Nitrogen (N) | Older leaves | Uniform pale green-yellow | Stunted; thin stems; few tillers | Top-dress 30-40 kg N/ha |\n| Phosphorus (P) | Older leaves | Dark green to purplish | Stunted; delayed flowering; thin stems | Basal DAP/SSP; foliar 2% DAP |\n| Potassium (K) | Older leaves | Yellow-orange spots and edges; brown tips | Weak stems; lodging; poor grain filling | Apply 30-40 kg K₂O/ha; KCl foliar |\n| Zinc (Zn) | Younger leaves | Brownish; mottled | Stunted; delayed maturity (1-2 weeks) | ZnSO₄ 25 kg/ha soil; foliar 0.5% spray |\n| Sulfur (S) | Younger leaves | Uniform pale yellow | Stunted; thin stems (looks like N deficiency) | SSP or ammonium sulfate |\n| Iron (Fe) | Youngest leaves | Interveinal chlorosis (white/yellow between green veins) | Not common in flooded rice; appears in DSR/aerobic | FeSO₄ foliar spray; reduce pH |\n\n---",
+      "source": "rice_paddy_cultivation_encyclopedia.md"
+    }
+  ]
+}
