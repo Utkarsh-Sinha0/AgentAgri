@@ -1254,7 +1254,13 @@ class AgentOrchestrator:
     @staticmethod
     def _is_cluster_intent(message: str) -> bool:
         msg = (message or "").lower()
-        return any(m in msg for m in ("other farmers", "district", "cluster", "मेरे ज़िले", "जिले में", "और किसान", "क्लस्टर"))
+        cues = (
+            "other farmers", "farmers around me", "farmers near me",
+            "in my district", "across the district", "cluster", "aggregate",
+            "मेरे ज़िले में", "जिले में किसान", "और किसान क्या", "क्लस्टर",
+            "आसपास के किसान",
+        )
+        return any(c in msg for c in cues)
 
     def _build_followup_response(
         self,
