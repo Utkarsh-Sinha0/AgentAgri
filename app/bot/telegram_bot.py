@@ -1452,6 +1452,10 @@ async def _process_farmer_query(
 
                 # Translate line-by-line so internal newlines/dividers survive
                 # (Sarvam Translate collapses whitespace when fed the whole msg).
+                # Strip Markdown bold and stash ALL_CAPS code tokens behind
+                # placeholders so translation doesn't mangle them; restore after.
+                _CODE_RE = re.compile(r"\b[A-Z][A-Z0-9_]{2,}\b")
+
                 async def _translate_preserving_layout(source: str, target: str) -> str:
                     out: list[str] = []
                     for ln in source.split("\n"):
@@ -1459,15 +1463,34 @@ async def _process_farmer_query(
                         if not stripped or stripped in {"​"} or set(stripped) <= {"━", "─", "—", "-"}:
                             out.append(ln)
                             continue
-                        # Skip translating already-bold dividers / labels.
+                        # Skip already-bold section dividers / labels verbatim.
                         if stripped.startswith("*—") and stripped.endswith("—*"):
                             out.append(ln)
                             continue
+                        # Detect & strip leading/trailing bold markers; we'll
+                        # re-wrap the translated body to keep it bold.
+                        is_bold_header = (
+                            stripped.startswith("*") and stripped.endswith("*")
+                            and stripped.count("*") == 2
+                        )
+                        body = stripped[1:-1] if is_bold_header else stripped
+                        # Stash ALL_CAPS tokens (e.g. SELL_OR_PROCURE) so
+                        # translate leaves them alone.
+                        tokens: list[str] = []
+                        def _stash(m: re.Match) -> str:
+                            tokens.append(m.group(0))
+                            return f"__CODE{len(tokens)-1}__"
+                        protected = _CODE_RE.sub(_stash, body)
                         try:
                             translated = await _sarvam_translate(
-                                stripped, source_lang="hi-IN", target_lang=target
+                                protected, source_lang="hi-IN", target_lang=target
                             )
-                            # Preserve leading indentation.
+                            # Restore code tokens.
+                            for idx, tok in enumerate(tokens):
+                                translated = translated.replace(f"__CODE{idx}__", tok)
+                                translated = translated.replace(f"__code{idx}__", tok)
+                            if is_bold_header:
+                                translated = f"*{translated}*"
                             indent = ln[: len(ln) - len(ln.lstrip())]
                             out.append(f"{indent}{translated}")
                         except Exception:
