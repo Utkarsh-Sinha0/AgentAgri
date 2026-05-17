@@ -106,5 +106,17 @@ services:
       retries: 12
       start_period: 20s
 
+  mcp-crop-kb:
+    build: .
+    command: python -m app.mcp_servers.crop_kb_server
+    ports:
+      - "9005:9005"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost',9005),2); s.close()\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
 volumes:
   pgdata:
