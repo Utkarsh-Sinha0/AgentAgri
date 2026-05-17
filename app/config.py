@@ -78,6 +78,18 @@ class Settings(BaseSettings):
     mcp_mandi_port: int = Field(default=9002, alias="MCP_MANDI_PORT")
     mcp_scheme_port: int = Field(default=9003, alias="MCP_SCHEME_PORT")
     mcp_finance_port: int = Field(default=9004, alias="MCP_FINANCE_PORT")
+    mcp_crop_kb_port: int = Field(default=9005, alias="MCP_CROP_KB_PORT")
+
+    # ─── Sarvam AI (voice pipeline) ───────
+    sarvam_api_key: str = Field(default="", alias="SARVAM_API_KEY")
+    sarvam_base_url: str = Field(default="https://api.sarvam.ai", alias="SARVAM_BASE_URL")
+    sarvam_stt_model: str = Field(default="saarika:v2", alias="SARVAM_STT_MODEL")
+    sarvam_translate_model: str = Field(default="mayura:v1", alias="SARVAM_TRANSLATE_MODEL")
+    sarvam_tts_model: str = Field(default="bulbul:v2", alias="SARVAM_TTS_MODEL")
+    sarvam_tts_speaker: str = Field(default="meera", alias="SARVAM_TTS_SPEAKER")
+    sarvam_timeout_seconds: float = Field(default=30.0, alias="SARVAM_TIMEOUT_SECONDS")
+    enable_voice_pipeline: bool = Field(default=False, alias="ENABLE_VOICE_PIPELINE")
+    voice_default_target_lang: str = Field(default="hi-IN", alias="VOICE_DEFAULT_TARGET_LANG")
 
     # ─── Feature Flags ────────────────────
     use_gemma_audio: bool = Field(default=False, alias="USE_GEMMA_AUDIO")
