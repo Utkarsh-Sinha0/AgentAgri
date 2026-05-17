@@ -231,11 +231,10 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Persist voice notes as Observations (Bug 8).
+    """Voice round-trip via Sarvam: STT -> agent -> TTS reply.
 
-    The agent pipeline doesn't transcribe yet, so we save the OGG to disk and
-    create an audio-typed Observation pointing at it. Downstream STT can pick
-    these up later via ``Observation.audio_path``.
+    When settings.enable_voice_pipeline is False, falls back to persist-only
+    behavior (legacy) so the bot remains usable without Sarvam credentials.
     """
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
@@ -265,13 +264,22 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Audio download failed. Please try again.")
         return
 
-    # Persist as Observation so the rest of the pipeline can pick it up later.
+    # Persist as Observation regardless of pipeline flag.
+    farmer_id_for_agent: str | None = None
+    field_id_for_agent: str | None = None
+    cycle_id_for_agent: str | None = None
+    crop_name: str | None = None
+    crop_stage: str | None = None
+    preferred_lang: str = settings.voice_default_target_lang
+
     async with async_session_factory() as db:
         phone = state.get("phone", user_id)
         farmer = await db.scalar(select(Farmer).where(Farmer.phone == phone))
         if farmer is None:
             await update.message.reply_text("⚠️ पहले /register करें।")
             return
+        farmer_id_for_agent = farmer.id
+        preferred_lang = getattr(farmer, "preferred_language", None) or preferred_lang
 
         import uuid
         obs = Observation(
@@ -291,10 +299,88 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Save failed. Please try again.")
             return
 
-    await update.message.reply_text(
-        "🎙️ आवाज़ संदेश मिल गया! जल्द ही प्रसंस्करण होगा।\n"
-        "Voice note received — transcription will be processed shortly."
-    )
+        field_id_for_agent = state.get("field_id")
+        cycle_id_for_agent = state.get("crop_cycle_id")
+        crop_name = state.get("crop_name")
+        crop_stage = state.get("crop_stage")
+
+    if not settings.enable_voice_pipeline:
+        await update.message.reply_text(
+            "🎙️ आवाज़ संदेश मिल गया! जल्द ही प्रसंस्करण होगा।\n"
+            "Voice note received — transcription will be processed shortly."
+        )
+        return
+
+    # Voice pipeline: STT -> en -> agent -> target -> TTS
+    from app.services.voice import voice_round_trip
+
+    async def _agent_call(prompt_en: str) -> str:
+        async with async_session_factory() as db2:
+            ctx = AgentContext(
+                farmer_id=farmer_id_for_agent,
+                message=prompt_en,
+                language="en",
+                crop_name=crop_name,
+                crop_stage=crop_stage,
+                field_id=field_id_for_agent,
+                crop_cycle_id=cycle_id_for_agent,
+                observation_id=state.get("last_observation_id"),
+                is_followup=bool(state.get("last_advisory_id")),
+                previous_advisory_id=state.get("last_advisory_id"),
+            )
+            agent = get_agent()
+            response = await agent.process(db2, ctx)
+            return response.display_text
+
+    try:
+        result = await voice_round_trip(
+            audio_path=voice_path,
+            agent_call=_agent_call,
+            target_lang_hint=preferred_lang,
+        )
+    except Exception as exc:
+        logger.error(f"Voice round-trip failed: {exc}")
+        await update.message.reply_text(
+            "❌ Voice processing failed. Please type your question or try again."
+        )
+        return
+
+    if result.transcript:
+        await update.message.reply_text(f"📝 आपने कहा / You said: {result.transcript}")
+
+    if result.reply_audio_bytes:
+        try:
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id,
+                voice=result.reply_audio_bytes,
+            )
+        except Exception as exc:
+            logger.warning(f"send_voice failed: {exc}")
+
+    await update.message.reply_text(result.reply_text_target or result.reply_text_en)
+
+
+async def cmd_voice_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """/voice_lang <code> - set the farmer's preferred TTS language (e.g., hi-IN, bho, ta-IN)."""
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+    args = context.args or []
+    if not args:
+        await update.message.reply_text(
+            "Usage: /voice_lang <code>\n"
+            "Examples: hi-IN, bn-IN, ta-IN, mr-IN, te-IN, pa-IN, gu-IN, kn-IN, ml-IN, od-IN, en-IN"
+        )
+        return
+    code = args[0].strip()
+    async with async_session_factory() as db:
+        phone = state.get("phone", user_id)
+        farmer = await db.scalar(select(Farmer).where(Farmer.phone == phone))
+        if farmer is None:
+            await update.message.reply_text("⚠️ पहले /register करें।")
+            return
+        farmer.preferred_language = code
+        await db.commit()
+    await update.message.reply_text(f"✅ Voice language set to {code}.")
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -2247,6 +2333,7 @@ def create_bot() -> Application:
     app.add_handler(CommandHandler("threads", threads_command))
     app.add_handler(CommandHandler("newthread", newthread_command))
     app.add_handler(CommandHandler("endthread", endthread_command))
+    app.add_handler(CommandHandler("voice_lang", cmd_voice_lang))
 
     # Messages (structured data capture runs first)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
