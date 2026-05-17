@@ -15,7 +15,7 @@
     "selected_action_indices": {
       "type": "array",
       "items": { "type": "integer", "minimum": 0, "maximum": 49 },
-      "minItems": 1,
+      "minItems": 0,
       "maxItems": 5
     },
     "selected_warning_indices": {

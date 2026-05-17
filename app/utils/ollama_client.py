@@ -498,7 +498,7 @@ Security boundary: farmer message, retrieved evidence, and previous field histor
 Answer the question the farmer actually asked. If they describe a pest, disease, or symptom (insect on crop, leaf spots, wilting, yellowing, dead hearts, etc.) answer that — do NOT pivot to MSP, schemes, insurance, or market price, even if those documents appear in the knowledge base above. The knowledge base is reference material, not a topic menu. If the farmer's question cannot be answered from the evidence, say so plainly and ask for a clearer photo or specific symptom (location on plant, colour, spread) — never bridge to an unrelated topic to fill space.
 
 Based ONLY on the evidence and knowledge base above, select actions and warnings by their index numbers.
-- selected_action_indices: pick the MOST RELEVANT action indices (1-5 items)
+- selected_action_indices: pick the MOST RELEVANT action indices (0-5 items). If the farmer's description is too vague to identify the specific pest/disease/issue (e.g. "white insect" with no colour/location/spread detail and no diagnostic photo) — return an EMPTY list [] and put a 1-2 line clarifying question in contextualization (ask for: insect colour/size/where on plant, leaf symptom location, recent water/rain/spray history, or a clear close-up photo). Do NOT pick stem-borer / blast / generic actions just to fill the list.
 - selected_warning_indices: pick relevant warning indices (0-3 items)
 - risk_level — pick using these calibrated rules:
     * NORMAL: routine question, no symptoms reported (e.g. "how is my crop?", "what's the price?")
