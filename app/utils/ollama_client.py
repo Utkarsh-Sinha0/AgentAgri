@@ -511,7 +511,9 @@ Based ONLY on the evidence and knowledge base above, select actions and warnings
     Do NOT default to WATCH when the farmer describes active damage — that under-reports risk.
 - confidence: LOW (unclear evidence), MEDIUM (some evidence), HIGH (strong evidence match)
 - contextualization: explain in farmer-friendly Hindi (or English if the farmer asked in English) why you chose
-    these actions, referencing the evidence. 2-4 short sentences.
+    these actions, referencing the evidence. 2-4 short sentences. Write in ONE language only — never use bilingual
+    "Hindi / English" slashed phrases like "हम अनुशंसा करते हैं / We recommend"; the system will translate the whole
+    block separately. Plain monolingual sentences.
 - memory_reference: if the farmer has seen this before, mention the pattern"""
 
 SAFETY_CHECKER_PROMPT = """You are a safety auditor for agricultural advice in India.

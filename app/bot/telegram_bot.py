@@ -1558,6 +1558,7 @@ async def _process_farmer_query(
                 # Strip Markdown bold and stash ALL_CAPS code tokens behind
                 # placeholders so translation doesn't mangle them; restore after.
                 _CODE_RE = re.compile(r"\b[A-Z][A-Z0-9_]{2,}\b")
+                _DEV_RE = re.compile(r"[ऀ-ॿ]")
 
                 async def _translate_preserving_layout(source: str, target: str) -> str:
                     out: list[str] = []
@@ -1578,20 +1579,34 @@ async def _process_farmer_query(
                         )
                         body = stripped[1:-1] if is_bold_header else stripped
                         # Stash ALL_CAPS tokens (e.g. SELL_OR_PROCURE) so
-                        # translate leaves them alone.
+                        # translate leaves them alone. Use a placeholder that
+                        # Sarvam preserves verbatim: ASCII letters + digits, no
+                        # underscores (mayura drops some punctuation).
                         tokens: list[str] = []
                         def _stash(m: re.Match) -> str:
                             tokens.append(m.group(0))
-                            return f"__CODE{len(tokens)-1}__"
+                            return f"ZZQ{len(tokens)-1}ZZ"
                         protected = _CODE_RE.sub(_stash, body)
+                        # Auto-detect source script per line so English action
+                        # text reaches Hindi target correctly (and vice versa).
+                        src_lang = "hi-IN" if _DEV_RE.search(body) else "en-IN"
+                        if src_lang == target.lower() or (
+                            src_lang.startswith("en") and target.lower().startswith("en")
+                        ) or (
+                            src_lang.startswith("hi") and target.lower().startswith("hi")
+                        ):
+                            out.append(ln)
+                            continue
                         try:
                             translated = await _sarvam_translate(
-                                protected, source_lang="hi-IN", target_lang=target
+                                protected, source_lang=src_lang, target_lang=target
                             )
-                            # Restore code tokens.
+                            # Restore code tokens (case-insensitive).
                             for idx, tok in enumerate(tokens):
-                                translated = translated.replace(f"__CODE{idx}__", tok)
-                                translated = translated.replace(f"__code{idx}__", tok)
+                                ph = f"ZZQ{idx}ZZ"
+                                translated = re.sub(
+                                    re.escape(ph), tok, translated, flags=re.IGNORECASE
+                                )
                             if is_bold_header:
                                 translated = f"*{translated}*"
                             indent = ln[: len(ln) - len(ln.lstrip())]

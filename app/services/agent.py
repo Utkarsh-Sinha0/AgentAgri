@@ -818,10 +818,10 @@ class AgentOrchestrator:
     # ── Evidence sub-helpers (E1, E2, E3) ────────────────────────
 
     _CONFIDENCE_PREFIX: ClassVar[dict[str, str]] = {
-        "LOW": "एहतियात के तौर पर / As a precaution: ",
-        "MEDIUM": "हम अनुशंसा करते हैं / We recommend: ",
-        "HIGH": "हम दृढ़ता से सुझाते हैं / We strongly recommend: ",
-        "ESCALATE": "Urgent — contact agricultural expert immediately: ",
+        "LOW": "एहतियात के तौर पर: ",
+        "MEDIUM": "हम अनुशंसा करते हैं: ",
+        "HIGH": "हम दृढ़ता से सुझाते हैं: ",
+        "ESCALATE": "ज़रूरी — तुरंत कृषि विशेषज्ञ से संपर्क करें: ",
     }
 
     @staticmethod
