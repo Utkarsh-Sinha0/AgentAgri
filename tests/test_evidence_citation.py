@@ -10,6 +10,7 @@ prefixes.
 from __future__ import annotations
 
 import uuid
+from datetime import timedelta
 
 import pytest
 
@@ -18,7 +19,6 @@ from app.services.agent import AgentContext, AgentOrchestrator
 from app.services.verifier import EvidenceBundle, Recommendation
 from app.utils.security import hash_password
 from app.utils.time import utc_now
-from datetime import timedelta
 
 
 async def _seed_prev_advisory(
@@ -387,7 +387,7 @@ async def test_display_renders_action_with_citation(orchestrator, db_session):
     out = await orchestrator._build_advisory_display(db_session, ctx, rec, ev)
     assert "Rice blast IPM" in out
     # Action is rendered with the citation chip on the same line.
-    action_line = next((l for l in out.splitlines() if "Spray neem-oil" in l), "")
+    action_line = next((line for line in out.splitlines() if "Spray neem-oil" in line), "")
     assert "📚 Rice blast IPM" in action_line
 
 
@@ -417,7 +417,7 @@ async def test_display_citation_uses_global_action_index_not_display_position(
         ],
     )
     out = await orchestrator._build_advisory_display(db_session, ctx, rec, ev)
-    action_line = next((l for l in out.splitlines() if "trichoderma" in l), "")
+    action_line = next((line for line in out.splitlines() if "trichoderma" in line), "")
     # The right article (Soil biocontrol) must be attributed — not Rice blast.
     assert "📚 Soil biocontrol" in action_line
     assert "Rice blast IPM" not in action_line

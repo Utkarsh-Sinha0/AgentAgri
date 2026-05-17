@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-import pytest
 from sqlalchemy import select
 
 from app.models import AlertCluster, AlertKind, CropCycle, Farmer, Field, Observation

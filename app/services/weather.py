@@ -254,6 +254,7 @@ async def get_historical_weather(field_id: str | None = None, days: int = 7) -> 
     if _owm_available():
         try:
             current = await _owm_current(lat, lng)
+            current["date"] = (utc_now().date() - timedelta(days=1)).isoformat()
             logger.info("Current weather from OpenWeatherMap for {}", district)
             return {
                 "field_id": field_id or "default",

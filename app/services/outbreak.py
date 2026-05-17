@@ -20,12 +20,12 @@ so tests and the operator can tune them.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import timedelta
-from typing import Iterable
 from uuid import uuid4
 
 from loguru import logger
-from sqlalchemy import and_, desc, func, select
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import AlertCluster, AlertKind, AlertStatus, CropCycle, Farmer, Field, Observation

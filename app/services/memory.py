@@ -48,11 +48,26 @@ _HALF_LIVES_DAYS: dict[str, int] = {
     "advisory_given": 30,
     "observation_recorded": 30,
     "field_insight": 90,
+    "village_insight": 30,
+    "tehsil_insight": 60,
+    "district_insight": 60,
+    "state_insight": 90,
+    "national_insight": 120,
     "voice_intent": 30,
     "playbook_stage_progress": 60,
     "cold_storage_planned": 45,
     "insurance_claim_filed": 90,
 }
+
+
+SERVER_SCOPE_ATOMS = {"village_insight", "tehsil_insight", "district_insight", "state_insight", "national_insight"}
+
+
+def _visibility_scope(atom: MemoryAtom) -> str:
+    """Where raw atom data may be exposed."""
+    if atom.atom_type in SERVER_SCOPE_ATOMS or atom.farmer_id == "system":
+        return "server"
+    return "device"
 
 
 def _temporal_weight(event_at, atom_type: str | None) -> float:
@@ -321,6 +336,7 @@ async def coarsen_field_memory(
         .where(
             MemoryAtom.field_id == field_id,
             MemoryAtom.farmer_id == farmer_id,
+            MemoryAtom.redacted.is_(False),
         )
         .order_by(desc(MemoryAtom.event_at))
         .limit(200)
@@ -402,6 +418,7 @@ async def coarsen_village_memory(
         .where(
             MemoryAtom.village == village,
             MemoryAtom.district == district,
+            MemoryAtom.redacted.is_(False),
         )
         .limit(500)
     )
@@ -465,13 +482,83 @@ async def coarsen_village_memory(
     return summary
 
 
+async def coarsen_geographic_memory(
+    db: AsyncSession,
+    scale: str,
+    scale_id: str,
+    filters: list,
+    min_farmers: int = 3,
+) -> MemorySummary | None:
+    atoms = (
+        await db.execute(select(MemoryAtom).where(*filters, MemoryAtom.redacted.is_(False)).limit(1000))
+    ).scalars().all()
+    farmer_ids = {a.farmer_id for a in atoms if a.farmer_id and a.farmer_id != "system"}
+    if len(farmer_ids) < min_farmers:
+        return None
+
+    field_ids = {a.field_id for a in atoms if a.field_id}
+    type_counts = {}
+    crop_mentions = {}
+    for atom in atoms:
+        type_counts[atom.atom_type] = type_counts.get(atom.atom_type, 0) + 1
+        crop = (atom.details or {}).get("crop_name") or (atom.details or {}).get("crop")
+        if crop:
+            crop_mentions[crop] = crop_mentions.get(crop, 0) + 1
+
+    patterns = []
+    for key in ("disease_observed", "pest_detected", "outcome_reported", "advisory_given"):
+        if type_counts.get(key, 0) >= min_farmers:
+            patterns.append(f"{key.replace('_', ' ')} seen in {type_counts[key]} events")
+    summary_text = (
+        f"{scale.title()} insight {scale_id}: {len(atoms)} events from "
+        f"{len(farmer_ids)} farmers across {len(field_ids)} fields."
+    )
+
+    existing = await db.scalar(
+        select(MemorySummary).where(MemorySummary.scale == scale, MemorySummary.scale_id == scale_id)
+    )
+    payload = {
+        "atom_types": type_counts,
+        "crop_mentions": crop_mentions,
+        "visibility": "server",
+    }
+    if existing:
+        existing.summary_text = summary_text
+        existing.key_patterns = patterns
+        existing.stats = payload
+        existing.atom_count = len(atoms)
+        existing.farmer_count = len(farmer_ids)
+        existing.field_count = len(field_ids)
+        existing.last_updated = utc_now()
+        existing.confidence = min(0.90, 0.30 + len(atoms) * 0.01)
+        return existing
+
+    summary = MemorySummary(
+        id=str(uuid.uuid4()),
+        scale=scale,
+        scale_id=scale_id,
+        title=f"{scale.title()} Insight",
+        summary_text=summary_text,
+        key_patterns=patterns,
+        stats=payload,
+        atom_count=len(atoms),
+        farmer_count=len(farmer_ids),
+        field_count=len(field_ids),
+        confidence=min(0.90, 0.30 + len(atoms) * 0.01),
+        is_public=True,
+        min_farmers_required=min_farmers,
+    )
+    db.add(summary)
+    return summary
+
+
 async def run_coarsening_job(db: AsyncSession) -> dict:
-    """Nightly coarsening: run field → village → tehsil → district aggregations."""
-    results = {"field": 0, "village": 0, "tehsil": 0, "district": 0}
+    """Nightly coarsening: run field → village → tehsil → district → state → national."""
+    results = {"field": 0, "village": 0, "tehsil": 0, "district": 0, "state": 0, "national": 0}
 
     # Field-level: for each field with recent atoms
     fields_result = await db.execute(
-        select(MemoryAtom.field_id, MemoryAtom.farmer_id).distinct()
+        select(MemoryAtom.field_id, MemoryAtom.farmer_id).where(MemoryAtom.redacted.is_(False)).distinct()
     )
     for field_id, farmer_id in fields_result.all():
         if field_id:
@@ -481,13 +568,31 @@ async def run_coarsening_job(db: AsyncSession) -> dict:
 
     # Village-level: group by village+district
     village_result = await db.execute(
-        select(MemoryAtom.village, MemoryAtom.district).distinct()
+        select(MemoryAtom.village, MemoryAtom.district).where(MemoryAtom.redacted.is_(False)).distinct()
     )
     for village, district in village_result.all():
         if village and district:
             summary = await coarsen_village_memory(db, village, district)
             if summary:
                 results["village"] += 1
+
+    for scale, cols, make_id in [
+        ("tehsil", (MemoryAtom.state, MemoryAtom.district, MemoryAtom.tehsil), lambda r: f"{r[0]}:{r[1]}:{r[2]}"),
+        ("district", (MemoryAtom.state, MemoryAtom.district), lambda r: f"{r[0]}:{r[1]}"),
+        ("state", (MemoryAtom.state,), lambda r: r[0]),
+    ]:
+        rows = (await db.execute(select(*cols).where(MemoryAtom.redacted.is_(False)).distinct())).all()
+        for row in rows:
+            if not all(row):
+                continue
+            filters = [col == value for col, value in zip(cols, row, strict=False)]
+            summary = await coarsen_geographic_memory(db, scale, make_id(row), filters)
+            if summary:
+                results[scale] += 1
+
+    national = await coarsen_geographic_memory(db, "national", "india", [MemoryAtom.farmer_id.isnot(None)])
+    if national:
+        results["national"] += 1
 
     await db.commit()
     logger.info(f"Coarsening complete: {results}")
@@ -520,7 +625,7 @@ async def retrieve_memory_context(
     # the previous "last N by date" semantics so old-but-confident atoms
     # for slow-cycling risks (pests, outcomes) aren't crowded out by
     # noisier recent activity.
-    field_query = select(MemoryAtom).where(MemoryAtom.farmer_id == farmer_id)
+    field_query = select(MemoryAtom).where(MemoryAtom.farmer_id == farmer_id, MemoryAtom.redacted.is_(False))
     if field_id:
         field_query = field_query.where(MemoryAtom.field_id == field_id)
     if crop_cycle_id:
@@ -681,6 +786,7 @@ async def retrieve_similar_farm_context(
             MemoryAtom.district == district,
             MemoryAtom.farmer_id != farmer_id,
             MemoryAtom.farmer_id != "system",
+            MemoryAtom.redacted.is_(False),
             MemoryAtom.event_at >= cutoff,
             MemoryAtom.atom_type.in_(
                 ["disease_observed", "pest_detected", "advisory_given", "outcome_reported"]

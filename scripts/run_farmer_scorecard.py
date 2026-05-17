@@ -50,9 +50,7 @@ def _risk_in_bounds(got: str, risk_min: str | None, risk_max: str | None) -> boo
         return False
     if risk_min and g < RISK_ORDER.get(risk_min.upper(), 0):
         return False
-    if risk_max and g > RISK_ORDER.get(risk_max.upper(), 3):
-        return False
-    return True
+    return not (risk_max and g > RISK_ORDER.get(risk_max.upper(), 3))
 
 
 def _contains_any(text: str, needles: list[str]) -> tuple[bool, list[str]]:

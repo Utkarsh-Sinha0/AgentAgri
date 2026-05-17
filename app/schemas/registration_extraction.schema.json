@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {"type": "string"},
+    "village": {"type": "string"},
+    "tehsil": {"type": "string"},
+    "district": {"type": "string"},
+    "state": {"type": "string"},
+    "primary_crop": {"type": "string"},
+    "soil_type": {"type": "string"},
+    "field_area_acres": {"type": "number"},
+    "preferred_lang": {"type": "string"}
+  },
+  "required": ["name", "district", "primary_crop", "preferred_lang"],
+  "additionalProperties": false
+}

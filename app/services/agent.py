@@ -104,10 +104,11 @@ class AgentOrchestrator:
         if ctx.land_owned_acres is None and ctx.field_id:
             try:
                 from sqlalchemy import select as _sa_select
+
                 from app.models import Field as _FieldModel
                 _res = await db.execute(_sa_select(_FieldModel.area_acres).where(_FieldModel.id == ctx.field_id))
                 _acres = _res.scalar_one_or_none()
-                if isinstance(_acres, (int, float)):
+                if isinstance(_acres, int | float):
                     ctx.land_owned_acres = float(_acres)
             except Exception as exc:
                 logger.warning(f"Land acres hydration failed: {exc}")
@@ -271,6 +272,40 @@ class AgentOrchestrator:
         if "match_schemes" in tool_results:
             evidence.scheme_data = tool_results.get("match_schemes")
 
+        # Closed-loop market decision: selling/procurement intent should not
+        # stop at raw mandi prices. Route to the deterministic sell advisor so
+        # the farmer gets sell/wait/store guidance grounded in MSP + storage.
+        if self._is_sell_intent(ctx.message, intent):
+            try:
+                farmer = await db.scalar(select(Farmer).where(Farmer.id == ctx.farmer_id))
+                from app.services.market_intel import sell_decision_advisor
+
+                tool_results["sell_decision"] = await sell_decision_advisor(
+                    crop=ctx.crop_name or llm_crop_name or "rice",
+                    district=getattr(farmer, "district", None) or "Munger",
+                )
+            except Exception as exc:
+                logger.warning(f"sell decision advisor skipped: {exc}")
+
+        if self._is_cluster_intent(ctx.message):
+            try:
+                farmer = await db.scalar(select(Farmer).where(Farmer.id == ctx.farmer_id))
+                from app.services.cluster_intel import (
+                    district_pest_pressure,
+                    district_stage_distribution,
+                )
+
+                district = getattr(farmer, "district", None) or ""
+                crop = ctx.crop_name or llm_crop_name or "rice"
+                tool_results["cluster_intel"] = {
+                    "stage_distribution": await district_stage_distribution(db, crop, district),
+                    "pest_pressure": await district_pest_pressure(db, crop, district),
+                    "district": district,
+                    "crop": crop,
+                }
+            except Exception as exc:
+                logger.warning(f"cluster intel skipped: {exc}")
+
         # Universal-KB: synchronous, in-memory, sub-ms per call. No need
         # to fire it in parallel — just retrieve once crop/state/stage are
         # known. Falls through silently when the loader has no rows.
@@ -278,17 +313,25 @@ class AgentOrchestrator:
             from app.services import universal_kb
             state_hint = None
             try:
-                farmer_row = await db.scalar(
-                    select(Farmer.state).where(Farmer.id == ctx.farmer_id)
-                )
-                state_hint = farmer_row
+                farmer_row = await db.scalar(select(Farmer).where(Farmer.id == ctx.farmer_id))
+                state_hint = getattr(farmer_row, "state", None) or "Bihar"
             except Exception:
                 pass
-            evidence.universal_kb_docs = universal_kb.retrieve(
-                crop=ctx.crop_name,
-                state=state_hint,
-                stage=ctx.crop_stage,
+            should_load_kb = bool(ctx.crop_name) or intent.get("intent") in {"scheme_query", "market_query"}
+            evidence.universal_kb_docs = (
+                universal_kb.retrieve(
+                    crop=ctx.crop_name,
+                    state=state_hint,
+                    stage=ctx.crop_stage,
+                ) if should_load_kb else []
             ) or []
+            if (
+                evidence.universal_kb_docs
+                and not evidence.wiki_articles
+                and not self._is_sell_intent(ctx.message, intent)
+                and not self._is_cluster_intent(ctx.message)
+            ):
+                evidence.wiki_articles = self._kb_docs_as_articles(evidence.universal_kb_docs)
         except Exception as exc:
             logger.debug(f"universal_kb retrieval skipped: {exc}")
 
@@ -311,14 +354,18 @@ class AgentOrchestrator:
                 ctx.message,
                 evidence.wiki_articles,
                 evidence.memory_context,
+                evidence.universal_kb_docs,
             )
         else:
             # No wiki evidence. If tools returned something (weather, mandi,
             # scheme), synthesize a tool-grounded response instead of falling
             # through to the disease-clarification template — that template
             # is wrong for every non-disease intent.
-            tool_response = self._build_tool_only_response(
-                ctx, tool_results, evidence
+            toolworthy = intent.get("intent") in {"weather_query", "market_query", "finance_query", "scheme_query"}
+            tool_response = (
+                self._build_tool_only_response(ctx, tool_results, evidence)
+                if toolworthy or self._is_sell_intent(ctx.message, intent) or self._is_cluster_intent(ctx.message)
+                else None
             )
             if tool_response is not None:
                 return await self._tool_only_response(
@@ -525,12 +572,12 @@ class AgentOrchestrator:
             if farmer_id and "farmer_id" not in fp:
                 fp["farmer_id"] = farmer_id
             acres = ctx.land_owned_acres if ctx else None
-            if isinstance(acres, (int, float)) and "land_owned_acres" not in fp:
+            if isinstance(acres, int | float) and "land_owned_acres" not in fp:
                 fp["land_owned_acres"] = float(acres)
             params["farmer_profile"] = fp
             if "field" not in params and field_default:
                 field_payload = {"field_id": field_default}
-                if isinstance(acres, (int, float)):
+                if isinstance(acres, int | float):
                     field_payload["area_acres"] = float(acres)
                 params["field"] = field_payload
 
@@ -871,7 +918,7 @@ class AgentOrchestrator:
             # position so actions still render — but citations will be inexact.
             indices = rec.selected_action_indices or list(range(len(rec.actions_text)))
             for display_pos, (global_idx, action) in enumerate(
-                zip(indices, rec.actions_text), 1
+                zip(indices, rec.actions_text, strict=False), 1
             ):
                 citation = self._build_action_citation(
                     global_idx, evidence.wiki_articles, memory_atoms, peer_atoms
@@ -943,7 +990,49 @@ class AgentOrchestrator:
                 "source_name": art.get("title") or "AgriMesh Knowledge Base",
                 "trust_level": "high" if art.get("review_status") == "published" else "medium",
             })
+        for doc in evidence.universal_kb_docs[:4]:
+            cards.append({
+                "type": "universal_kb",
+                "label": f"📌 {doc.get('doc_type', 'KB')}",
+                "content": json.dumps(doc.get("content", {}), ensure_ascii=False)[:200],
+                "source_name": "AgentAgri Universal KB",
+                "trust_level": "medium",
+            })
         return cards
+
+    @staticmethod
+    def _kb_docs_as_articles(docs: list[dict]) -> list[dict]:
+        articles: list[dict] = []
+        for idx, doc in enumerate(docs[:6]):
+            content = doc.get("content") or {}
+            dtype = doc.get("doc_type", "kb")
+            actions: list[str] = []
+            warnings = ["Verify local availability/date with agriculture office, mandi, CSC, or KVK before committing money."]
+            if isinstance(content, dict):
+                if dtype == "playbook_stage":
+                    actions = [str(a) for a in (content.get("actions") or [])[:5]]
+                elif dtype == "playbook":
+                    for stage in (content.get("stages") or [])[:2]:
+                        actions.extend(str(a) for a in (stage.get("actions") or [])[:2])
+                elif dtype == "msp":
+                    actions = [
+                        f"Compare current mandi price with MSP ₹{content.get('msp_rs_per_quintal')}/quintal "
+                        f"effective {content.get('effective_date')} before selling."
+                    ]
+                elif dtype == "insurance":
+                    actions = [f"Check eligibility and claim/enrolment window for {content.get('scheme_name') or 'crop insurance'}."]
+                elif dtype == "scheme":
+                    actions = [f"Check eligibility for {content.get('scheme_name') or 'government scheme'} and apply via official channel."]
+            if actions:
+                articles.append({
+                    "id": doc.get("id") or f"universal_kb:{dtype}:{idx}",
+                    "title": f"Universal KB: {dtype}",
+                    "summary": json.dumps(content, ensure_ascii=False)[:500],
+                    "actions": actions,
+                    "warnings": warnings,
+                    "review_status": "seeded",
+                })
+        return articles
 
     def _render_scheme_block(
         self,
@@ -1112,6 +1201,32 @@ class AgentOrchestrator:
         if scheme_lines:
             lines.extend(scheme_lines)
 
+        sell = tool_results.get("sell_decision")
+        if sell:
+            lines.append("🏷️ *बेचने का निर्णय*" if is_hindi else "🏷️ *Sell decision*")
+            lines.append(sell.get("advice_hi" if is_hindi else "advice_en", ""))
+            storage = sell.get("storage_advice") or {}
+            if storage:
+                action = storage.get("action")
+                reason = storage.get("reasoning")
+                lines.append(f"  • Storage: {action} — {reason}")
+                for s in storage.get("candidate_storages", [])[:2]:
+                    lines.append(f"  • {s.get('name')} ({s.get('district')}) {s.get('contact_phone') or ''}")
+            lines.append("")
+
+        cluster = tool_results.get("cluster_intel")
+        if cluster:
+            lines.append("👥 *ज़िला संकेत*" if is_hindi else "👥 *District signals*")
+            stages = (cluster.get("stage_distribution") or {}).get("stages") or {}
+            pressure = (cluster.get("pest_pressure") or {}).get("signals") or {}
+            if stages:
+                lines.append(f"  • {cluster.get('crop')} stage mix: {stages}")
+            if pressure:
+                lines.append(f"  • Recent shared pest/disease signals: {pressure}")
+            if not stages and not pressure:
+                lines.append("  • Privacy gate not met yet: at least 3 farmers are needed for aggregate sharing.")
+            lines.append("")
+
         if not lines:
             return None
 
@@ -1121,6 +1236,20 @@ class AgentOrchestrator:
             lines.append("📞 Kisan Call Center: 1800-180-1551")
 
         return "\n".join(lines)
+
+    @staticmethod
+    def _is_sell_intent(message: str, intent: dict | None = None) -> bool:
+        msg = (message or "").lower()
+        markers = (
+            "sell", "selling", "sale", "mandi", "market", "price", "msp",
+            "बेच", "बिक्री", "मंडी", "भाव", "एमएसपी",
+        )
+        return (intent or {}).get("intent") == "market_query" or any(m in msg for m in markers)
+
+    @staticmethod
+    def _is_cluster_intent(message: str) -> bool:
+        msg = (message or "").lower()
+        return any(m in msg for m in ("other farmers", "district", "cluster", "मेरे ज़िले", "जिले में", "और किसान", "क्लस्टर"))
 
     def _build_followup_response(
         self,

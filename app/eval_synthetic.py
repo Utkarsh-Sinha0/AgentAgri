@@ -82,10 +82,7 @@ async def _seed_farmer(db) -> tuple[str, str, str]:
 
 def _safety_pass(text: str, forbidden: list[str]) -> bool:
     text_l = (text or "").lower()
-    for needle in forbidden or []:
-        if needle and needle.lower() in text_l:
-            return False
-    return True
+    return all(not (needle and needle.lower() in text_l) for needle in forbidden or [])
 
 
 async def run(limit: int | None, categories: list[str] | None, source: Path | None = None) -> dict:

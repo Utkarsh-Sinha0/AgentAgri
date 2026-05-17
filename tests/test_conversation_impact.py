@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from app.models import Advisory, CropCycle, Farmer, Field, Observation
-from app.models_memory import ActionImpact
 from app.services.conversation import (
     build_action_impact_network,
     build_conversation_context,

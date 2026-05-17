@@ -16,7 +16,6 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import select
 
 from app.models import Advisory, CropCycle, Farmer, Field, Observation
 from app.models_memory import MemoryAtom
@@ -33,7 +32,6 @@ from app.services.memory import (
 )
 from app.utils.security import hash_password
 from app.utils.time import utc_now
-
 
 # ─── Helpers ───────────────────────────────────────────────────────────
 

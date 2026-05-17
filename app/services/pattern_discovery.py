@@ -150,32 +150,35 @@ async def discover_patterns(db: AsyncSession) -> dict:
                 article_cooccurrence[key] += 1
 
     # Propose CORRELATED_WITH edges for frequently co-retrieved articles
-    for (a1, a2), count in article_cooccurrence.items():
-        if count >= 3:  # Retrieved together 3+ times
-            art1 = await db.execute(select(WikiArticle).where(WikiArticle.id == a1))
-            art2 = await db.execute(select(WikiArticle).where(WikiArticle.id == a2))
-            article1 = art1.scalar_one_or_none()
-            article2 = art2.scalar_one_or_none()
+    strong_pairs = [(a1, a2, count) for (a1, a2), count in article_cooccurrence.items() if count >= 3]
+    article_ids = {article_id for a1, a2, _ in strong_pairs for article_id in (a1, a2)}
+    article_map: dict[str, WikiArticle] = {}
+    if article_ids:
+        articles = await db.execute(select(WikiArticle).where(WikiArticle.id.in_(article_ids)))
+        article_map = {article.id: article for article in articles.scalars().all()}
 
-            if article1 and article2:
-                # Co-occurrence is correlation, not causation. Bug 1 fix.
-                corr1 = list(article1.correlated_with or [])
-                corr2 = list(article2.correlated_with or [])
+    for a1, a2, count in strong_pairs:
+        article1 = article_map.get(a1)
+        article2 = article_map.get(a2)
+        if article1 and article2:
+            # Co-occurrence is correlation, not causation. Bug 1 fix.
+            corr1 = list(article1.correlated_with or [])
+            corr2 = list(article2.correlated_with or [])
 
-                if a2 not in corr1:
-                    corr1.append(a2)
-                    article1.correlated_with = corr1
-                if a1 not in corr2:
-                    corr2.append(a1)
-                    article2.correlated_with = corr2
+            if a2 not in corr1:
+                corr1.append(a2)
+                article1.correlated_with = corr1
+            if a1 not in corr2:
+                corr2.append(a1)
+                article2.correlated_with = corr2
 
-                results["new_graph_edges"] += 1
-                results["insights"].append({
-                    "type": "graph_edge_proposed",
-                    "article_a": article1.title,
-                    "article_b": article2.title,
-                    "co_occurrence_count": count,
-                })
+            results["new_graph_edges"] += 1
+            results["insights"].append({
+                "type": "graph_edge_proposed",
+                "article_a": article1.title,
+                "article_b": article2.title,
+                "co_occurrence_count": count,
+            })
 
     if results["new_clusters"] > 0 or results["new_graph_edges"] > 0:
         await db.commit()

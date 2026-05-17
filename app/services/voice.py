@@ -11,12 +11,11 @@ Edge cases:
 """
 from __future__ import annotations
 
-import asyncio
 import base64
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Awaitable, Callable
 
 import httpx
 from tenacity import AsyncRetrying, RetryError, stop_after_attempt, wait_exponential_jitter
@@ -233,3 +232,37 @@ async def voice_round_trip(
         target_lang=target, reply_text_en=reply_en, reply_text_target=reply_target,
         reply_audio_bytes=audio_bytes, degraded=False, error=None,
     )
+
+
+async def extract_registration_fields(transcript_en: str) -> dict:
+    """Parse one-shot voice onboarding into farmer/field/crop fields.
+
+    The LLM path is preferred; a tiny deterministic fallback keeps onboarding
+    usable when Ollama is down during demos.
+    """
+    try:
+        from app.utils.ollama_client import get_ollama
+
+        result = await get_ollama().extract_registration(transcript_en)
+        parsed = result.get("parsed", {}) or {}
+    except Exception:
+        parsed = {}
+
+    text = transcript_en.strip()
+    lower = text.lower()
+    crops = ("rice", "paddy", "wheat", "maize", "potato", "onion", "tomato", "mustard", "arhar")
+    crop = parsed.get("primary_crop") or next((c for c in crops if c in lower), "")
+    if crop == "paddy":
+        crop = "rice"
+
+    return {
+        "name": (parsed.get("name") or "Farmer").strip(),
+        "village": (parsed.get("village") or "").strip(),
+        "tehsil": (parsed.get("tehsil") or "").strip(),
+        "district": (parsed.get("district") or "").strip(),
+        "state": (parsed.get("state") or "Bihar").strip(),
+        "primary_crop": (crop or "rice").strip().lower(),
+        "soil_type": (parsed.get("soil_type") or "loam").strip().lower(),
+        "field_area_acres": float(parsed.get("field_area_acres") or 1.0),
+        "preferred_lang": (parsed.get("preferred_lang") or "hi-IN").strip(),
+    }

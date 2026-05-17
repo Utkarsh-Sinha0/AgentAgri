@@ -423,10 +423,9 @@ class VerifierService:
                 return False
             return True
 
-        if rec.confidence == "MEDIUM":
-            if article_count < 1:
-                logger.warning("MEDIUM confidence rejected: 0 wiki articles")
-                return False
+        if rec.confidence == "MEDIUM" and article_count < 1:
+            logger.warning("MEDIUM confidence rejected: 0 wiki articles")
+            return False
 
         return True
 

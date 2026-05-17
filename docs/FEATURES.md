@@ -61,6 +61,8 @@ The Telegram bot (`app/bot/telegram_bot.py`) is the primary surface. Hindi-first
 | Command | Purpose |
 |---|---|
 | `/memory` | Inspect MemoryAtoms for active field. |
+| `/mydata` | Show the farmer's own raw memory digest only. |
+| `/forgetme` | Soft-redact the farmer's own raw memory while preserving anonymous aggregate summaries. |
 | `/threads` | List active + archived ConversationThreads with title, turn count, summary. |
 | `/newthread` | Archive current thread, start a new one (confirm/cancel). |
 | `/endthread` | Archive current thread (`is_active=False`); zombie-safe routing. |

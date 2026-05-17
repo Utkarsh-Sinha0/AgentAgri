@@ -6,6 +6,7 @@ profile, fields, crops, weather, NDVI, finance, advisories, conversations, and c
 from __future__ import annotations
 
 import math
+from collections import defaultdict
 from datetime import timedelta
 from typing import Any
 
@@ -162,32 +163,56 @@ async def _resolve_farmer(
 async def _field_cards(db: AsyncSession, farmer: Farmer) -> list[dict[str, Any]]:
     result = await db.execute(select(Field).where(Field.farmer_id == farmer.id).order_by(Field.created_at))
     fields = result.scalars().all()
+    if not fields:
+        return []
+
+    field_ids = [field.id for field in fields]
+    cycles = (
+        await db.execute(
+            select(CropCycle)
+            .where(CropCycle.field_id.in_(field_ids), CropCycle.is_active)
+            .order_by(desc(CropCycle.created_at))
+        )
+    ).scalars().all()
+    cycle_by_field: dict[str, CropCycle] = {}
+    for cycle in cycles:
+        cycle_by_field.setdefault(cycle.field_id, cycle)
+
+    ndvi_rows = (
+        await db.execute(
+            select(SatelliteNDVI)
+            .where(SatelliteNDVI.field_id.in_(field_ids))
+            .order_by(SatelliteNDVI.field_id, SatelliteNDVI.date)
+        )
+    ).scalars().all()
+    ndvi_by_field: dict[str, list[SatelliteNDVI]] = defaultdict(list)
+    for row in ndvi_rows:
+        bucket = ndvi_by_field[row.field_id]
+        if len(bucket) < 16:
+            bucket.append(row)
+
+    cycle_ids = [cycle.id for cycle in cycle_by_field.values()]
+    tasks_by_cycle: dict[str, list[CropCalendarTask]] = defaultdict(list)
+    if cycle_ids:
+        task_rows = (
+            await db.execute(
+                select(CropCalendarTask)
+                .where(CropCalendarTask.cycle_id.in_(cycle_ids))
+                .order_by(CropCalendarTask.cycle_id, CropCalendarTask.days_from_sowing)
+            )
+        ).scalars().all()
+        for task in task_rows:
+            bucket = tasks_by_cycle[task.cycle_id]
+            if len(bucket) < 8:
+                bucket.append(task)
+
+    threads_by_field = await _threads_for_fields(db, farmer.id, field_ids)
     cards = []
     for field in fields:
-        cycle = await db.scalar(
-            select(CropCycle)
-            .where(CropCycle.field_id == field.id, CropCycle.is_active)
-            .order_by(desc(CropCycle.created_at))
-            .limit(1)
-        )
-        ndvi_result = await db.execute(
-            select(SatelliteNDVI)
-            .where(SatelliteNDVI.field_id == field.id)
-            .order_by(SatelliteNDVI.date)
-            .limit(16)
-        )
-        ndvi = list(ndvi_result.scalars().all())
-        tasks = []
-        if cycle:
-            task_result = await db.execute(
-                select(CropCalendarTask)
-                .where(CropCalendarTask.cycle_id == cycle.id)
-                .order_by(CropCalendarTask.days_from_sowing)
-                .limit(8)
-            )
-            tasks = [_serialize_task(task) for task in task_result.scalars().all()]
-
-        threads = await _threads_for_field(db, farmer.id, field.id)
+        cycle = cycle_by_field.get(field.id)
+        ndvi = ndvi_by_field.get(field.id, [])
+        tasks = [_serialize_task(task) for task in tasks_by_cycle.get(cycle.id, [])] if cycle else []
+        threads = threads_by_field.get(field.id, {"active": [], "archived": []})
 
         cards.append(
             {
@@ -207,6 +232,81 @@ async def _field_cards(db: AsyncSession, farmer: Farmer) -> list[dict[str, Any]]
             }
         )
     return cards
+
+
+async def _threads_for_fields(
+    db: AsyncSession,
+    farmer_id: str,
+    field_ids: list[str],
+    archived_limit: int = 5,
+    recent_turns_limit: int = 3,
+) -> dict[str, dict[str, list[dict[str, Any]]]]:
+    if not field_ids:
+        return {}
+
+    threads = (
+        await db.execute(
+            select(ConversationThread)
+            .where(
+                ConversationThread.farmer_id == farmer_id,
+                ConversationThread.field_id.in_(field_ids),
+            )
+            .order_by(ConversationThread.field_id, desc(ConversationThread.updated_at))
+        )
+    ).scalars().all()
+
+    thread_ids = [thread.id for thread in threads]
+    turns_by_thread: dict[str, list[ConversationTurn]] = defaultdict(list)
+    if thread_ids:
+        turns = (
+            await db.execute(
+                select(ConversationTurn)
+                .where(ConversationTurn.thread_id.in_(thread_ids))
+                .order_by(ConversationTurn.thread_id, desc(ConversationTurn.created_at))
+            )
+        ).scalars().all()
+        for turn in turns:
+            bucket = turns_by_thread[turn.thread_id]
+            if len(bucket) < recent_turns_limit:
+                bucket.append(turn)
+
+    out: dict[str, dict[str, list[dict[str, Any]]]] = {
+        field_id: {"active": [], "archived": []} for field_id in field_ids
+    }
+    archived_counts: dict[str, int] = defaultdict(int)
+    for thread in threads:
+        field_bucket = out.setdefault(thread.field_id, {"active": [], "archived": []})
+        target = "active" if thread.is_active else "archived"
+        if target == "archived":
+            if archived_counts[thread.field_id] >= archived_limit:
+                continue
+            archived_counts[thread.field_id] += 1
+        field_bucket[target].append(_serialize_thread_row(thread, turns_by_thread.get(thread.id, [])))
+    return out
+
+
+def _serialize_thread_row(thread: ConversationThread, turns: list[ConversationTurn]) -> dict[str, Any]:
+    summary = thread.running_summary or ""
+    if len(summary) > 240:
+        summary = summary[:240] + "..."
+    return {
+        "id": thread.id,
+        "title": thread.title,
+        "crop_cycle_id": thread.crop_cycle_id,
+        "is_active": thread.is_active,
+        "turn_count": thread.turn_count,
+        "running_summary": summary,
+        "updated_at": thread.updated_at.isoformat() if thread.updated_at else None,
+        "recent_turns": [
+            {
+                "user_message": (turn.user_message or "")[:200],
+                "agent_response": (turn.agent_response or "")[:240],
+                "risk_level": turn.risk_level,
+                "created_at": turn.created_at.isoformat() if turn.created_at else None,
+            }
+            for turn in reversed(turns)
+        ],
+    }
 
 
 async def _threads_for_field(
@@ -242,40 +342,21 @@ async def _threads_for_field(
     ).scalars().all()
 
     async def _rows(threads):
-        out = []
-        for thread in threads:
+        thread_ids = [thread.id for thread in threads]
+        turns_by_thread: dict[str, list[ConversationTurn]] = defaultdict(list)
+        if thread_ids:
             turns = (
                 await db.execute(
                     select(ConversationTurn)
-                    .where(ConversationTurn.thread_id == thread.id)
-                    .order_by(desc(ConversationTurn.created_at))
-                    .limit(recent_turns_limit)
+                    .where(ConversationTurn.thread_id.in_(thread_ids))
+                    .order_by(ConversationTurn.thread_id, desc(ConversationTurn.created_at))
                 )
             ).scalars().all()
-            summary = thread.running_summary or ""
-            if len(summary) > 240:
-                summary = summary[:240] + "..."
-            out.append(
-                {
-                    "id": thread.id,
-                    "title": thread.title,
-                    "crop_cycle_id": thread.crop_cycle_id,
-                    "is_active": thread.is_active,
-                    "turn_count": thread.turn_count,
-                    "running_summary": summary,
-                    "updated_at": thread.updated_at.isoformat() if thread.updated_at else None,
-                    "recent_turns": [
-                        {
-                            "user_message": (turn.user_message or "")[:200],
-                            "agent_response": (turn.agent_response or "")[:240],
-                            "risk_level": turn.risk_level,
-                            "created_at": turn.created_at.isoformat() if turn.created_at else None,
-                        }
-                        for turn in reversed(turns)
-                    ],
-                }
-            )
-        return out
+            for turn in turns:
+                bucket = turns_by_thread[turn.thread_id]
+                if len(bucket) < recent_turns_limit:
+                    bucket.append(turn)
+        return [_serialize_thread_row(thread, turns_by_thread.get(thread.id, [])) for thread in threads]
 
     return {"active": await _rows(active_threads), "archived": await _rows(archived_threads)}
 
@@ -309,14 +390,24 @@ async def _conversation_summary(db: AsyncSession, farmer_id: str) -> list[dict[s
         .order_by(desc(ConversationThread.updated_at))
         .limit(6)
     )
+    threads = threads_result.scalars().all()
+    thread_ids = [thread.id for thread in threads]
+    turns_by_thread: dict[str, list[ConversationTurn]] = defaultdict(list)
+    if thread_ids:
+        turns = (
+            await db.execute(
+                select(ConversationTurn)
+                .where(ConversationTurn.thread_id.in_(thread_ids))
+                .order_by(ConversationTurn.thread_id, desc(ConversationTurn.created_at))
+            )
+        ).scalars().all()
+        for turn in turns:
+            bucket = turns_by_thread[turn.thread_id]
+            if len(bucket) < 3:
+                bucket.append(turn)
+
     rows = []
-    for thread in threads_result.scalars().all():
-        turns_result = await db.execute(
-            select(ConversationTurn)
-            .where(ConversationTurn.thread_id == thread.id)
-            .order_by(desc(ConversationTurn.created_at))
-            .limit(3)
-        )
+    for thread in threads:
         rows.append(
             {
                 "id": thread.id,
@@ -334,7 +425,7 @@ async def _conversation_summary(db: AsyncSession, farmer_id: str) -> list[dict[s
                         "risk_level": turn.risk_level,
                         "created_at": turn.created_at.isoformat() if turn.created_at else None,
                     }
-                    for turn in turns_result.scalars().all()
+                    for turn in turns_by_thread.get(thread.id, [])
                 ],
             }
         )

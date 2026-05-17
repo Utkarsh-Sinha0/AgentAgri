@@ -70,6 +70,7 @@ class MemoryAtom(Base):
     # True for atom_types in the M4 safe whitelist (disease_observed,
     # pest_detected, advisory_given, outcome_reported).
     is_shareable = Column(Boolean, default=False, nullable=False, index=True)
+    redacted = Column(Boolean, default=False, nullable=False, index=True)
 
     # Causal chain: this atom was caused by / follows from another atom (M3).
     # Self-referential FK; SET NULL on delete to keep history intact.

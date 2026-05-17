@@ -6,6 +6,7 @@ Runs as a background async task. Checks every 30 minutes.
 from __future__ import annotations
 
 import asyncio
+from collections import defaultdict
 
 from loguru import logger
 from sqlalchemy import select
@@ -28,20 +29,25 @@ async def check_weather_triggers(db: AsyncSession) -> list[dict]:
     forecast = await get_forecast(days=3)
     alerts = []
 
-    for day in forecast.get("forecast", []):
+    high_humidity_days = [day for day in forecast.get("forecast", []) if day.get("humidity", 0) >= 80]
+    if not high_humidity_days:
+        return alerts
+
+    result = await db.execute(
+        select(Farmer, Field, CropCycle)
+        .join(Field, Field.farmer_id == Farmer.id)
+        .join(CropCycle, CropCycle.field_id == Field.id)
+        .where(
+            CropCycle.is_active,
+            CropCycle.current_stage.in_(["vegetative", "flowering", "fruiting"]),
+        )
+        .limit(20)
+    )
+    vulnerable_farmers = result.all()
+
+    for day in high_humidity_days:
         if day.get("humidity", 0) >= 80:
-            # Find farmers with active crops in vulnerable stages
-            result = await db.execute(
-                select(Farmer, Field, CropCycle)
-                .join(Field, Field.farmer_id == Farmer.id)
-                .join(CropCycle, CropCycle.field_id == Field.id)
-                .where(
-                    CropCycle.is_active,
-                    CropCycle.current_stage.in_(["vegetative", "flowering", "fruiting"]),
-                )
-                .limit(20)
-            )
-            for farmer, _field, cycle in result.all():
+            for farmer, _field, cycle in vulnerable_farmers:
                 alerts.append({
                     "farmer_id": farmer.id,
                     "farmer_phone": farmer.phone,
@@ -104,17 +110,25 @@ async def check_cluster_alerts(db: AsyncSession) -> list[dict]:
     clusters = result.scalars().all()
 
     alerts = []
+    if not clusters:
+        return alerts
+
+    farmers_by_scope: dict[tuple[str, str], list[Farmer]] = defaultdict(list)
+    scopes = {(cluster.district, cluster.tehsil) for cluster in clusters}
+    districts = {district for district, _ in scopes}
+    tehsils = {tehsil for _, tehsil in scopes}
+    farmer_result = await db.execute(
+        select(Farmer)
+        .where(Farmer.district.in_(districts), Farmer.tehsil.in_(tehsils))
+        .limit(50 * max(len(scopes), 1))
+    )
+    for farmer in farmer_result.scalars().all():
+        key = (farmer.district, farmer.tehsil)
+        if key in scopes and len(farmers_by_scope[key]) < 50:
+            farmers_by_scope[key].append(farmer)
+
     for cluster in clusters:
-        # Find farmers in the affected area
-        farmer_result = await db.execute(
-            select(Farmer)
-            .where(
-                Farmer.district == cluster.district,
-                Farmer.tehsil == cluster.tehsil,
-            )
-            .limit(50)
-        )
-        for farmer in farmer_result.scalars().all():
+        for farmer in farmers_by_scope.get((cluster.district, cluster.tehsil), []):
             alerts.append({
                 "farmer_id": farmer.id,
                 "trigger": "cluster_alert",

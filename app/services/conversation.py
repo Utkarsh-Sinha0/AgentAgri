@@ -14,6 +14,7 @@ from app.models import Advisory, CropCycle, Observation, WikiArticle
 from app.models_memory import ActionImpact, ConversationThread, ConversationTurn
 from app.utils.time import utc_now
 
+
 async def get_or_create_thread(
     db: AsyncSession,
     farmer_id: str,
@@ -300,8 +301,8 @@ async def build_action_impact_network(
         selected_indices = list(range(len(actions_text)))
 
     impacts = []
-    for display_pos, (action_index, action_text) in enumerate(
-        zip(selected_indices, actions_text)
+    for _display_pos, (action_index, action_text) in enumerate(
+        zip(selected_indices, actions_text, strict=False)
     ):
         profile = _score_action(action_text, advisory.risk_level, article_risks)
         impact = ActionImpact(

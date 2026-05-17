@@ -23,14 +23,15 @@ import argparse
 import asyncio
 import uuid
 from collections import Counter
+from collections.abc import Iterable
 from datetime import timedelta
-from typing import Iterable
 
 from loguru import logger
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import async_session_factory
+from app.models import CropCycle
 from app.models_memory import MemoryAtom
 from app.utils.time import utc_now
 
@@ -144,8 +145,18 @@ async def _reflect_field(
 
 
 async def run(field_id: str | None = None, dry_run: bool = False) -> dict:
-    stats = {"fields_processed": 0, "insights_written": 0, "skipped": 0}
+    stats = {"fields_processed": 0, "insights_written": 0, "stage_advances": 0, "skipped": 0}
     async with async_session_factory() as db:
+        if not dry_run:
+            from app.services.crop_cycle import advance_stage
+
+            cycles = (
+                await db.execute(select(CropCycle).where(CropCycle.is_active.is_(True)))
+            ).scalars().all()
+            for cycle in cycles:
+                if await advance_stage(db, cycle):
+                    stats["stage_advances"] += 1
+
         if field_id:
             farmer = await db.scalar(
                 select(MemoryAtom.farmer_id).where(MemoryAtom.field_id == field_id).limit(1)

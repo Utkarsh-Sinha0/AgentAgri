@@ -11,7 +11,7 @@ Cross-references the breakdown in features_sota_breakdown.md.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 

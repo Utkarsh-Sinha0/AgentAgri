@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Literal
 
 from app.services.mandi import get_mandi_prices, get_msp
+from app.services.storage_decision import should_store
 
 # ─── FCI Procurement Centers ──────────────────────────────────────────
 
@@ -102,6 +103,13 @@ async def sell_decision_advisor(
 
     # FCI centers
     fci_centers = get_fci_centers(crop=crop, district=district)
+    storage = should_store(
+        crop=crop,
+        current_price=current_price,
+        msp=msp,
+        district=district,
+        harvest_date=harvest_date,
+    )
 
     return {
         "decision": decision,
@@ -113,5 +121,6 @@ async def sell_decision_advisor(
         "advice_hi": advice_hi,
         "advice_en": advice_en,
         "fci_centers_nearby": [{"name": c["name"], "district": c["district"], "contact": c["contact"]} for c in fci_centers],
+        "storage_advice": storage,
         "quality_note": "FAQ (Fair Average Quality)" if quality_grade == "FAQ" else f"Premium grade — expect {(current_price * 1.15):.0f}/quintal",
     }

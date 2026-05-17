@@ -14,8 +14,8 @@ from pathlib import Path
 from loguru import logger
 from sqlalchemy import desc, select
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.error import BadRequest
 from telegram.constants import ChatAction
+from telegram.error import BadRequest
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -36,7 +36,7 @@ from app.models import (
     Field,
     Observation,
 )
-from app.models_memory import ConversationThread
+from app.models_memory import ConversationThread, MemoryAtom
 from app.services.agent import AgentContext, get_agent
 from app.services.demo_seed import seed_demo_memory_palace
 from app.utils.security import hash_password
@@ -81,6 +81,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         async with async_session_factory() as db:
             farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
             if farmer:
+                state["farmer_id"] = farmer.id
                 has_thread = await db.scalar(
                     select(ConversationThread.id)
                     .where(
@@ -95,14 +96,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as exc:
         logger.warning(f"start-hint thread lookup failed: {exc}")
 
-    keyboard = [
+    keyboard = []
+    if state.get("farmer_id"):
+        keyboard.append([
+            InlineKeyboardButton("▶ जारी रखें / Continue", callback_data="threads_list"),
+            InlineKeyboardButton("✳ नई बातचीत / New", callback_data="thread_new"),
+        ])
+    keyboard.extend([
         [InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")],
         [_dashboard_button("🧭 Dashboard: map, weather, money, memory", phone=user_id)],
         [InlineKeyboardButton("📝 Register: save farmer profile", callback_data="cmd_register")],
         [InlineKeyboardButton("🌱 Crop: set active field crop", callback_data="cmd_crop")],
         [InlineKeyboardButton("📸 Photo: diagnose crop symptoms", callback_data="cmd_photo")],
         [InlineKeyboardButton("ℹ️ Help: commands and what they do", callback_data="cmd_help")],
-    ]
+    ])
 
     await update.message.reply_text(
         welcome,
@@ -121,8 +128,9 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         "📝 *किसान पंजीकरण / Farmer Registration*\n\n"
-        "कृपया अपना पूरा नाम लिखें:\n"
-        "Please enter your full name:",
+        "आवाज़ में एक साथ बोल सकते हैं: नाम, गाँव, ज़िला, मुख्य फसल।\n"
+        "या लिखकर शुरू करें — कृपया अपना पूरा नाम लिखें:\n"
+        "You can speak name, village, district, main crop in one voice note, or type your full name:",
         parse_mode="Markdown",
     )
 
@@ -227,6 +235,14 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await photo_file.download_to_drive(str(photo_path))
 
     caption = update.message.caption or ""
+    if not caption.strip():
+        state["pending_photo_path"] = str(photo_path)
+        await update.message.reply_text(
+            "📸 फोटो मिल गई। अब आवाज़ में अपना सवाल भेजिए, या टेक्स्ट में लक्षण लिखिए।\n"
+            "Photo received. Now send your question by voice, or type the symptoms."
+        )
+        return
+
     await _process_farmer_query(update, user_id, caption, str(photo_path))
 
 
@@ -239,15 +255,12 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
 
-    if state.get("state") != "ready":
-        await update.message.reply_text(
-            "⚠️ पहले /register, /field, और /crop करें।\n"
-            "Please complete /register, /field, /crop first."
-        )
-        return
-
     voice = update.message.voice or update.message.audio
     if voice is None:
+        return
+
+    if state.get("state") != "ready":
+        await _handle_voice_registration(update, context, user_id, state, voice)
         return
 
     await update.message.chat.send_action(ChatAction.TYPING)
@@ -272,6 +285,8 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     crop_stage: str | None = None
     preferred_lang: str = settings.voice_default_target_lang
 
+    pending_photo_path = state.pop("pending_photo_path", None)
+
     async with async_session_factory() as db:
         phone = state.get("phone", user_id)
         farmer = await db.scalar(select(Farmer).where(Farmer.phone == phone))
@@ -286,7 +301,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
             id=str(uuid.uuid4()),
             farmer_id=farmer.id,
             crop_cycle_id=state.get("crop_cycle_id"),
+            field_id=state.get("field_id"),
+            observation_type="photo_voice" if pending_photo_path else "voice",
             text_content=update.message.caption or "[voice note]",
+            image_path=pending_photo_path,
             audio_path=str(voice_path),
         )
         db.add(obs)
@@ -325,6 +343,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 field_id=field_id_for_agent,
                 crop_cycle_id=cycle_id_for_agent,
                 observation_id=state.get("last_observation_id"),
+                image_path=pending_photo_path,
                 is_followup=bool(state.get("last_advisory_id")),
                 previous_advisory_id=state.get("last_advisory_id"),
             )
@@ -358,6 +377,110 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
             logger.warning(f"send_voice failed: {exc}")
 
     await update.message.reply_text(result.reply_text_target or result.reply_text_en)
+
+
+async def _handle_voice_registration(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: str, state: dict, voice):
+    """One-note onboarding: STT -> translate -> extract -> upsert farmer/field/cycle."""
+    if not settings.enable_voice_pipeline:
+        await update.message.reply_text(
+            "🎙️ आवाज़ पंजीकरण के लिए Sarvam voice pipeline चालू नहीं है। /register से टेक्स्ट पंजीकरण करें।"
+        )
+        return
+
+    await update.message.chat.send_action(ChatAction.TYPING)
+    voice_dir = Path(settings.data_dir) / "voice"
+    voice_dir.mkdir(parents=True, exist_ok=True)
+    voice_path = voice_dir / f"{user_id}_registration_{utc_now().strftime('%Y%m%d_%H%M%S')}.ogg"
+    try:
+        tg_file = await voice.get_file()
+        await tg_file.download_to_drive(str(voice_path))
+    except Exception as exc:
+        logger.error(f"Voice registration download failed: {exc}")
+        await update.message.reply_text("❌ आवाज़ डाउनलोड नहीं हो सकी। फिर कोशिश करें।")
+        return
+
+    try:
+        from app.services.voice import (
+            extract_registration_fields,
+            synthesize,
+            transcribe,
+            translate,
+        )
+
+        stt = await transcribe(voice_path)
+        detected_lang = stt.get("detected_lang") or settings.voice_default_target_lang
+        transcript = stt.get("text") or ""
+        transcript_en = await translate(transcript, detected_lang, "en-IN")
+        fields = await extract_registration_fields(transcript_en)
+        preferred_lang = fields.get("preferred_lang") or detected_lang
+    except Exception as exc:
+        logger.error(f"Voice registration pipeline failed: {exc}")
+        await update.message.reply_text("❌ आवाज़ समझ नहीं आई। कृपया /register से टेक्स्ट में करें या फिर से बोलें।")
+        return
+
+    import uuid
+    async with async_session_factory() as db:
+        farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
+        if farmer is None:
+            farmer = Farmer(
+                id=str(uuid.uuid4()),
+                phone=user_id,
+                hashed_password=hash_password(f"telegram:{user_id}"),
+                name=fields["name"],
+                preferred_language=preferred_lang,
+                district=fields["district"],
+                tehsil=fields.get("tehsil") or "",
+                village=fields.get("village") or "",
+            )
+            db.add(farmer)
+        else:
+            farmer.name = fields["name"]
+            farmer.preferred_language = preferred_lang
+            farmer.district = fields["district"]
+            farmer.tehsil = fields.get("tehsil") or farmer.tehsil
+            farmer.village = fields.get("village") or farmer.village
+            farmer.is_active = True
+
+        field = Field(
+            id=str(uuid.uuid4()),
+            farmer_id=farmer.id,
+            name=fields.get("village") or "Main field",
+            area_acres=fields.get("field_area_acres") or 1.0,
+            soil_type=fields.get("soil_type") or "loam",
+            irrigation_type="unknown",
+        )
+        db.add(field)
+        cycle = CropCycle(
+            id=str(uuid.uuid4()),
+            field_id=field.id,
+            crop_name=fields["primary_crop"],
+            sowing_date=utc_now(),
+            current_stage="pre_sowing",
+            is_active=True,
+        )
+        db.add(cycle)
+        await db.commit()
+
+    state.update({
+        "state": "ready",
+        "farmer_id": farmer.id,
+        "phone": user_id,
+        "field_id": field.id,
+        "crop_cycle_id": cycle.id,
+        "crop_name": cycle.crop_name,
+        "crop_stage": cycle.current_stage,
+    })
+    msg = (
+        f"✅ पंजीकरण पूरा: {farmer.name}, {farmer.village or '-'}, {farmer.district}; "
+        f"फसल: {cycle.crop_name}. अब फोटो, टेक्स्ट या आवाज़ से सवाल पूछें।"
+    )
+    try:
+        audio = await synthesize(msg, preferred_lang)
+        if audio:
+            await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio)
+    except Exception as exc:
+        logger.warning(f"voice registration TTS failed: {exc}")
+    await update.message.reply_text(msg)
 
 
 async def cmd_voice_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -420,6 +543,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/prices — मंडी भाव + MSP context\n"
             "/finance — खर्च/बिक्री और profit-loss\n"
             "/memory — पुराने field context और patterns देखें\n"
+            "/mydata — अपनी saved memory देखें\n"
+            "/forgetme — अपनी raw memory redact करें\n"
             "/why — advice के evidence और verifier देखें\n\n"
             "फसल की समस्या लिखें या फोटो भेजें।"
         )
@@ -918,6 +1043,16 @@ async def _process_farmer_query(
             await update.message.reply_text("⚠️ पहले /field और /crop पूरा करें।")
             return
 
+        stage_notice = ""
+        try:
+            from app.services.crop_cycle import advance_stage, stage_message_hi
+
+            new_stage = await advance_stage(db, cycle)
+            if new_stage:
+                stage_notice = stage_message_hi(cycle, new_stage) + "\n\n"
+        except Exception as exc:
+            logger.warning(f"stage advance skipped: {exc}")
+
         import uuid
         observation = Observation(
             id=str(uuid.uuid4()),
@@ -963,7 +1098,7 @@ async def _process_farmer_query(
             return
 
         # Build response with evidence and verifier info
-        msg = response.display_text
+        msg = stage_notice + response.display_text
 
         # Prepend an outbreak warning banner once, if this farmer has a
         # pending alert that has not yet been surfaced in chat.
@@ -1258,6 +1393,56 @@ async def memory_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             lines.append(f"\n🛰️ *NDVI Trend:* {trend} {ndvi_vals[0]:.2f} (latest)")
 
         await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+
+
+async def mydata_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /mydata — farmer-visible personal data export."""
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+    farmer_id = await _resolve_farmer_id(state, user_id)
+    if not farmer_id:
+        await update.message.reply_text("पहले /register करें।")
+        return
+    async with async_session_factory() as db:
+        atoms = (
+            await db.execute(
+                select(MemoryAtom)
+                .where(MemoryAtom.farmer_id == farmer_id, MemoryAtom.redacted.is_(False))
+                .order_by(desc(MemoryAtom.event_at))
+                .limit(20)
+            )
+        ).scalars().all()
+    if not atoms:
+        await update.message.reply_text("आपके लिए अभी कोई saved memory नहीं है।")
+        return
+    lines = ["📦 *आपका डेटा / Your data*", "Server पर aggregate insights अलग रखे जाते हैं; यहाँ सिर्फ आपकी raw memory है."]
+    for atom in atoms:
+        day = atom.event_at.strftime("%Y-%m-%d") if atom.event_at else "?"
+        lines.append(f"• {day} [{atom.atom_type}] {atom.summary[:120]}")
+    lines.append("\n/forgetme आपकी raw memory redact करता है; aggregate anonymous summaries रह सकती हैं.")
+    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+
+
+async def forgetme_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /forgetme — soft-redact farmer-owned atoms."""
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+    farmer_id = await _resolve_farmer_id(state, user_id)
+    if not farmer_id:
+        await update.message.reply_text("पहले /register करें।")
+        return
+    async with async_session_factory() as db:
+        atoms = (
+            await db.execute(select(MemoryAtom).where(MemoryAtom.farmer_id == farmer_id, MemoryAtom.redacted.is_(False)))
+        ).scalars().all()
+        for atom in atoms:
+            atom.redacted = True
+            atom.summary = "[redacted by farmer request]"
+            atom.details = {}
+        await db.commit()
+    await update.message.reply_text(
+        f"✅ आपकी {len(atoms)} raw memory entries redact कर दी गईं। Anonymous aggregate summaries server-side रह सकती हैं।"
+    )
 
 
 async def demo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1795,8 +1980,20 @@ async def closecycle_command(update: Update, context: ContextTypes.DEFAULT_TYPE)
             cycle.is_active = False
             cycle.current_stage = "harvest"
             await db.commit()
+            rotation_text = ""
+            try:
+                from app.services.rotation import suggest_next_crop
+
+                rotation = await suggest_next_crop(db, cycle.field_id)
+                rotation_text = (
+                    f"\n\n🔁 अगली फसल सुझाव: *{rotation['next_crop']}*"
+                    f"\nविकल्प: {', '.join(rotation['alternatives'])}"
+                    f"\nकारण: " + " ".join(rotation["reasoning"][:2])
+                )
+            except Exception as exc:
+                logger.warning(f"rotation suggestion skipped: {exc}")
             await update.message.reply_text(
-                f"✅ *{cycle.crop_name}* फसल समाप्त (कटाई)। /newcycle से नई फसल शुरू करें।",
+                f"✅ *{cycle.crop_name}* फसल समाप्त (कटाई)। /newcycle से नई फसल शुरू करें।{rotation_text}",
                 parse_mode="Markdown"
             )
             state["crop_cycle_id"] = ""
@@ -2324,6 +2521,8 @@ def create_bot() -> Application:
     app.add_handler(CommandHandler("sale", sale_command))
     app.add_handler(CommandHandler("finance", finance_command))
     app.add_handler(CommandHandler("memory", memory_command))
+    app.add_handler(CommandHandler("mydata", mydata_command))
+    app.add_handler(CommandHandler("forgetme", forgetme_command))
     app.add_handler(CommandHandler("dashboard", dashboard_command))
     app.add_handler(CommandHandler("why", why_command))
     app.add_handler(CommandHandler("sources", sources_command))
