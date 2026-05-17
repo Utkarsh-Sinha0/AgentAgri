@@ -50,16 +50,72 @@ def _load_schema(name: str) -> dict:
     return _SCHEMA_CACHE[name]
 
 
+# ─── Gemma 4 auto-detect ──────────────────────────────────────────────
+
+_INSTALLED_TAGS_CACHE: list[str] | None = None
+
+
+def _list_installed_tags() -> list[str]:
+    """Best-effort sync lookup of installed Ollama model tags.
+
+    Result is cached for the process lifetime; failures degrade silently so
+    misconfigured Ollama hosts don't break import-time wiring.
+    """
+    global _INSTALLED_TAGS_CACHE
+    if _INSTALLED_TAGS_CACHE is not None:
+        return _INSTALLED_TAGS_CACHE
+    try:
+        import httpx  # local import to avoid hard dep at import time
+
+        resp = httpx.get(f"{settings.ollama_host.rstrip('/')}/api/tags", timeout=2.0)
+        resp.raise_for_status()
+        models = resp.json().get("models", []) or []
+        _INSTALLED_TAGS_CACHE = [m.get("name", "") for m in models if m.get("name")]
+    except Exception as exc:
+        logger.debug(f"Ollama tag discovery skipped: {exc}")
+        _INSTALLED_TAGS_CACHE = []
+    return _INSTALLED_TAGS_CACHE
+
+
+def _resolve_installed_gemma4(configured: str, prefer: str | None = None) -> str:
+    """If `configured` isn't installed, fall back to any installed gemma4:* tag.
+
+    Honors `prefer` so the fallback model differs from the primary when possible.
+    Returns the configured value unchanged when discovery fails — preserving
+    current behavior on offline/test hosts.
+    """
+    # Only rewrite gemma* targets — leave test fixtures and explicit non-gemma
+    # configurations untouched.
+    if not configured.startswith(("gemma4:", "gemma3:", "gemma:")):
+        return configured
+    tags = _list_installed_tags()
+    if not tags:
+        return configured
+    if configured in tags:
+        return configured
+    gemma4 = [t for t in tags if t.startswith("gemma4:") or t.startswith("gemma3:")]
+    if not gemma4:
+        return configured
+    if prefer:
+        alt = [t for t in gemma4 if t != prefer]
+        if alt:
+            logger.info(f"Ollama auto-detect: {configured!r} not installed, using {alt[0]!r}")
+            return alt[0]
+    logger.info(f"Ollama auto-detect: {configured!r} not installed, using {gemma4[0]!r}")
+    return gemma4[0]
+
+
 # ─── Client ───────────────────────────────────────────────────────────
 
 class OllamaClient:
     """Wraps Ollama Python client with AgriMesh-specific configuration."""
 
     def __init__(self, model: str | None = None):
-        self.model = model or settings.ollama_model
         self.host = settings.ollama_host
         self._client = AsyncClient(host=self.host)
-        self._fallback = settings.ollama_fallback_model
+        resolved = model or _resolve_installed_gemma4(settings.ollama_model)
+        self.model = resolved
+        self._fallback = _resolve_installed_gemma4(settings.ollama_fallback_model, prefer=resolved)
         self._use_fallback = False
         self._fallback_until: float | None = None
 

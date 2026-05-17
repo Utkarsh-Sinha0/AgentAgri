@@ -12,8 +12,8 @@ import re
 from pathlib import Path
 
 from loguru import logger
-from sqlalchemy import desc, select
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from sqlalchemy import desc, func, select
+from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.error import BadRequest
 from telegram.ext import (
@@ -52,6 +52,83 @@ def get_user_state(user_id: str) -> dict:
     return user_state[user_id]
 
 
+# ─── Shared copy / helpers ────────────────────────────────────────────
+
+
+def _help_text() -> str:
+    return (
+        "ℹ️ *सहायता / Help*\n\n"
+        "*शुरुआत / Getting started*\n"
+        "/start — मुख्य मेन्यू और जारी बातचीत\n"
+        "/demo — sample farm + memory load करें\n"
+        "/register, /field, /crop — टेक्स्ट पंजीकरण\n"
+        "🎙 आवाज़ भेजें — एक note में नाम+गाँव+ज़िला+फसल बोलें\n\n"
+        "*रोज़ का काम / Daily*\n"
+        "/prices — मंडी भाव + MSP\n"
+        "/tasks, /calendar — आज क्या करना है\n"
+        "/expense, /sale, /finance — पैसे का हिसाब\n"
+        "/memory, /dashboard — खेत की पूरी तस्वीर\n\n"
+        "*फसल चक्र / Crop cycle*\n"
+        "/newcycle — नया cycle शुरू\n"
+        "/closecycle — cycle बंद + अगली फसल का सुझाव\n"
+        "/fields, /usefield, /crops, /usecrop — कई खेत/फसलें switch\n\n"
+        "*बातचीत / Conversations*\n"
+        "/threads — सभी बातचीत\n"
+        "/newthread — नई बातचीत शुरू\n"
+        "/endthread — मौजूदा बातचीत बंद\n\n"
+        "*गोपनीयता / Privacy*\n"
+        "/mydata — आपकी saved memory देखें\n"
+        "/forgetme — raw memory redact करें (confirm माँगा जाएगा)\n"
+        "/voice_lang hi-IN — आवाज़ की भाषा सेट करें\n\n"
+        "*Trust*\n"
+        "/why, /sources, /feedback, /outcome, /health\n\n"
+        "फसल की समस्या लिखें, फोटो भेजें, या आवाज़ में बोलें।"
+    )
+
+
+async def _send_prices(message, state: dict):
+    crop = state.get("crop_name", "rice")
+    district = "Munger"
+    await message.chat.send_action(ChatAction.TYPING)
+    from app.services.mandi import get_mandi_prices, get_msp
+    prices = await get_mandi_prices(crop=crop, district=district)
+    msp_data = await get_msp(crop=crop)
+    lines = [f"🏪 *मंडी भाव / Mandi Prices — {crop.title()}*"]
+    if prices.get("prices"):
+        for p in prices["prices"]:
+            latest = p["history"][0] if p["history"] else {}
+            lines.append(f"  {p['type']}: ₹{latest.get('modal', 'N/A')}/{p.get('unit', 'quintal')}")
+    if msp_data.get("msp_per_quintal"):
+        lines.append(f"\n📊 *MSP 2025-26:* ₹{msp_data['msp_per_quintal']}/quintal")
+    lines.append("\n_स्रोत: agmarknet.gov.in (सीडेड डेटा)_")
+    await message.reply_text("\n".join(lines), parse_mode="Markdown")
+
+
+async def _send_mydata(message, state: dict, user_id: str):
+    farmer_id = await _resolve_farmer_id(state, user_id)
+    if not farmer_id:
+        await message.reply_text("पहले /register करें।")
+        return
+    async with async_session_factory() as db:
+        atoms = (
+            await db.execute(
+                select(MemoryAtom)
+                .where(MemoryAtom.farmer_id == farmer_id, MemoryAtom.redacted.is_(False))
+                .order_by(desc(MemoryAtom.event_at))
+                .limit(20)
+            )
+        ).scalars().all()
+    if not atoms:
+        await message.reply_text("आपके लिए अभी कोई saved memory नहीं है।")
+        return
+    lines = ["📦 *आपका डेटा / Your data*", "Server पर aggregate insights अलग रखे जाते हैं; यहाँ सिर्फ आपकी raw memory है."]
+    for atom in atoms:
+        day = atom.event_at.strftime("%Y-%m-%d") if atom.event_at else "?"
+        lines.append(f"• {day} [{atom.atom_type}] {atom.summary[:120]}")
+    lines.append("\n/forgetme आपकी raw memory redact करता है; aggregate anonymous summaries रह सकती हैं.")
+    await message.reply_text("\n".join(lines), parse_mode="Markdown")
+
+
 # ─── Handlers ─────────────────────────────────────────────────────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -63,18 +140,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     welcome = (
         "🌾 *AgriMesh* — आपका AI कृषि सलाहकार\n"
         "Your AI Agricultural Advisor\n\n"
-        "मैं आपकी फसल की बीमारियों की पहचान, मौसम की सलाह, मंडी भाव, "
-        "सरकारी योजनाओं और खेती के खर्च का हिसाब रखने में मदद करता हूं।\n\n"
-        "I help with crop disease identification, weather advice, market prices, "
-        "government schemes, and farm finance tracking.\n\n"
-        "*शुरू करें / आरंभ करें:*\n"
-        "1. /demo — तुरंत डेमो खेत और मेमोरी तैयार करें\n"
-        "2. /register — अपना पंजीकरण करें\n"
-        "3. /field — अपना खेत पंजीकृत करें\n"
-        "4. /crop — अपनी फसल की जानकारी दें\n"
-        "5. /dashboard — निजी खेत डैशबोर्ड खोलें\n"
-        "6. फोटो भेजें या समस्या लिखें 📸\n\n"
-        "📞 किसान कॉल सेंटर: 1800-180-1551"
+        "मौसम, मंडी भाव, MSP, बीमारी पहचान, सरकारी योजनाएं और खेत का पूरा हिसाब — "
+        "एक ही जगह। आवाज़ में बात करें, फोटो भेजें, या लिखें।\n\n"
+        "Weather, mandi prices, MSP, disease ID, government schemes, and full farm "
+        "accounting — all in one place. Speak, send a photo, or type.\n\n"
+        "*शुरू करने के 3 तरीके / 3 ways to start:*\n"
+        "🎙 आवाज़ भेजें — नाम, गाँव, ज़िला, फसल एक साथ बोलें (registration done)\n"
+        "⚡ /demo — sample farm + memory अभी load करें\n"
+        "📝 /register — टेक्स्ट में step-by-step पंजीकरण\n\n"
+        "📞 किसान कॉल सेंटर: 1800-180-1551 — /help से सभी commands देखें"
     )
 
     try:
@@ -102,14 +176,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("▶ जारी रखें / Continue", callback_data="threads_list"),
             InlineKeyboardButton("✳ नई बातचीत / New", callback_data="thread_new"),
         ])
-    keyboard.extend([
-        [InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")],
-        [_dashboard_button("🧭 Dashboard: map, weather, money, memory", phone=user_id)],
-        [InlineKeyboardButton("📝 Register: save farmer profile", callback_data="cmd_register")],
-        [InlineKeyboardButton("🌱 Crop: set active field crop", callback_data="cmd_crop")],
-        [InlineKeyboardButton("📸 Photo: diagnose crop symptoms", callback_data="cmd_photo")],
-        [InlineKeyboardButton("ℹ️ Help: commands and what they do", callback_data="cmd_help")],
-    ])
+        keyboard.append([
+            _dashboard_button("🧭 Dashboard / Map / Memory", phone=user_id),
+        ])
+        keyboard.append([
+            InlineKeyboardButton("📸 Photo + Voice diagnose", callback_data="cmd_photo"),
+            InlineKeyboardButton("💰 Prices & MSP", callback_data="cmd_prices"),
+        ])
+        keyboard.append([
+            InlineKeyboardButton("📦 My data", callback_data="cmd_mydata"),
+            InlineKeyboardButton("ℹ️ Help", callback_data="cmd_help"),
+        ])
+    else:
+        keyboard.extend([
+            [InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")],
+            [InlineKeyboardButton("📝 Register: text step-by-step", callback_data="cmd_register")],
+            [_dashboard_button("🧭 Dashboard preview", phone=user_id)],
+            [InlineKeyboardButton("ℹ️ Help: see all commands", callback_data="cmd_help")],
+        ])
 
     await update.message.reply_text(
         welcome,
@@ -204,6 +288,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _handle_crop_sowing(update, user_id, text, state)
     elif current_state == "registering_crop_stage":
         await _handle_crop_stage(update, user_id, text, state)
+    elif current_state == "editing_field":
+        await _apply_edit(update, user_id, text, state)
     elif current_state == "profiling":
         await _handle_profile_data(update, user_id, text, state)
     elif current_state == "ready":
@@ -330,7 +416,24 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Voice pipeline: STT -> en -> agent -> target -> TTS
-    from app.services.voice import voice_round_trip
+    from app.services.voice import voice_round_trip, transcribe, _normalize_lang
+    from sqlalchemy import update as sa_update
+
+    # Run STT first so we can persist the real transcript before agent reasoning.
+    transcript_seed = ""
+    try:
+        stt_result = await transcribe(voice_path, source_lang=_normalize_lang(preferred_lang))
+        transcript_seed = stt_result.get("text", "") or ""
+        if transcript_seed:
+            async with async_session_factory() as db_up:
+                await db_up.execute(
+                    sa_update(Observation)
+                    .where(Observation.id == state["last_observation_id"])
+                    .values(text_content=transcript_seed)
+                )
+                await db_up.commit()
+    except Exception as exc:
+        logger.warning(f"Pre-STT transcribe failed (will let round-trip retry): {exc}")
 
     async def _agent_call(prompt_en: str) -> str:
         async with async_session_factory() as db2:
@@ -509,7 +612,11 @@ async def cmd_voice_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle inline button callbacks."""
     query = update.callback_query
-    await query.answer()
+    try:
+        await query.answer()
+    except BadRequest as exc:
+        if "Query is too old" not in str(exc):
+            raise
     data = query.data
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
@@ -533,21 +640,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="Markdown",
         )
     elif data == "cmd_help":
-        await query.message.reply_text(
-            "ℹ️ सहायता / Help\n\n"
-            "/dashboard — निजी वेब पेज: मौसम बैकग्राउंड, खेत, map clusters, finance, memory\n"
-            "/register — किसान पंजीकरण और server-side profile\n"
-            "/profile set — पानी, बजट, बीमा, मंडी, risk preference जैसी जानकारी जोड़ें\n"
-            "/field — खेत पंजीकरण: area, soil, irrigation\n"
-            "/crop — active crop और stage set करें\n"
-            "/prices — मंडी भाव + MSP context\n"
-            "/finance — खर्च/बिक्री और profit-loss\n"
-            "/memory — पुराने field context और patterns देखें\n"
-            "/mydata — अपनी saved memory देखें\n"
-            "/forgetme — अपनी raw memory redact करें\n"
-            "/why — advice के evidence और verifier देखें\n\n"
-            "फसल की समस्या लिखें या फोटो भेजें।"
-        )
+        await query.message.reply_text(_help_text(), parse_mode="Markdown")
+    elif data == "cmd_prices":
+        await _send_prices(query.message, state)
+    elif data == "cmd_mydata":
+        await _send_mydata(query.message, state, user_id)
     elif data == "cmd_dashboard":
         farmer_id = state.get("farmer_id")
         if not farmer_id:
@@ -645,6 +742,32 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "✅ बातचीत बंद। नया सवाल पूछें / Conversation closed. Ask a new question."
             )
     elif data == "newthread_cancel":
+        try:
+            await query.edit_message_text("❌ रद्द / Cancelled.")
+        except BadRequest:
+            await query.message.reply_text("❌ रद्द / Cancelled.")
+    elif data == "forgetme_confirm":
+        try:
+            await query.edit_message_reply_markup(reply_markup=None)
+        except BadRequest:
+            pass
+        await _execute_forgetme(query.message, state, user_id)
+    elif data == "forgetme_cancel":
+        try:
+            await query.edit_message_text("❌ रद्द / Cancelled — आपकी memory सुरक्षित है।")
+        except BadRequest:
+            await query.message.reply_text("❌ रद्द / Cancelled — आपकी memory सुरक्षित है।")
+    elif data.startswith("edit_field:"):
+        field_key = data.split(":", 1)[1]
+        if field_key in EDIT_FIELDS:
+            state.setdefault("data", {})["edit_field"] = field_key
+            state["state"] = "editing_field"
+            prompt = EDIT_FIELDS[field_key][1]
+            try:
+                await query.edit_message_text(prompt)
+            except BadRequest:
+                await query.message.reply_text(prompt)
+    elif data == "edit_cancel":
         try:
             await query.edit_message_text("❌ रद्द / Cancelled.")
         except BadRequest:
@@ -1148,6 +1271,21 @@ async def _process_farmer_query(
 
         msg += f"\n\n⚡ _{response.latency_ms}ms • {response.model_used} • {response.retrieval_path}_"
 
+        # Translate the body into farmer's preferred language when it isn't
+        # already Hindi/English (the display template is already bilingual hi/en).
+        pref_lang = (getattr(farmer, "preferred_language", "") or "").lower()
+        if (
+            settings.enable_voice_pipeline
+            and pref_lang
+            and not pref_lang.startswith(("hi", "en"))
+        ):
+            try:
+                from app.services.voice import translate as _sarvam_translate
+
+                msg = await _sarvam_translate(msg, source_lang="hi-IN", target_lang=pref_lang)
+            except Exception as exc:
+                logger.warning(f"reply translate to {pref_lang} skipped: {exc}")
+
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
         # Agent output is templated text + LLM contextualization; an
         # unbalanced * or _ from the LLM trips Telegram's Markdown parser
@@ -1207,23 +1345,7 @@ async def prices_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /prices — show mandi prices."""
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
-    crop = state.get("crop_name", "rice")
-    district = "Munger"
-
-    await update.message.reply_chat_action(ChatAction.TYPING)
-    from app.services.mandi import get_mandi_prices, get_msp
-    prices = await get_mandi_prices(crop=crop, district=district)
-    msp_data = await get_msp(crop=crop)
-
-    lines = [f"🏪 *मंडी भाव / Mandi Prices — {crop.title()}*"]
-    if prices.get("prices"):
-        for p in prices["prices"]:
-            latest = p["history"][0] if p["history"] else {}
-            lines.append(f"  {p['type']}: ₹{latest.get('modal', 'N/A')}/{p.get('unit', 'quintal')}")
-    if msp_data.get("msp_per_quintal"):
-        lines.append(f"\n📊 *MSP 2025-26:* ₹{msp_data['msp_per_quintal']}/quintal")
-    lines.append("\n_स्रोत: agmarknet.gov.in (सीडेड डेटा)_")
-    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+    await _send_prices(update.message, state)
 
 
 async def expense_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1399,32 +1521,11 @@ async def mydata_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /mydata — farmer-visible personal data export."""
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
-    farmer_id = await _resolve_farmer_id(state, user_id)
-    if not farmer_id:
-        await update.message.reply_text("पहले /register करें।")
-        return
-    async with async_session_factory() as db:
-        atoms = (
-            await db.execute(
-                select(MemoryAtom)
-                .where(MemoryAtom.farmer_id == farmer_id, MemoryAtom.redacted.is_(False))
-                .order_by(desc(MemoryAtom.event_at))
-                .limit(20)
-            )
-        ).scalars().all()
-    if not atoms:
-        await update.message.reply_text("आपके लिए अभी कोई saved memory नहीं है।")
-        return
-    lines = ["📦 *आपका डेटा / Your data*", "Server पर aggregate insights अलग रखे जाते हैं; यहाँ सिर्फ आपकी raw memory है."]
-    for atom in atoms:
-        day = atom.event_at.strftime("%Y-%m-%d") if atom.event_at else "?"
-        lines.append(f"• {day} [{atom.atom_type}] {atom.summary[:120]}")
-    lines.append("\n/forgetme आपकी raw memory redact करता है; aggregate anonymous summaries रह सकती हैं.")
-    await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
+    await _send_mydata(update.message, state, user_id)
 
 
 async def forgetme_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /forgetme — soft-redact farmer-owned atoms."""
+    """Handle /forgetme — ask confirm before soft-redacting farmer-owned atoms."""
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
     farmer_id = await _resolve_farmer_id(state, user_id)
@@ -1432,17 +1533,118 @@ async def forgetme_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("पहले /register करें।")
         return
     async with async_session_factory() as db:
+        count = await db.scalar(
+            select(func.count(MemoryAtom.id)).where(  # type: ignore[arg-type]
+                MemoryAtom.farmer_id == farmer_id,
+                MemoryAtom.redacted.is_(False),
+            )
+        )
+    count = int(count or 0)
+    if count == 0:
+        await update.message.reply_text(
+            "आपकी अभी कोई conversation memory save नहीं है — कुछ redact करने को नहीं है।\n"
+            "(आपके खेत, फसल और खर्च records अलग हैं — वे यथावत रहेंगे।)\n\n"
+            "No conversation memory stored yet — nothing to redact.\n"
+            "(Your field, crop, and expense records are separate and remain intact.)"
+        )
+        return
+    keyboard = InlineKeyboardMarkup([[
+        InlineKeyboardButton(f"हाँ / Yes — redact {count}", callback_data="forgetme_confirm"),
+        InlineKeyboardButton("नहीं / Cancel", callback_data="forgetme_cancel"),
+    ]])
+    await update.message.reply_text(
+        f"⚠️ आपकी {count} personal memory entries redact होंगी (soft delete).\n"
+        f"Aggregate anonymous summaries server-side रहेंगी।\n"
+        f"This will redact {count} personal entries. Anonymous aggregates stay server-side.\n\n"
+        "क्या आप पक्के हैं? / Are you sure?",
+        reply_markup=keyboard,
+    )
+
+
+async def _execute_forgetme(message, state: dict, user_id: str) -> None:
+    farmer_id = await _resolve_farmer_id(state, user_id)
+    if not farmer_id:
+        await message.reply_text("पहले /register करें।")
+        return
+    async with async_session_factory() as db:
         atoms = (
-            await db.execute(select(MemoryAtom).where(MemoryAtom.farmer_id == farmer_id, MemoryAtom.redacted.is_(False)))
+            await db.execute(
+                select(MemoryAtom).where(
+                    MemoryAtom.farmer_id == farmer_id,
+                    MemoryAtom.redacted.is_(False),
+                )
+            )
         ).scalars().all()
         for atom in atoms:
             atom.redacted = True
             atom.summary = "[redacted by farmer request]"
             atom.details = {}
         await db.commit()
-    await update.message.reply_text(
+    await message.reply_text(
         f"✅ आपकी {len(atoms)} raw memory entries redact कर दी गईं। Anonymous aggregate summaries server-side रह सकती हैं।"
     )
+
+
+EDIT_FIELDS: dict[str, tuple[str, str]] = {
+    "name": ("नाम / Name", "अपना नाम भेजें / Send your name:"),
+    "phone": ("फोन / Phone", "नया 10-अंक फोन नंबर भेजें / Send new 10-digit phone:"),
+    "village": ("गाँव / Village", "नया गाँव भेजें / Send new village name:"),
+    "tehsil": ("तहसील / Tehsil", "नई तहसील भेजें / Send new tehsil/block:"),
+    "district": ("ज़िला / District", "नया ज़िला भेजें / Send new district:"),
+    "preferred_language": (
+        "भाषा / Language",
+        "Preferred language code भेजें (hi-IN, bn-IN, kn-IN, mr-IN, ta-IN, te-IN, gu-IN, pa-IN, ml-IN, od-IN, en-IN):",
+    ),
+}
+
+
+async def edit_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /edit — let farmer revise a registered field."""
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+    farmer_id = await _resolve_farmer_id(state, user_id)
+    if not farmer_id:
+        await update.message.reply_text("पहले /register करें। / Please /register first.")
+        return
+    keyboard = InlineKeyboardMarkup(
+        [[InlineKeyboardButton(label, callback_data=f"edit_field:{key}")]
+         for key, (label, _) in EDIT_FIELDS.items()]
+        + [[InlineKeyboardButton("रद्द / Cancel", callback_data="edit_cancel")]]
+    )
+    await update.message.reply_text(
+        "क्या बदलना है? / What would you like to change?",
+        reply_markup=keyboard,
+    )
+
+
+async def _apply_edit(update, user_id: str, value: str, state: dict) -> None:
+    field_key = state.get("data", {}).get("edit_field")
+    if not field_key or field_key not in EDIT_FIELDS:
+        state["state"] = "ready"
+        return
+    phone = state.get("phone", user_id)
+    async with async_session_factory() as db:
+        farmer = await db.scalar(select(Farmer).where(Farmer.phone == phone))
+        if not farmer:
+            await update.message.reply_text("⚠️ Farmer record नहीं मिला।")
+            state["state"] = "ready"
+            return
+        clean = value.strip()
+        if field_key == "phone":
+            clean = clean.replace(" ", "").replace("-", "").replace("+91", "")
+        setattr(farmer, field_key, clean)
+        try:
+            await db.commit()
+        except Exception as exc:
+            await db.rollback()
+            logger.error(f"Edit save failed: {exc}")
+            await update.message.reply_text("❌ Save failed. /edit से दोबारा कोशिश करें।")
+            state["state"] = "ready"
+            return
+    state["state"] = "ready"
+    state.get("data", {}).pop("edit_field", None)
+    label = EDIT_FIELDS[field_key][0]
+    await update.message.reply_text(f"✅ {label} अपडेट हो गया: {clean}")
 
 
 async def demo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -2492,6 +2694,47 @@ async def endthread_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ─── Bot Runner ───────────────────────────────────────────────────────
 
+BOT_COMMAND_MENU: list[tuple[str, str]] = [
+    ("start", "Main menu, resume chat"),
+    ("demo", "Load sample farm + memory"),
+    ("register", "Register (text step-by-step)"),
+    ("edit", "Edit registration details"),
+    ("dashboard", "Open private dashboard"),
+    ("prices", "Mandi prices + MSP"),
+    ("tasks", "Today's tasks"),
+    ("calendar", "Crop calendar"),
+    ("memory", "Field memories and patterns"),
+    ("threads", "List conversations"),
+    ("newthread", "Start a new conversation"),
+    ("endthread", "Close current conversation"),
+    ("newcycle", "Start a new crop cycle"),
+    ("closecycle", "Close cycle + rotation tip"),
+    ("expense", "Log an expense"),
+    ("sale", "Log a sale"),
+    ("finance", "Profit & loss summary"),
+    ("voice_lang", "Set voice language (hi-IN…)"),
+    ("mydata", "Show my saved memory"),
+    ("forgetme", "Redact my raw memory"),
+    ("why", "Explain last advice"),
+    ("sources", "Show evidence sources"),
+    ("help", "All commands"),
+]
+
+
+async def _post_init(app: Application) -> None:
+    """Set the BotFather command menu so '/' inside Telegram shows commands."""
+    try:
+        await app.bot.set_my_commands([BotCommand(c, d) for c, d in BOT_COMMAND_MENU])
+        logger.info(f"Telegram command menu registered ({len(BOT_COMMAND_MENU)} commands).")
+    except Exception as exc:
+        logger.warning(f"set_my_commands failed: {exc}")
+
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /help — show all commands."""
+    await update.message.reply_text(_help_text(), parse_mode="Markdown")
+
+
 def create_bot() -> Application:
     """Create and configure the Telegram bot application."""
     token = settings.telegram_bot_token.strip()
@@ -2499,10 +2742,11 @@ def create_bot() -> Application:
         logger.warning("TELEGRAM_BOT_TOKEN not set! Bot will not start.")
         return None
 
-    app = Application.builder().token(token).build()
+    app = Application.builder().token(token).post_init(_post_init).build()
 
     # Commands
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("demo", demo_command))
     app.add_handler(CommandHandler("register", register))
     app.add_handler(CommandHandler("profile", profile_command))
@@ -2523,6 +2767,7 @@ def create_bot() -> Application:
     app.add_handler(CommandHandler("memory", memory_command))
     app.add_handler(CommandHandler("mydata", mydata_command))
     app.add_handler(CommandHandler("forgetme", forgetme_command))
+    app.add_handler(CommandHandler("edit", edit_command))
     app.add_handler(CommandHandler("dashboard", dashboard_command))
     app.add_handler(CommandHandler("why", why_command))
     app.add_handler(CommandHandler("sources", sources_command))

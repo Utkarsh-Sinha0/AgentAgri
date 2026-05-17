@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     # ─── Sarvam AI (voice pipeline) ───────
     sarvam_api_key: str = Field(default="", alias="SARVAM_API_KEY")
     sarvam_base_url: str = Field(default="https://api.sarvam.ai", alias="SARVAM_BASE_URL")
-    sarvam_stt_model: str = Field(default="saarika:v2", alias="SARVAM_STT_MODEL")
+    sarvam_stt_model: str = Field(default="saarika:v2.5", alias="SARVAM_STT_MODEL")
     sarvam_translate_model: str = Field(default="mayura:v1", alias="SARVAM_TRANSLATE_MODEL")
     sarvam_tts_model: str = Field(default="bulbul:v2", alias="SARVAM_TTS_MODEL")
     sarvam_tts_speaker: str = Field(default="meera", alias="SARVAM_TTS_SPEAKER")

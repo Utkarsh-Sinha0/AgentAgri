@@ -13,8 +13,10 @@ of the registration/follow-up flows surface immediately.
 from __future__ import annotations
 
 from datetime import timedelta
+from types import SimpleNamespace
 
 import pytest
+from telegram.error import BadRequest
 
 from app.utils.time import utc_now
 
@@ -287,6 +289,34 @@ def test_create_bot_registers_callback_handler(bot_app):
         if isinstance(h, CallbackQueryHandler) and h.callback is handle_callback
     ]
     assert found, "handle_callback not wired"
+
+
+@pytest.mark.asyncio
+async def test_handle_callback_ignores_stale_callback_ack():
+    from app.bot.telegram_bot import handle_callback
+
+    class Query:
+        data = "cmd_help"
+        message = SimpleNamespace(reply_text=lambda *args, **kwargs: None)
+
+        async def answer(self):
+            raise BadRequest("Query is too old and response timeout expired or query id is invalid")
+
+    replied = {}
+
+    async def reply_text(*args, **kwargs):
+        replied["called"] = True
+
+    query = Query()
+    query.message = SimpleNamespace(reply_text=reply_text)
+    update = SimpleNamespace(
+        callback_query=query,
+        effective_user=SimpleNamespace(id=123),
+    )
+
+    await handle_callback(update, SimpleNamespace())
+
+    assert replied["called"]
 
 
 @pytest.mark.parametrize(

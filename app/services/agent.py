@@ -917,9 +917,14 @@ class AgentOrchestrator:
             # If indices are missing (degenerate input), fall back to display
             # position so actions still render — but citations will be inexact.
             indices = rec.selected_action_indices or list(range(len(rec.actions_text)))
-            for display_pos, (global_idx, action) in enumerate(
-                zip(indices, rec.actions_text, strict=False), 1
-            ):
+            seen_actions: set[str] = set()
+            display_pos = 0
+            for global_idx, action in zip(indices, rec.actions_text, strict=False):
+                key = " ".join(action.lower().split())
+                if key in seen_actions:
+                    continue
+                seen_actions.add(key)
+                display_pos += 1
                 citation = self._build_action_citation(
                     global_idx, evidence.wiki_articles, memory_atoms, peer_atoms
                 )

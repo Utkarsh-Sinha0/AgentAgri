@@ -179,7 +179,7 @@ async def voice_round_trip(
 ) -> VoiceRoundTrip:
     """End-to-end: STT -> en -> agent -> target lang -> TTS. Graceful degradation on Sarvam failure."""
     try:
-        stt = await transcribe(audio_path)
+        stt = await transcribe(audio_path, source_lang=_normalize_lang(target_lang_hint))
     except Exception as exc:
         logger.exception("STT failed")
         return VoiceRoundTrip(
