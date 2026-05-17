@@ -61,6 +61,43 @@ def _normalize_lang(lang: str | None) -> str:
     return FALLBACK_LANG
 
 
+def _chunk_for_tts(text: str, max_chars: int = 450) -> list[str]:
+    """Split text into <=max_chars chunks at sentence boundaries.
+
+    Sarvam bulbul:v2 rejects inputs >500 chars per element. We split at
+    '।', '.', '!', '?', or '\n' to keep prosody natural, then hard-split
+    any remaining oversized fragment.
+    """
+    text = (text or "").strip()
+    if not text:
+        return [""]
+    if len(text) <= max_chars:
+        return [text]
+    import re
+    parts = re.split(r"(?<=[।.!?\n])\s+", text)
+    chunks: list[str] = []
+    buf = ""
+    for p in parts:
+        if not p:
+            continue
+        if len(p) > max_chars:
+            if buf:
+                chunks.append(buf.strip())
+                buf = ""
+            for i in range(0, len(p), max_chars):
+                chunks.append(p[i:i + max_chars])
+            continue
+        if len(buf) + len(p) + 1 <= max_chars:
+            buf = f"{buf} {p}".strip()
+        else:
+            if buf:
+                chunks.append(buf.strip())
+            buf = p
+    if buf:
+        chunks.append(buf.strip())
+    return chunks or [text[:max_chars]]
+
+
 def _client() -> httpx.AsyncClient:
     return httpx.AsyncClient(
         base_url=settings.sarvam_base_url,
@@ -164,10 +201,12 @@ async def synthesize(
     spk = speaker or settings.sarvam_tts_speaker
     preset = EMOTION_PRESETS.get(emotion, EMOTION_PRESETS["friendly"])
 
+    chunks = _chunk_for_tts(text, max_chars=450)
+
     async def _call() -> bytes:
         async with _client() as client:
             payload = {
-                "inputs": [text[:1500]],
+                "inputs": chunks,
                 "target_language_code": tgt,
                 "speaker": spk,
                 "model": settings.sarvam_tts_model,
@@ -178,11 +217,13 @@ async def synthesize(
                 "enable_preprocessing": True,
             }
             resp = await client.post("/text-to-speech", json=payload)
+            if resp.status_code >= 400:
+                logger.warning(f"Sarvam TTS {resp.status_code}: {resp.text[:300]}")
             resp.raise_for_status()
             audios = resp.json().get("audios", [])
             if not audios:
                 return b""
-            return base64.b64decode(audios[0])
+            return b"".join(base64.b64decode(a) for a in audios)
 
     try:
         return await _retry(_call)
