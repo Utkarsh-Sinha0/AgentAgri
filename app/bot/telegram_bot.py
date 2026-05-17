@@ -125,7 +125,7 @@ async def _send_prices(message, state: dict):
 async def _send_mydata(message, state: dict, user_id: str):
     farmer_id = await _resolve_farmer_id(state, user_id)
     if not farmer_id:
-        await message.reply_text("पहले /register करें।")
+        await message.reply_text("Please /register first.")
         return
     async with async_session_factory() as db:
         atoms = (
@@ -280,7 +280,7 @@ async def field_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         farmer = result.scalar_one_or_none()
         if not farmer:
             await update.message.reply_text(
-                "⚠️ पहले /register करें। Please /register first."
+                "⚠️ Please /register first."
             )
             return
 
@@ -356,7 +356,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = get_user_state(user_id)
 
     if state.get("state") != "ready":
-        await update.message.reply_text("⚠️ पहले /register, /field, और /crop करें। कृपया पहले पंजीकरण पूरा करें।")
+        await update.message.reply_text("⚠️ Please complete /register, /field, and /crop first.")
         return
 
     await update.message.reply_chat_action(ChatAction.TYPING)
@@ -436,7 +436,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         phone = state.get("phone", user_id)
         farmer = await db.scalar(select(Farmer).where(Farmer.phone == phone))
         if farmer is None:
-            await update.message.reply_text("⚠️ पहले /register करें।")
+            await update.message.reply_text("⚠️ Please /register first.")
             return
         farmer_id_for_agent = farmer.id
         preferred_lang = getattr(farmer, "preferred_language", None) or preferred_lang
@@ -713,7 +713,7 @@ async def cmd_voice_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
         phone = state.get("phone", user_id)
         farmer = await db.scalar(select(Farmer).where(Farmer.phone == phone))
         if farmer is None:
-            await update.message.reply_text("⚠️ पहले /register करें।")
+            await update.message.reply_text("⚠️ Please /register first.")
             return
         farmer.preferred_language = code
         await db.commit()
@@ -1101,7 +1101,7 @@ async def _handle_field_soil(update, user_id: str, soil: str, state: dict):
 
         if not farmer:
             await update.message.reply_text(
-                _t(state, "⚠️ पहले /register करें।", "⚠️ Please /register first.")
+                _t(state, "⚠️ Please /register first.", "⚠️ Please /register first.")
             )
             return
 
@@ -1308,7 +1308,7 @@ async def _handle_crop_stage(update, user_id: str, stage: str, state: dict):
         result = await db.execute(select(Farmer).where(Farmer.phone == phone))
         farmer = result.scalar_one_or_none()
         if not farmer:
-            await update.message.reply_text("⚠️ पहले /register करें।")
+            await update.message.reply_text("⚠️ Please /register first.")
             return
 
         # Find field
@@ -1374,7 +1374,7 @@ async def _process_farmer_query(
         farmer = result.scalar_one_or_none()
 
         if not farmer:
-            await update.message.reply_text("⚠️ पहले /register करें। Please /register first.")
+            await update.message.reply_text("⚠️ Please /register first.")
             return
 
         # Get active field and crop cycle
@@ -1701,7 +1701,7 @@ async def calendar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
     if state.get("state") != "ready":
-        await update.message.reply_text("⚠️ पहले /register, /field, और /crop करें।")
+        await update.message.reply_text("⚠️ Please complete /register, /field, and /crop first.")
         return
 
     async with async_session_factory() as db:
@@ -1734,7 +1734,7 @@ async def expense_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
     if state.get("state") != "ready":
-        await update.message.reply_text("⚠️ पहले /register, /field, और /crop करें।")
+        await update.message.reply_text("⚠️ Please complete /register, /field, and /crop first.")
         return
 
     args = context.args
@@ -1780,7 +1780,7 @@ async def sale_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
     if state.get("state") != "ready":
-        await update.message.reply_text("⚠️ पहले /register, /field, और /crop करें।")
+        await update.message.reply_text("⚠️ Please complete /register, /field, and /crop first.")
         return
 
     args = context.args
@@ -1824,7 +1824,7 @@ async def finance_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
     if state.get("state") != "ready":
-        await update.message.reply_text("⚠️ पहले /register, /field, और /crop करें।")
+        await update.message.reply_text("⚠️ Please complete /register, /field, and /crop first.")
         return
 
     await update.message.reply_chat_action(ChatAction.TYPING)
@@ -1857,7 +1857,7 @@ async def memory_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
     if state.get("state") != "ready":
-        await update.message.reply_text("⚠️ पहले /register, /field, और /crop करें।")
+        await update.message.reply_text("⚠️ Please complete /register, /field, and /crop first.")
         return
 
     await update.message.reply_chat_action(ChatAction.TYPING)
@@ -1911,7 +1911,7 @@ async def forgetme_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = get_user_state(user_id)
     farmer_id = await _resolve_farmer_id(state, user_id)
     if not farmer_id:
-        await update.message.reply_text("पहले /register करें।")
+        await update.message.reply_text("Please /register first.")
         return
     async with async_session_factory() as db:
         count = await db.scalar(
@@ -1945,7 +1945,7 @@ async def forgetme_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def _execute_forgetme(message, state: dict, user_id: str) -> None:
     farmer_id = await _resolve_farmer_id(state, user_id)
     if not farmer_id:
-        await message.reply_text("पहले /register करें।")
+        await message.reply_text("Please /register first.")
         return
     async with async_session_factory() as db:
         atoms = (
@@ -1985,7 +1985,7 @@ async def edit_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = get_user_state(user_id)
     farmer_id = await _resolve_farmer_id(state, user_id)
     if not farmer_id:
-        await update.message.reply_text("पहले /register करें। / Please /register first.")
+        await update.message.reply_text("Please /register first.")
         return
     keyboard = InlineKeyboardMarkup(
         [[InlineKeyboardButton(label, callback_data=f"edit_field:{key}")]
@@ -2253,7 +2253,7 @@ async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             result = await db.execute(select(Farmer).where(Farmer.phone == phone))
             farmer = result.scalar_one_or_none()
             if not farmer:
-                await update.message.reply_text("⚠️ पहले /register करें।")
+                await update.message.reply_text("⚠️ Please /register first.")
                 return
 
             # Get extended profile
@@ -2307,7 +2307,7 @@ async def _handle_profile_data(update: Update, user_id: str, text: str, state: d
         phone = state.get("phone", user_id)
         farmer = await db.scalar(select(Farmer).where(Farmer.phone == phone))
         if not farmer:
-            await update.message.reply_text("⚠️ पहले /register करें। Please /register first.")
+            await update.message.reply_text("⚠️ Please /register first.")
             state["state"] = "start"
             return
 
@@ -2362,7 +2362,7 @@ async def fields_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = await db.execute(select(Farmer).where(Farmer.phone == phone))
         farmer = result.scalar_one_or_none()
         if not farmer:
-            await update.message.reply_text("⚠️ पहले /register करें।")
+            await update.message.reply_text("⚠️ Please /register first.")
             return
 
         field_result = await db.execute(
@@ -2393,7 +2393,7 @@ async def usefield_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = await db.execute(select(Farmer).where(Farmer.phone == phone))
         farmer = result.scalar_one_or_none()
         if not farmer:
-            await update.message.reply_text("⚠️ पहले /register करें।")
+            await update.message.reply_text("⚠️ Please /register first.")
             return
 
         field_result = await db.execute(
@@ -2431,7 +2431,7 @@ async def crops_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = await db.execute(select(Farmer).where(Farmer.phone == phone))
         farmer = result.scalar_one_or_none()
         if not farmer:
-            await update.message.reply_text("⚠️ पहले /register करें।")
+            await update.message.reply_text("⚠️ Please /register first.")
             return
 
         cycle_result = await db.execute(
@@ -2465,7 +2465,7 @@ async def usecrop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = await db.execute(select(Farmer).where(Farmer.phone == phone))
         farmer = result.scalar_one_or_none()
         if not farmer:
-            await update.message.reply_text("⚠️ पहले /register करें।")
+            await update.message.reply_text("⚠️ Please /register first.")
             return
 
         cycle_result = await db.execute(
@@ -2521,7 +2521,7 @@ async def newcycle_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         result = await db.execute(select(Farmer).where(Farmer.phone == phone))
         farmer = result.scalar_one_or_none()
         if not farmer:
-            await update.message.reply_text("⚠️ पहले /register करें।")
+            await update.message.reply_text("⚠️ Please /register first.")
             return
 
         cycle = CropCycle(
