@@ -211,7 +211,10 @@ async def voice_round_trip(
 
     transcript = stt["text"]
     detected = stt["detected_lang"]
-    target = _normalize_lang(target_lang_hint or detected)
+    # Detected language wins over the stored preference: if the farmer just
+    # spoke English, reply in English even if their saved preferred_language
+    # is hi-IN. The hint is only used as a fallback when detection failed.
+    target = _normalize_lang(detected or target_lang_hint)
 
     try:
         transcript_en = await translate(transcript, source_lang=detected, target_lang="en-IN")
