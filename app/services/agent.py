@@ -1337,22 +1337,26 @@ class AgentOrchestrator:
                 )
             blocks.append(blk)
 
-        # Stitch blocks with a visible separator so each section renders
-        # as its own paragraph in Telegram (blank lines alone get collapsed
-        # by some clients). Bold the header line of every block.
+        # Stitch blocks with a separator that Telegram won't collapse.
+        # Telegram's Markdown parser collapses runs of blank lines into one,
+        # so an empty-line-only separator silently disappears. Using a line
+        # of em-dashes flanked by zero-width-space lines forces real paragraph
+        # spacing. Each block header is bolded.
+        ZWSP = "​"
+        sep_line = "━" * 18
         lines: list[str] = []
         for i, blk in enumerate(blocks):
             if i > 0:
-                lines.append("")
-                lines.append("─" * 20)
-                lines.append("")
+                lines.append(ZWSP)
+                lines.append(sep_line)
+                lines.append(ZWSP)
             if blk:
                 header = blk[0]
                 if header and not (header.startswith("*") and header.endswith("*")):
                     blk = [f"*{header}*", *blk[1:]]
             lines.extend(blk)
-        lines.append("")
-        lines.append("─" * 20)
+        lines.append(ZWSP)
+        lines.append(sep_line)
 
         if not lines:
             return None

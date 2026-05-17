@@ -1439,8 +1439,12 @@ async def _process_farmer_query(
         else:
             detected_lang = ""  # inconclusive (mixed / empty)
 
+        # Native = detected script first; fall back to farmer's stored pref.
+        # Render bilingual whenever a native (non-English) lang is in play,
+        # regardless of whether the farmer typed in English or native — the
+        # English half doubles as a literacy aid; the native half drives TTS.
         native_lang = detected_lang if (detected_lang and not detected_lang.startswith("en")) else (pref_lang if pref_lang and not pref_lang.startswith("en") else "")
-        english_only = (detected_lang.startswith("en")) or (not native_lang)
+        english_only = not native_lang
 
         if settings.enable_voice_pipeline:
             try:
@@ -1453,7 +1457,12 @@ async def _process_farmer_query(
                     msg_native = msg if native_lang.startswith("hi") else await _sarvam_translate(
                         msg, source_lang="hi-IN", target_lang=native_lang
                     )
-                    msg = f"{msg_en}\n———\n{msg_native}"
+                    # Labeled, zero-width-space-padded divider survives
+                    # Telegram's blank-line collapse.
+                    ZWSP = "​"
+                    divider = f"{ZWSP}\n*— English —*\n{ZWSP}"
+                    native_divider = f"{ZWSP}\n*— {native_lang.upper()} —*\n{ZWSP}"
+                    msg = f"{divider}\n{msg_en}\n{native_divider}\n{msg_native}"
             except Exception as exc:
                 logger.warning(f"bilingual render skipped ({detected_lang}/{native_lang}): {exc}")
         effective_lang = "en-IN" if english_only else (native_lang or "hi-IN")
@@ -1488,10 +1497,18 @@ async def _process_farmer_query(
 
                 tts_lang = effective_lang if effective_lang else (pref_lang or "hi-IN")
                 emotion = RISK_TO_EMOTION.get(response.risk_level, "friendly")
-                # When msg is bilingual (English ——— native), speak only the
-                # native half. When English-only, speak the whole thing.
-                tts_source = msg.split("\n———\n", 1)[1] if "\n———\n" in msg else msg
-                tts_text = re.sub(r"[*_`#─]+", "", tts_source)
+                # Speak only the native half of a bilingual reply. The
+                # native section starts after the labeled native divider
+                # (matches whatever we built above).
+                native_marker_token = "*— "
+                if english_only:
+                    tts_source = msg
+                else:
+                    # Take everything after the LAST occurrence of the
+                    # native-language divider line we inserted.
+                    parts = msg.rsplit(f"*— {native_lang.upper()} —*", 1)
+                    tts_source = parts[1] if len(parts) == 2 else msg
+                tts_text = re.sub(r"[*_`#─━​]+", "", tts_source)
                 tts_text = re.sub(r"[\U0001F300-\U0001FAFF\U00002600-\U000027BF]", "", tts_text).strip()
                 audio_bytes = await _sarvam_tts(tts_text, target_lang=tts_lang, emotion=emotion)
                 if audio_bytes:
