@@ -1,0 +1,77 @@
+{
+  "reference_manuals": [
+    {
+      "id": "niphm_rice_ipm_package",
+      "crop": "rice",
+      "title": "Integrated Pest Management Package for Rice",
+      "publisher": "National Institute of Plant Health Management, Government of India",
+      "source_url": "https://niphm.gov.in/IPMPackages/Rice.pdf",
+      "local_path": "data/reference/official_manuals/niphm_rice_ipm_package.pdf",
+      "sha256": "9D63C8D64E67CA08FC35A804DF522F812E28EF479EBF9241EEA42C20E6D7486F",
+      "source_type": "official_manual",
+      "trust_level": "high",
+      "is_official": true,
+      "focus": [
+        "rice integrated pest management",
+        "economic threshold levels",
+        "biological control",
+        "safe chemical last-resort use"
+      ],
+      "sustainable_first_rules": [
+        "Monitor pests and defenders before recommending treatment; use pest-defender ratios and economic threshold levels where available.",
+        "Prefer prevention, cultural practices, resistant varieties, natural-enemy conservation, pheromone traps, and biological control before chemicals.",
+        "For rice stem borer and leaf folder, consider Trichogramma release, egg-mass collection, seedling-tip clipping, stubble destruction, and field sanitation before chemical escalation.",
+        "Use chemical control only as a last choice after regular monitoring shows pests have crossed threshold levels."
+      ],
+      "common_issues": [
+        "yellow stem borer",
+        "leaf folder",
+        "brown plant hopper",
+        "rice blast",
+        "brown spot",
+        "sheath blight",
+        "bacterial leaf blight",
+        "root-knot nematode"
+      ],
+      "farmer_safety_note": "If symptoms are severe, spreading fast, uncertain, or chemical use is being considered, ask for clear field evidence and advise contacting Kisan Call Centre 1800-180-1551 or a local KVK/agriculture officer."
+    },
+    {
+      "id": "ppqs_wheat_aesa_ipm_package",
+      "crop": "wheat",
+      "title": "AESA Based IPM Package for Wheat",
+      "publisher": "Directorate of Plant Protection, Quarantine and Storage, Government of India",
+      "source_url": "https://ppqs.gov.in/sites/default/files/wheat.pdf",
+      "local_path": "data/reference/official_manuals/ppqs_wheat_aesa_ipm_package.pdf",
+      "sha256": "43C50D431E45660A1ACA834386DB9133E58D16D83EC095AD64C5097C35663A52",
+      "source_type": "official_manual",
+      "trust_level": "high",
+      "is_official": true,
+      "focus": [
+        "wheat agro-ecosystem analysis",
+        "crop stage-wise IPM",
+        "ecological engineering",
+        "nutrient deficiency and pest safety"
+      ],
+      "sustainable_first_rules": [
+        "Conduct AESA in the morning and decide from field situation, pest count, natural enemies, weather, disease severity, weeds, and rodent damage.",
+        "Avoid calendar-based pesticide application; prefer resistant varieties, seed treatment, balanced nutrition, sanitation, biological control, pheromone traps, and mechanical/cultural controls.",
+        "Do not apply micronutrients without soil-test or clear deficiency evidence; avoid imbalanced fertilizer use.",
+        "Protect pollinators and natural enemies; avoid spraying during bee-active morning hours and avoid chemicals soon after parasitoid release."
+      ],
+      "common_issues": [
+        "termite",
+        "wheat aphid",
+        "army worm",
+        "yellow rust",
+        "brown rust",
+        "black rust",
+        "powdery mildew",
+        "karnal bunt",
+        "loose smut",
+        "rodent damage",
+        "post-harvest storage pests"
+      ],
+      "farmer_safety_note": "If symptoms are severe, spreading fast, uncertain, or chemical use is being considered, ask for clear field evidence and advise contacting Kisan Call Centre 1800-180-1551 or a local KVK/agriculture officer."
+    }
+  ]
+}

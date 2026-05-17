@@ -1208,14 +1208,15 @@ class AgentOrchestrator:
         lines: list[str] = []
 
         weather = evidence.weather_data
-        if weather and weather.get("forecast"):
+        forecast_rows = (weather or {}).get("forecast") if isinstance(weather, dict) else None
+        if isinstance(forecast_rows, list) and forecast_rows:
             district = weather.get("district", "")
             header = (
                 f"मौसम पूर्वानुमान ({district}):" if is_hindi
                 else f"Weather Forecast ({district}):"
             )
             lines.append(header)
-            for row in weather["forecast"][:5]:
+            for row in forecast_rows[:5]:
                 date = row.get("date", "")
                 tmax = row.get("temp_max")
                 tmin = row.get("temp_min")
@@ -1265,14 +1266,30 @@ class AgentOrchestrator:
         sell = tool_results.get("sell_decision")
         if sell:
             lines.append("बेचने का निर्णय:" if is_hindi else "Sell Decision:")
-            lines.append(sell.get("advice_hi" if is_hindi else "advice_en", ""))
+            advice = sell.get("advice_hi" if is_hindi else "advice_en", "")
+            for ln in str(advice).splitlines():
+                ln = ln.strip()
+                if ln:
+                    lines.append(f"  {ln}")
             storage = sell.get("storage_advice") or {}
-            if storage:
-                action = storage.get("action")
-                reason = storage.get("reasoning")
-                lines.append(f"  • Storage: {action} — {reason}")
-                for s in storage.get("candidate_storages", [])[:2]:
-                    lines.append(f"  • {s.get('name')} ({s.get('district')}) {s.get('contact_phone') or ''}")
+            candidates = storage.get("candidate_storages", []) if storage else []
+            if storage or candidates:
+                lines.append("")
+                lines.append("भंडारण विकल्प:" if is_hindi else "Storage Options:")
+                if storage.get("action"):
+                    lines.append(f"  Action: {storage.get('action')}")
+                if storage.get("reasoning"):
+                    lines.append(f"  Reason: {storage.get('reasoning')}")
+                for s in candidates[:2]:
+                    name = s.get("name", "")
+                    district = s.get("district", "")
+                    phone = s.get("contact_phone") or ""
+                    line = f"  - {name}"
+                    if district:
+                        line += f", {district}"
+                    if phone:
+                        line += f" (Phone: {phone})"
+                    lines.append(line)
             lines.append("")
 
         cluster = tool_results.get("cluster_intel")

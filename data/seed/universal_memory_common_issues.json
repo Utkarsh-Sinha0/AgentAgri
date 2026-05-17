@@ -1,0 +1,295 @@
+{
+  "common_issue_memory": [
+    {
+      "id": "rice_brown_spot_sustainable",
+      "crop": "rice",
+      "issue": "brown spot",
+      "aliases": ["brown spots", "oval spots", "leaf spots", "bhure dhabbe", "brown oval lesions"],
+      "topic_tags": ["disease", "leaf_spot", "soil_health"],
+      "source_ids": ["niphm_rice_ipm_package", "crop_playbook_rice"],
+      "field_evidence_needed": [
+        "clear close photo of affected leaf",
+        "whole-field photo showing spread",
+        "crop stage",
+        "whether spots are on lower leaves or all leaves",
+        "recent rain or high humidity",
+        "fertilizer and potash history"
+      ],
+      "weather_factors": [
+        "high humidity and cloudy/rainy weather increase fungal leaf-spot pressure",
+        "water stress and nutrient imbalance can make brown spot worse",
+        "avoid any spray when rain or strong wind is expected"
+      ],
+      "non_chemical_first": [
+        "remove heavily infected leaves where practical and keep field sanitation",
+        "improve drainage and avoid standing stagnant water",
+        "use balanced nutrition; do not overuse nitrogen",
+        "check potash status and soil health before adding inputs",
+        "send clearer photos if symptoms are mixed or unclear"
+      ],
+      "chemical_last_resort": [
+        "only consider fungicide after field evidence and local threshold/risk assessment support disease diagnosis",
+        "follow label and local agriculture officer/KVK advice; do not rely on chatbot dosage"
+      ],
+      "ask_expert_when": [
+        "spots are spreading across the field",
+        "panicles or stems are affected",
+        "two different symptom types are present",
+        "the farmer already tried advice and crop worsened"
+      ],
+      "safety_note": "Prefer diagnosis plus non-chemical steps first. If chemical control is being considered, advise Kisan Call Centre 1800-180-1551 or local KVK/agriculture officer."
+    },
+    {
+      "id": "rice_yellow_stem_borer_ipm",
+      "crop": "rice",
+      "issue": "yellow stem borer",
+      "aliases": ["stem borer", "dead heart", "white ear", "sundhi", "tana chhedak"],
+      "topic_tags": ["pest", "stem_borer", "ipm"],
+      "source_ids": ["niphm_rice_ipm_package", "crop_playbook_rice"],
+      "field_evidence_needed": [
+        "photo of deadheart or white ear symptom",
+        "count of affected tillers per square meter or per hill",
+        "egg masses or moths seen",
+        "crop stage",
+        "pheromone trap catch if available"
+      ],
+      "weather_factors": [
+        "humid rice canopy and dense crop can favor pest survival",
+        "wind or rain can reduce spray effectiveness",
+        "stubble survival after harvest can increase next crop pressure"
+      ],
+      "non_chemical_first": [
+        "clip seedling tips before transplanting to reduce egg carryover",
+        "collect egg masses and conserve parasitoids",
+        "install pheromone traps and monitor weekly",
+        "destroy stubble after harvest and flood/till as community practice where feasible",
+        "conserve spiders and other natural enemies"
+      ],
+      "chemical_last_resort": [
+        "chemical control only after monitoring shows economic threshold is crossed",
+        "use locally approved product and label guidance through KVK/agriculture officer"
+      ],
+      "ask_expert_when": [
+        "deadheart or white ear is above threshold",
+        "damage is spreading despite IPM steps",
+        "the farmer cannot identify pest versus nutrient/stress symptom"
+      ],
+      "safety_note": "Do not recommend calendar-based pesticide use. Escalate threshold decisions to KVK/Kisan Call Centre when uncertain."
+    },
+    {
+      "id": "rice_bph_weather_ipm",
+      "crop": "rice",
+      "issue": "brown plant hopper",
+      "aliases": ["bph", "hopper burn", "plant hopper", "brown hopper", "telia keeda"],
+      "topic_tags": ["pest", "hopper", "weather_risk"],
+      "source_ids": ["niphm_rice_ipm_package", "crop_playbook_rice"],
+      "field_evidence_needed": [
+        "photo of plant base near waterline",
+        "hopper count per hill",
+        "patch pattern in the field",
+        "water level and recent nitrogen application",
+        "weather humidity/rain forecast"
+      ],
+      "weather_factors": [
+        "humid and dense canopy conditions can increase hopper pressure",
+        "excess nitrogen and continuous standing water can worsen outbreaks",
+        "rain/wind timing affects any intervention"
+      ],
+      "non_chemical_first": [
+        "drain excess water temporarily if field conditions permit",
+        "avoid extra nitrogen until pest pressure is clear",
+        "inspect plant bases and field patches, not only leaf tips",
+        "conserve predators and avoid unnecessary broad-spectrum sprays"
+      ],
+      "chemical_last_resort": [
+        "only after hopper counts cross threshold and diagnosis is clear",
+        "follow label and local expert guidance; protect natural enemies"
+      ],
+      "ask_expert_when": [
+        "hopper burn patches are visible",
+        "more than one field patch is drying",
+        "prior pesticide use may have killed natural enemies"
+      ],
+      "safety_note": "BPH can worsen quickly; ask for field-base photos and advise KVK/Kisan Call Centre if patches are drying."
+    },
+    {
+      "id": "rice_blast_humidity_ipm",
+      "crop": "rice",
+      "issue": "blast",
+      "aliases": ["blast", "neck blast", "leaf blast", "diamond lesions", "jhulsa"],
+      "topic_tags": ["disease", "fungal_disease", "weather_risk"],
+      "source_ids": ["niphm_rice_ipm_package", "crop_playbook_rice"],
+      "field_evidence_needed": [
+        "clear leaf or neck/panicle photo",
+        "stage: vegetative, booting, flowering, or grain filling",
+        "recent cloudy/rainy weather and humidity",
+        "nitrogen use history",
+        "area affected"
+      ],
+      "weather_factors": [
+        "cloudy humid weather and leaf wetness increase blast risk",
+        "high nitrogen can increase susceptibility",
+        "neck blast near heading/grain filling needs urgent expert attention"
+      ],
+      "non_chemical_first": [
+        "avoid excess nitrogen and keep balanced nutrition",
+        "improve air movement where dense crop is causing prolonged wetness",
+        "remove volunteer/infected debris where practical",
+        "use resistant variety next season if blast is recurring"
+      ],
+      "chemical_last_resort": [
+        "fungicide decisions should be evidence-based and stage-aware",
+        "follow local recommendation and label; do not apply blindly"
+      ],
+      "ask_expert_when": [
+        "neck/panicle blast is suspected",
+        "large area is affected",
+        "symptoms spread after earlier advice"
+      ],
+      "safety_note": "For severe blast or neck blast, advise Kisan Call Centre 1800-180-1551 or KVK quickly."
+    },
+    {
+      "id": "wheat_yellow_rust_weather_ipm",
+      "crop": "wheat",
+      "issue": "yellow rust",
+      "aliases": ["yellow rust", "stripe rust", "peeli dhari", "yellow stripes"],
+      "topic_tags": ["disease", "rust", "weather_risk"],
+      "source_ids": ["ppqs_wheat_aesa_ipm_package", "crop_playbook_wheat"],
+      "field_evidence_needed": [
+        "photo of yellow stripes/pustules on leaves",
+        "variety name if known",
+        "crop stage",
+        "whether symptom is in patches or widespread",
+        "recent cool/humid weather"
+      ],
+      "weather_factors": [
+        "cool humid weather favors rust development",
+        "wind can spread spores between fields",
+        "avoid any spray if rain or strong wind is expected"
+      ],
+      "non_chemical_first": [
+        "confirm rust with clear leaf photos before treatment",
+        "avoid excess nitrogen",
+        "monitor field edges and patches every 2-3 days",
+        "use resistant varieties in future seasons"
+      ],
+      "chemical_last_resort": [
+        "chemical intervention should follow confirmed diagnosis and local advisory",
+        "follow label and KVK/agriculture officer guidance"
+      ],
+      "ask_expert_when": [
+        "yellow stripes are spreading",
+        "the crop is near booting/heading",
+        "multiple neighboring fields show similar symptoms"
+      ],
+      "safety_note": "Rust spreads fast. If diagnosis is likely, advise local KVK/Kisan Call Centre rather than guessing dosage."
+    },
+    {
+      "id": "wheat_aphid_ipm",
+      "crop": "wheat",
+      "issue": "aphid",
+      "aliases": ["aphid", "chepa", "mahua", "earhead aphid", "sticky leaves"],
+      "topic_tags": ["pest", "sucking_pest", "ipm"],
+      "source_ids": ["ppqs_wheat_aesa_ipm_package", "crop_playbook_wheat"],
+      "field_evidence_needed": [
+        "photo of aphids on leaf or earhead",
+        "rough count per tiller or earhead",
+        "presence of ladybird beetles or other natural enemies",
+        "crop stage",
+        "honeydew or sooty mold presence"
+      ],
+      "weather_factors": [
+        "mild dry spells can favor aphid buildup",
+        "rain may naturally reduce aphid pressure",
+        "spray timing should protect pollinators and natural enemies"
+      ],
+      "non_chemical_first": [
+        "check natural enemy population before action",
+        "avoid unnecessary broad-spectrum pesticide",
+        "monitor earheads and field edges",
+        "use water jet or localized non-chemical suppression where feasible on small patches"
+      ],
+      "chemical_last_resort": [
+        "only if counts cross local threshold and natural enemies are insufficient",
+        "follow label/KVK advice and avoid bee-active morning hours"
+      ],
+      "ask_expert_when": [
+        "aphids cover earheads in many patches",
+        "natural enemies are absent and crop is at grain filling",
+        "farmer is considering chemical spray"
+      ],
+      "safety_note": "Do not recommend calendar spray. Preserve natural enemies and escalate threshold decisions to local experts."
+    },
+    {
+      "id": "wheat_termite_dry_soil_ipm",
+      "crop": "wheat",
+      "issue": "termite",
+      "aliases": ["termite", "deemak", "white ant", "plants drying", "hollow stem"],
+      "topic_tags": ["pest", "soil_pest", "water_stress"],
+      "source_ids": ["ppqs_wheat_aesa_ipm_package", "crop_playbook_wheat"],
+      "field_evidence_needed": [
+        "photo of dried plants and root zone",
+        "whether plants pull out easily",
+        "soil moisture condition",
+        "FYM/manure status",
+        "patch size"
+      ],
+      "weather_factors": [
+        "dry soil and moisture stress increase termite damage risk",
+        "irrigation or rainfall can reduce stress-related termite injury",
+        "un-decomposed FYM can increase termite pressure"
+      ],
+      "non_chemical_first": [
+        "maintain appropriate soil moisture where irrigation is available",
+        "use well-decomposed FYM only",
+        "remove crop residues that harbor termites where feasible",
+        "confirm termite presence before treatment"
+      ],
+      "chemical_last_resort": [
+        "soil insecticide decisions need local diagnosis and label guidance",
+        "do not suggest treatment without root-zone evidence"
+      ],
+      "ask_expert_when": [
+        "large patches dry suddenly",
+        "root damage is visible",
+        "irrigation does not reduce symptoms"
+      ],
+      "safety_note": "Termite symptoms can resemble drought or root disease; ask for root-zone evidence before recommending treatment."
+    },
+    {
+      "id": "wheat_karnal_bunt_escalate",
+      "crop": "wheat",
+      "issue": "karnal bunt",
+      "aliases": ["karnal bunt", "fishy smell", "black grains", "bad smell wheat"],
+      "topic_tags": ["disease", "grain_quality", "quarantine"],
+      "source_ids": ["ppqs_wheat_aesa_ipm_package", "crop_playbook_wheat"],
+      "field_evidence_needed": [
+        "photo of affected earheads/grains",
+        "whether fishy smell is present",
+        "stage and harvest status",
+        "percentage of affected grains",
+        "seed source and variety"
+      ],
+      "weather_factors": [
+        "humid conditions around heading/flowering can increase disease risk",
+        "grain-quality disease decisions depend on stage and local advisory"
+      ],
+      "non_chemical_first": [
+        "do not use affected grain as seed",
+        "separate suspect grain from healthy produce",
+        "use certified seed and resistant varieties in future",
+        "confirm diagnosis through local expert before market/storage decision"
+      ],
+      "chemical_last_resort": [
+        "current-season chemical action is limited once grain symptoms are visible",
+        "future prevention should follow official seed treatment/local advisory"
+      ],
+      "ask_expert_when": [
+        "fishy smell or black grains are present",
+        "grain is intended for sale or seed",
+        "multiple spikes are affected"
+      ],
+      "safety_note": "Treat as an escalation/quality issue. Advise KVK/agriculture officer confirmation before sale, seed use, or storage decisions."
+    }
+  ]
+}

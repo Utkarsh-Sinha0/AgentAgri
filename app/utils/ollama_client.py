@@ -488,7 +488,7 @@ TEMPLATE_SELECTION_PROMPT = """Farmer message: {farmer_message}
 Retrieved evidence (wiki articles with indexed actions & warnings):
 {evidence}
 
-Knowledge base documents (MSP, schemes, insurance, cold storage, crop playbooks):
+Knowledge base documents (MSP, schemes, insurance, cold storage, crop playbooks, official manuals, common issue memory):
 {universal_kb}
 
 Previous field history: {memory_reference}

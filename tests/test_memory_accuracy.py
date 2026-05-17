@@ -18,12 +18,13 @@ from datetime import timedelta
 import pytest
 
 from app.models import Advisory, CropCycle, Farmer, Field, Observation
-from app.models_memory import MemoryAtom
+from app.models_memory import MemoryAtom, MemorySummary
 from app.services.memory import (
     _HALF_LIVES_DAYS,
     _OUTCOME_DELTAS,
     _outcome_delta,
     _temporal_weight,
+    coarsen_field_memory,
     extract_from_observation,
     extract_from_outcome,
     get_causal_chain,
@@ -344,6 +345,125 @@ async def test_m2_missing_observation_returns_none(db_session):
     """Unknown observation_id must short-circuit to None, not crash."""
     out = await extract_from_outcome(db_session, "nonexistent-obs-id", "improved", "", rating=5)
     assert out is None
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# M2.5 — Field-first localized memory payloads
+# ═══════════════════════════════════════════════════════════════════════
+
+
+async def test_field_summary_includes_soil_crop_status_and_common_issues(db_session):
+    """Field coarsening must carry the actual agronomy context, not just atom counts."""
+    farmer = await _farmer(db_session, phone="9100000065")
+    fld, cyc = await _field_cycle(db_session, farmer, crop="rice")
+    fld.soil_ph = 6.8
+    fld.irrigation_type = "canal"
+    cyc.variety = "Swarna"
+    obs, adv = await _obs_adv(db_session, farmer, fld, cyc, text="rice brown spots after humid weather")
+    await extract_from_observation(db_session, obs, adv)
+    db_session.add(MemoryAtom(
+        id=str(uuid.uuid4()),
+        farmer_id=farmer.id,
+        field_id=fld.id,
+        crop_cycle_id=cyc.id,
+        atom_type="disease_observed",
+        summary="Brown spot suspected in rice lower leaves",
+        details={"crop_name": "rice", "issue": "brown spot", "crop_stage": "vegetative"},
+        confidence=0.82,
+        source_type="manual",
+        village=farmer.village,
+        tehsil=farmer.tehsil,
+        district=farmer.district,
+        state="Bihar",
+        event_at=utc_now() - timedelta(days=1),
+        is_shareable=True,
+    ))
+    db_session.add(MemoryAtom(
+        id=str(uuid.uuid4()),
+        farmer_id=farmer.id,
+        field_id=fld.id,
+        crop_cycle_id=cyc.id,
+        atom_type="weather_event",
+        summary="Recent humid cloudy weather",
+        details={"crop_name": "rice", "weather_factor": "high humidity", "crop_stage": "vegetative"},
+        confidence=0.80,
+        source_type="weather_tool",
+        village=farmer.village,
+        tehsil=farmer.tehsil,
+        district=farmer.district,
+        state="Bihar",
+        event_at=utc_now(),
+    ))
+    await db_session.commit()
+
+    summary = await coarsen_field_memory(db_session, field_id=fld.id, farmer_id=farmer.id)
+    assert summary is not None
+    stats = summary.stats
+    assert stats["soil"]["soil_type"] == "loam"
+    assert stats["soil"]["soil_ph"] == 6.8
+    assert stats["current_crop"]["crop_name"] == "rice"
+    assert stats["current_crop"]["current_stage"] == "vegetative"
+    assert stats["crop_history"][0]["variety"] == "Swarna"
+    assert stats["special_issues"]["reported_issues"]["brown spot"] == 1
+    assert stats["special_issues"]["weather_factors"]["high humidity"] == 1
+    assert stats["latest_advisory"]["advisory_id"] == adv.id
+    assert any(issue["id"] == "rice_brown_spot_sustainable" for issue in stats["universal_common_issues"])
+    assert stats["expert_escalation"]["national_kisan_call_centre"] == "1800-180-1551"
+
+
+async def test_retrieve_memory_context_includes_full_public_hierarchy(db_session):
+    """Traversal should surface village through national coarsened context for a farmer."""
+    farmer = await _farmer(db_session, phone="9100000066", district="Patna", village="Bhusaula")
+    fld, cyc = await _field_cycle(db_session, farmer, crop="rice")
+    db_session.add(MemoryAtom(
+        id=str(uuid.uuid4()),
+        farmer_id=farmer.id,
+        field_id=fld.id,
+        crop_cycle_id=cyc.id,
+        atom_type="observation_recorded",
+        summary="rice field observation",
+        details={"crop_name": "rice"},
+        confidence=0.90,
+        source_type="manual",
+        village=farmer.village,
+        tehsil=farmer.tehsil,
+        district=farmer.district,
+        state="Bihar",
+        event_at=utc_now(),
+    ))
+    for scale, scale_id in [
+        ("village", "Patna:Bhusaula"),
+        ("tehsil", "Bihar:Patna:Bihta"),
+        ("district", "Bihar:Patna"),
+        ("state", "Bihar"),
+        ("national", "india"),
+    ]:
+        db_session.add(MemorySummary(
+            id=str(uuid.uuid4()),
+            scale=scale,
+            scale_id=scale_id,
+            title=f"{scale} title",
+            summary_text=f"{scale} summary",
+            key_patterns=[f"{scale} pattern"],
+            stats={"aggregation_chain": ["field", scale]},
+            atom_count=3,
+            farmer_count=3,
+            field_count=3,
+            confidence=0.8,
+            is_public=True,
+            min_farmers_required=3,
+        ))
+    await db_session.commit()
+
+    out = await retrieve_memory_context(db_session, farmer_id=farmer.id, field_id=fld.id, top_k=3)
+    types = {row["type"] for row in out}
+    assert {
+        "village_summary",
+        "tehsil_summary",
+        "district_summary",
+        "state_summary",
+        "national_summary",
+    } <= types
 
 
 # ═══════════════════════════════════════════════════════════════════════

@@ -1339,11 +1339,11 @@ async def _process_farmer_query(
         try:
             response = await agent.process(db, ctx)
         except Exception as exc:
-            logger.error(f"Agent processing failed: {exc}")
+            logger.exception(f"Agent processing failed: {exc}")
             await update.message.reply_text(
-                "⚠️ कुछ त्रुटि हुई। कृपया पुनः प्रयास करें।\n"
-                "An error occurred. Please try again.\n\n"
-                "📞 किसान कॉल सेंटर: 1800-180-1551"
+                "An error occurred. Please try again.\n"
+                "कुछ त्रुटि हुई। कृपया पुनः प्रयास करें।\n\n"
+                "Kisan Call Center: 1800-180-1551"
             )
             return
 
@@ -1396,7 +1396,7 @@ async def _process_farmer_query(
             InlineKeyboardButton("✳ नई बातचीत / New thread", callback_data="thread_new"),
         ])
 
-        msg += f"\n\n⚡ _{response.latency_ms}ms • {response.model_used} • {response.retrieval_path}_"
+        msg += f"\n\n---\n{response.latency_ms}ms | {response.model_used} | {response.retrieval_path}"
 
         # Bilingual reply policy:
         # - text always contains English.

@@ -166,8 +166,15 @@ async def translate(text: str, source_lang: str, target_lang: str) -> str:
                 "speaker_gender": "Female",
             }
             resp = await client.post("/translate", json=payload)
+            if resp.status_code >= 400:
+                logger.warning(f"Sarvam translate {resp.status_code}: {resp.text[:300]}")
             resp.raise_for_status()
-            return resp.json().get("translated_text", text)
+            body = resp.json()
+            translated = body.get("translated_text") or ""
+            if not translated:
+                logger.warning(f"Sarvam translate empty body keys={list(body.keys())} len_in={len(text)} src={src} tgt={tgt}")
+                return text
+            return translated
 
     try:
         return await _retry(_call)

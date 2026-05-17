@@ -75,30 +75,30 @@ async def sell_decision_advisor(
     if above_msp and price_rising and not is_volatile:
         decision: Literal["SELL_NOW", "WAIT", "PARTIAL_SALE", "HOLD"] = "HOLD"
         advice_hi = (
-            f"📈 भाव MSP (₹{msp}/quintal) से ऊपर है और बढ़ रहा है।\n"
-            f"सलाह: *थोड़ा रुकें* — कीमतें और बढ़ सकती हैं।\n"
+            f"भाव MSP (₹{msp}/क्विंटल) से ऊपर है और बढ़ रहा है।\n"
+            f"सलाह: थोड़ा रुकें — कीमतें और बढ़ सकती हैं।\n"
             f"अगले 2-3 दिन निगरानी करें।"
         )
         advice_en = f"Price above MSP (₹{msp}) and rising. Advice: HOLD — prices may increase further. Monitor for 2-3 days."
     elif above_msp and not price_rising:
         decision = "SELL_NOW"
         advice_hi = (
-            f"✅ भाव MSP (₹{msp}/quintal) से ऊपर है पर स्थिर/गिर रहा है।\n"
-            f"सलाह: *अभी बेचें* — कीमतें और गिर सकती हैं।\n"
-            f"वर्तमान भाव: ₹{current_price}/quintal"
+            f"भाव MSP (₹{msp}/क्विंटल) से ऊपर है पर स्थिर/गिर रहा है।\n"
+            f"सलाह: अभी बेचें — कीमतें और गिर सकती हैं।\n"
+            f"वर्तमान भाव: ₹{current_price}/क्विंटल"
         )
         advice_en = f"Price above MSP (₹{msp}) but stable/declining. Advice: SELL NOW at ₹{current_price}/quintal."
     elif not above_msp and msp > 0:
         decision = "WAIT"
         advice_hi = (
-            f"⚠️ भाव MSP (₹{msp}/quintal) से नीचे है।\n"
-            f"सलाह: *MSP पर FCI को बेचें* या भाव बढ़ने तक प्रतीक्षा करें।\n"
-            f"वर्तमान भाव: ₹{current_price}/quintal | MSP: ₹{msp}/quintal"
+            f"भाव MSP (₹{msp}/क्विंटल) से नीचे है।\n"
+            f"सलाह: MSP पर FCI को बेचें या भाव बढ़ने तक प्रतीक्षा करें।\n"
+            f"वर्तमान भाव: ₹{current_price}/क्विंटल | MSP: ₹{msp}/क्विंटल"
         )
         advice_en = f"Price below MSP (₹{msp}). Advice: Sell to FCI at MSP or wait for price recovery."
     else:
         decision = "PARTIAL_SALE"
-        advice_hi = "सलाह: *आंशिक बिक्री* — 50% अभी बेचें, 50% रोक कर रखें।"
+        advice_hi = "सलाह: आंशिक बिक्री — 50% अभी बेचें, 50% रोक कर रखें।"
         advice_en = "Advice: PARTIAL SALE — sell 50% now, hold 50%."
 
     # FCI centers

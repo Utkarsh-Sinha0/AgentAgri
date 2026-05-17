@@ -16,13 +16,12 @@ import uuid
 from pathlib import Path
 from types import SimpleNamespace
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 from telegram.constants import ChatAction  # noqa: F401  (kept for parity)
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.bot import telegram_bot as tb
 from app.database import init_db
-
 
 # ─── Fake Telegram surface ────────────────────────────────────────────
 

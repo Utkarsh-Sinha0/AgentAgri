@@ -38,6 +38,8 @@ def load_seed(force: bool = False) -> dict[str, Any]:
             "state_schemes": (_load_json("schemes_state_local.json") or {}).get("state_schemes", []),
             "insurance": (_load_json("insurance_policies.json") or {}).get("insurance_policies", []),
             "cold_storage": (_load_json("cold_storage_directory.json") or {}).get("cold_storage", []),
+            "reference_manuals": (_load_json("reference_manuals.json") or {}).get("reference_manuals", []),
+            "common_issue_memory": (_load_json("universal_memory_common_issues.json") or {}).get("common_issue_memory", []),
             "playbooks": {
                 "rice": _load_json("crop_playbook_rice.json"),
                 "wheat": _load_json("crop_playbook_wheat.json"),
@@ -138,6 +140,30 @@ def get_sustainable_alternatives(crop: str, stage: str | None = None) -> list[st
     return out
 
 
+def get_reference_manuals(crop: str | None = None) -> list[dict]:
+    rows = load_seed()["reference_manuals"]
+    if crop:
+        return [r for r in rows if _ci_eq(r.get("crop"), crop)]
+    return rows
+
+
+def get_common_issue_memory(crop: str | None = None, query: str | None = None, limit: int = 4) -> list[dict]:
+    rows = load_seed()["common_issue_memory"]
+    if crop:
+        rows = [r for r in rows if _ci_eq(r.get("crop"), crop)]
+    if query:
+        q = query.strip().lower()
+        scored: list[tuple[int, dict]] = []
+        for row in rows:
+            aliases = [row.get("issue", ""), *(row.get("aliases") or []), *(row.get("topic_tags") or [])]
+            score = sum(1 for alias in aliases if alias and alias.lower() in q)
+            if score:
+                scored.append((score, row))
+        if scored:
+            rows = [row for _, row in sorted(scored, key=lambda item: item[0], reverse=True)]
+    return rows[:limit]
+
+
 def retrieve(crop: str | None = None, state: str | None = None, stage: str | None = None, query: str | None = None) -> list[dict]:
     """Universal-KB retrieval. Returns metadata-tagged documents for the agent."""
     docs: list[dict] = []
@@ -156,6 +182,10 @@ def retrieve(crop: str | None = None, state: str | None = None, stage: str | Non
         docs.append({"kind": "universal_kb", "doc_type": "insurance", "crop": row.get("crop"), "state": row.get("state"), "content": row})
     for row in get_state_schemes(state=state, crop=crop):
         docs.append({"kind": "universal_kb", "doc_type": "scheme", "state": row.get("state"), "content": row})
+    for row in get_reference_manuals(crop=crop):
+        docs.append({"kind": "universal_kb", "doc_type": "official_manual", "crop": row.get("crop"), "content": row})
+    for row in get_common_issue_memory(crop=crop, query=query):
+        docs.append({"kind": "universal_kb", "doc_type": "common_issue_memory", "crop": row.get("crop"), "id": row.get("id"), "content": row})
     return docs
 
 

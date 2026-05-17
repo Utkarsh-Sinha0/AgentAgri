@@ -8,11 +8,12 @@ Three operators:
 from __future__ import annotations
 
 import uuid
+from collections import Counter
 from datetime import timedelta
 from math import exp
 
 from loguru import logger
-from sqlalchemy import desc, or_, select
+from sqlalchemy import desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
@@ -20,6 +21,7 @@ from app.models import (
     CropCalendarTask,
     CropCycle,
     Farmer,
+    Field,
     FinanceEntry,
     Observation,
     SatelliteNDVI,
@@ -90,6 +92,174 @@ def _temporal_weight(event_at, atom_type: str | None) -> float:
         return 0.0
     weight = exp(-0.693 * days_ago / float(half_life))
     return round(weight, 3)
+
+
+def _top_counts(values: list[str | None], limit: int = 8) -> dict[str, int]:
+    """Compact JSON-safe top-N counter for summary stats."""
+    counter = Counter(v for v in values if v)
+    return dict(counter.most_common(limit))
+
+
+def _atom_detail(atom: MemoryAtom, *keys: str):
+    details = atom.details or {}
+    for key in keys:
+        value = details.get(key)
+        if value not in (None, "", []):
+            return value
+    return None
+
+
+def _atom_issue_patterns(atoms: list[MemoryAtom]) -> dict:
+    issue_atoms = [
+        a for a in atoms
+        if a.atom_type in {
+            "disease_observed",
+            "pest_detected",
+            "weather_event",
+            "soil_trend",
+            "fertilizer_applied",
+            "irrigation_event",
+            "ndvi_change",
+            "outcome_reported",
+            "advisory_given",
+            "vision_analysis",
+            "observation_recorded",
+        }
+    ]
+    return {
+        "by_atom_type": _top_counts([a.atom_type for a in issue_atoms], limit=12),
+        "reported_issues": _top_counts(
+            [
+                _atom_detail(a, "issue", "disease", "pest", "risk_type", "label", "diagnosis")
+                for a in issue_atoms
+            ],
+            limit=8,
+        ),
+        "weather_factors": _top_counts(
+            [
+                _atom_detail(a, "weather", "weather_factor", "rainfall", "humidity", "temperature")
+                for a in issue_atoms
+            ],
+            limit=6,
+        ),
+        "stages": _top_counts([_atom_detail(a, "crop_stage", "stage") for a in issue_atoms], limit=6),
+    }
+
+
+def _summary_period(atoms: list[MemoryAtom]) -> tuple:
+    dated = [a.event_at for a in atoms if a.event_at]
+    if not dated:
+        return None, None
+    return min(dated), max(dated)
+
+
+def _aggregation_chain_for(scale: str) -> list[str]:
+    chain = ["field", "village", "tehsil", "district", "state", "national"]
+    if scale not in chain:
+        return chain
+    return chain[: chain.index(scale) + 1]
+
+
+def _lower_scale_for(scale: str) -> str | None:
+    order = ["field", "village", "tehsil", "district", "state", "national"]
+    try:
+        idx = order.index(scale)
+    except ValueError:
+        return None
+    return order[idx - 1] if idx > 0 else None
+
+
+async def _field_status_payload(
+    db: AsyncSession,
+    field_id: str,
+    farmer_id: str,
+    atoms: list[MemoryAtom],
+) -> dict:
+    field = await db.scalar(select(Field).where(Field.id == field_id, Field.farmer_id == farmer_id))
+    cycles = (
+        await db.execute(
+            select(CropCycle)
+            .where(CropCycle.field_id == field_id, CropCycle.is_template.is_(False))
+            .order_by(desc(CropCycle.is_active), desc(CropCycle.created_at))
+            .limit(8)
+        )
+    ).scalars().all()
+    active_cycle = next((c for c in cycles if c.is_active), cycles[0] if cycles else None)
+
+    latest_advisory = await db.scalar(
+        select(Advisory)
+        .join(Observation, Advisory.observation_id == Observation.id)
+        .where(Advisory.farmer_id == farmer_id, Observation.field_id == field_id)
+        .order_by(desc(Advisory.created_at))
+        .limit(1)
+    )
+
+    crop_name = active_cycle.crop_name if active_cycle else None
+    if not crop_name:
+        crop_name = next((_atom_detail(a, "crop_name", "crop") for a in atoms if _atom_detail(a, "crop_name", "crop")), None)
+
+    try:
+        from app.services.universal_kb import get_common_issue_memory
+
+        common_issues = [
+            {
+                "id": row.get("id"),
+                "issue": row.get("issue"),
+                "crop": row.get("crop"),
+                "field_evidence_needed": row.get("field_evidence_needed", [])[:4],
+                "non_chemical_first": row.get("non_chemical_first", [])[:4],
+                "safety_note": row.get("safety_note"),
+            }
+            for row in get_common_issue_memory(crop=crop_name, limit=4)
+        ]
+    except Exception as exc:  # pragma: no cover - defensive: memory must not fail if KB seed is missing.
+        logger.warning(f"common issue memory unavailable for field summary: {exc}")
+        common_issues = []
+
+    crop_history = [
+        {
+            "crop_cycle_id": c.id,
+            "crop_name": c.crop_name,
+            "variety": c.variety,
+            "current_stage": c.current_stage,
+            "sowing_date": c.sowing_date.isoformat() if c.sowing_date else None,
+            "expected_harvest_date": c.expected_harvest_date.isoformat() if c.expected_harvest_date else None,
+            "is_active": bool(c.is_active),
+        }
+        for c in cycles
+    ]
+
+    payload = {
+        "soil": {
+            "soil_type": field.soil_type if field else None,
+            "soil_ph": field.soil_ph if field else None,
+            "irrigation_type": field.irrigation_type if field else None,
+            "area_acres": field.area_acres if field else None,
+        },
+        "current_crop": {
+            "crop_cycle_id": active_cycle.id if active_cycle else None,
+            "crop_name": active_cycle.crop_name if active_cycle else crop_name,
+            "variety": active_cycle.variety if active_cycle else None,
+            "current_stage": active_cycle.current_stage if active_cycle else None,
+            "sowing_date": active_cycle.sowing_date.isoformat() if active_cycle and active_cycle.sowing_date else None,
+        },
+        "crop_history": crop_history,
+        "special_issues": _atom_issue_patterns(atoms),
+        "latest_advisory": {
+            "advisory_id": latest_advisory.id if latest_advisory else None,
+            "risk_level": latest_advisory.risk_level if latest_advisory else None,
+            "confidence": latest_advisory.confidence if latest_advisory else None,
+            "actions": latest_advisory.actions_text if latest_advisory else None,
+            "warnings": latest_advisory.warnings_text if latest_advisory else None,
+            "created_at": latest_advisory.created_at.isoformat() if latest_advisory and latest_advisory.created_at else None,
+        },
+        "universal_common_issues": common_issues,
+        "expert_escalation": {
+            "national_kisan_call_centre": "1800-180-1551",
+            "use_when": "chemical pesticide/fertilizer decisions, unclear diagnosis, spreading crop damage, or low confidence",
+        },
+    }
+    return payload
 
 # ═══════════════════════════════════════════════════════════════════════
 # OPERATOR 1: EXTRACTION
@@ -346,27 +516,46 @@ async def coarsen_field_memory(
     if not atoms:
         return None
 
-    # Count by type
-    type_counts = {}
-    for a in atoms:
-        type_counts[a.atom_type] = type_counts.get(a.atom_type, 0) + 1
+    type_counts = _top_counts([a.atom_type for a in atoms], limit=20)
+    period_start, period_end = _summary_period(atoms)
+    field_payload = await _field_status_payload(db, field_id, farmer_id, atoms)
 
     # Extract patterns
     patterns = []
-    disease_atoms = [a for a in atoms if "disease" in (a.atom_type or "").lower()]
-    if len(disease_atoms) >= 2:
-        patterns.append(f"Recurring disease observations ({len(disease_atoms)} events)")
+    special_issues = field_payload["special_issues"]
+    for atom_type, count in special_issues["by_atom_type"].items():
+        if count >= 2 and atom_type in {"disease_observed", "pest_detected", "weather_event", "outcome_reported"}:
+            patterns.append(f"Recurring {atom_type.replace('_', ' ')} ({count} events)")
 
     expense_atoms = [a for a in atoms if a.atom_type == "expense_logged"]
     if expense_atoms:
         total_expense = sum((a.details or {}).get("amount", 0) for a in expense_atoms)
         patterns.append(f"Total expenses logged: ₹{total_expense:,.0f}")
 
+    crop = field_payload["current_crop"].get("crop_name")
+    stage = field_payload["current_crop"].get("current_stage")
+    soil = field_payload["soil"].get("soil_type")
+
     # Build summary
     summary_text = f"Field memory: {len(atoms)} events recorded. "
+    if crop:
+        summary_text += f"Current crop: {crop}"
+        if stage:
+            summary_text += f" at {stage} stage"
+        summary_text += ". "
+    if soil:
+        summary_text += f"Soil: {soil}. "
     summary_text += f"Types: {', '.join(f'{k}({v})' for k, v in sorted(type_counts.items()))}. "
     if patterns:
         summary_text += "Key patterns: " + "; ".join(patterns) + "."
+
+    stats_payload = {
+        "atom_types": type_counts,
+        "hierarchy_source": "field_atoms",
+        "aggregation_chain": ["field"],
+        "source_atom_ids": [a.id for a in atoms[:30]],
+        **field_payload,
+    }
 
     # Upsert existing summary
     existing = await db.execute(
@@ -380,9 +569,11 @@ async def coarsen_field_memory(
     if summary:
         summary.summary_text = summary_text
         summary.key_patterns = patterns
-        summary.stats = {"atom_types": type_counts}
+        summary.stats = stats_payload
         summary.atom_count = len(atoms)
         summary.confidence = min(0.95, 0.40 + (len(atoms) * 0.02))
+        summary.period_start = period_start
+        summary.period_end = period_end
         summary.last_updated = utc_now()
     else:
         summary = MemorySummary(
@@ -392,10 +583,12 @@ async def coarsen_field_memory(
             title="Field Memory",
             summary_text=summary_text,
             key_patterns=patterns,
-            stats={"atom_types": type_counts},
+            stats=stats_payload,
             atom_count=len(atoms),
             farmer_count=1,
             field_count=1,
+            period_start=period_start,
+            period_end=period_end,
             confidence=min(0.95, 0.40 + (len(atoms) * 0.02)),
             is_public=False,
         )
@@ -430,6 +623,10 @@ async def coarsen_village_memory(
         return None  # Privacy threshold not met
 
     field_ids = set(a.field_id for a in atoms if a.field_id)
+    period_start, period_end = _summary_period(atoms)
+    type_counts = _top_counts([a.atom_type for a in atoms], limit=20)
+    crop_mentions = _top_counts([_atom_detail(a, "crop_name", "crop") for a in atoms], limit=8)
+    issue_patterns = _atom_issue_patterns(atoms)
 
     # Count disease/pest events
     disease_count = sum(1 for a in atoms if "disease" in (a.atom_type or "").lower())
@@ -445,6 +642,14 @@ async def coarsen_village_memory(
         f"Village {village}: {len(atoms)} events from {len(farmer_ids)} farmers "
         f"across {len(field_ids)} fields."
     )
+    stats_payload = {
+        "atom_types": type_counts,
+        "crop_mentions": crop_mentions,
+        "issue_patterns": issue_patterns,
+        "hierarchy_source": "field_atoms_clustered_by_village",
+        "aggregation_chain": ["field", "village"],
+        "visibility": "public_after_k_anonymity",
+    }
 
     existing = await db.execute(
         select(MemorySummary).where(
@@ -457,9 +662,12 @@ async def coarsen_village_memory(
     if summary:
         summary.summary_text = summary_text
         summary.key_patterns = patterns
+        summary.stats = stats_payload
         summary.atom_count = len(atoms)
         summary.farmer_count = len(farmer_ids)
         summary.field_count = len(field_ids)
+        summary.period_start = period_start
+        summary.period_end = period_end
         summary.last_updated = utc_now()
         summary.confidence = min(0.90, 0.30 + (len(atoms) * 0.01))
     else:
@@ -470,9 +678,12 @@ async def coarsen_village_memory(
             title=f"Village Commons — {village}",
             summary_text=summary_text,
             key_patterns=patterns,
+            stats=stats_payload,
             atom_count=len(atoms),
             farmer_count=len(farmer_ids),
             field_count=len(field_ids),
+            period_start=period_start,
+            period_end=period_end,
             confidence=min(0.90, 0.30 + (len(atoms) * 0.01)),
             is_public=True,
             min_farmers_required=3,
@@ -497,13 +708,19 @@ async def coarsen_geographic_memory(
         return None
 
     field_ids = {a.field_id for a in atoms if a.field_id}
-    type_counts = {}
-    crop_mentions = {}
-    for atom in atoms:
-        type_counts[atom.atom_type] = type_counts.get(atom.atom_type, 0) + 1
-        crop = (atom.details or {}).get("crop_name") or (atom.details or {}).get("crop")
-        if crop:
-            crop_mentions[crop] = crop_mentions.get(crop, 0) + 1
+    type_counts = _top_counts([a.atom_type for a in atoms], limit=20)
+    crop_mentions = _top_counts([_atom_detail(a, "crop_name", "crop") for a in atoms], limit=10)
+    issue_patterns = _atom_issue_patterns(atoms)
+    period_start, period_end = _summary_period(atoms)
+    lower_scale = _lower_scale_for(scale)
+    lower_summary_count = 0
+    if lower_scale == "field":
+        lower_summary_count = len(field_ids)
+    elif lower_scale:
+        lower_query = select(func.count()).select_from(MemorySummary).where(MemorySummary.scale == lower_scale)
+        if scale in {"district", "state"}:
+            lower_query = lower_query.where(MemorySummary.scale_id.like(f"{scale_id}:%"))
+        lower_summary_count = await db.scalar(lower_query) or 0
 
     patterns = []
     for key in ("disease_observed", "pest_detected", "outcome_reported", "advisory_given"):
@@ -520,6 +737,10 @@ async def coarsen_geographic_memory(
     payload = {
         "atom_types": type_counts,
         "crop_mentions": crop_mentions,
+        "issue_patterns": issue_patterns,
+        "hierarchy_source": f"{lower_scale or 'field'}_signals_clustered_to_{scale}",
+        "aggregation_chain": _aggregation_chain_for(scale),
+        "lower_summary_count": lower_summary_count,
         "visibility": "server",
     }
     if existing:
@@ -529,6 +750,8 @@ async def coarsen_geographic_memory(
         existing.atom_count = len(atoms)
         existing.farmer_count = len(farmer_ids)
         existing.field_count = len(field_ids)
+        existing.period_start = period_start
+        existing.period_end = period_end
         existing.last_updated = utc_now()
         existing.confidence = min(0.90, 0.30 + len(atoms) * 0.01)
         return existing
@@ -544,6 +767,8 @@ async def coarsen_geographic_memory(
         atom_count=len(atoms),
         farmer_count=len(farmer_ids),
         field_count=len(field_ids),
+        period_start=period_start,
+        period_end=period_end,
         confidence=min(0.90, 0.30 + len(atoms) * 0.01),
         is_public=True,
         min_farmers_required=min_farmers,
@@ -616,7 +841,7 @@ async def retrieve_memory_context(
     """
     Semantic memory retrieval replacing 'latest 5 observations'.
     Filters by farmer, field, crop, stage, risk type.
-    Returns top-k most relevant atoms + village-level summaries.
+    Returns top-k most relevant atoms plus public hierarchy summaries.
     """
     results = []
 
@@ -662,29 +887,77 @@ async def retrieve_memory_context(
             "source": "memory",
         })
 
-    # 2. Village-level public summaries
     if field_id:
-        # Get farmer's village
-        farmer_result = await db.execute(select(Farmer).where(Farmer.id == farmer_id))
-        farmer = farmer_result.scalar_one_or_none()
-        if farmer and farmer.village:
-            village_summary = await db.execute(
+        field_summary = await db.scalar(
+            select(MemorySummary)
+            .where(MemorySummary.scale == "field", MemorySummary.scale_id == field_id)
+            .order_by(desc(MemorySummary.last_updated))
+            .limit(1)
+        )
+        if field_summary:
+            results.append({
+                "type": "field_summary",
+                "scale": field_summary.scale,
+                "scale_id": field_summary.scale_id,
+                "title": field_summary.title,
+                "summary": field_summary.summary_text,
+                "patterns": field_summary.key_patterns,
+                "stats": field_summary.stats,
+                "farmer_count": field_summary.farmer_count,
+                "field_count": field_summary.field_count,
+                "source": "memory",
+            })
+
+    # 2. Local-to-national public summaries. Raw farm memory stays field-
+    # scoped; only coarsened summaries that passed their privacy threshold
+    # are traversed above the farmer's own field.
+    farmer_result = await db.execute(select(Farmer).where(Farmer.id == farmer_id))
+    farmer = farmer_result.scalar_one_or_none()
+    if farmer:
+        state = "Bihar"
+        latest_atom = await db.scalar(
+            select(MemoryAtom)
+            .where(MemoryAtom.farmer_id == farmer_id, MemoryAtom.state.isnot(None))
+            .order_by(desc(MemoryAtom.event_at))
+            .limit(1)
+        )
+        if latest_atom and latest_atom.state:
+            state = latest_atom.state
+
+        summary_keys: list[tuple[str, str]] = []
+        if farmer.village and farmer.district:
+            summary_keys.append(("village", f"{farmer.district}:{farmer.village}"))
+        if farmer.tehsil and farmer.district and state:
+            summary_keys.append(("tehsil", f"{state}:{farmer.district}:{farmer.tehsil}"))
+        if farmer.district and state:
+            summary_keys.append(("district", f"{state}:{farmer.district}"))
+        if state:
+            summary_keys.append(("state", state))
+        summary_keys.append(("national", "india"))
+
+        for scale, scale_id in summary_keys:
+            summary_result = await db.execute(
                 select(MemorySummary)
                 .where(
-                    MemorySummary.scale == "village",
-                    MemorySummary.scale_id == f"{farmer.district}:{farmer.village}",
+                    MemorySummary.scale == scale,
+                    MemorySummary.scale_id == scale_id,
+                    MemorySummary.is_public.is_(True),
                 )
                 .order_by(desc(MemorySummary.last_updated))
                 .limit(1)
             )
-            vs = village_summary.scalar_one_or_none()
-            if vs:
+            summary = summary_result.scalar_one_or_none()
+            if summary:
                 results.append({
-                    "type": "village_summary",
-                    "title": vs.title,
-                    "summary": vs.summary_text,
-                    "patterns": vs.key_patterns,
-                    "farmer_count": vs.farmer_count,
+                    "type": f"{scale}_summary",
+                    "scale": summary.scale,
+                    "scale_id": summary.scale_id,
+                    "title": summary.title,
+                    "summary": summary.summary_text,
+                    "patterns": summary.key_patterns,
+                    "stats": summary.stats,
+                    "farmer_count": summary.farmer_count,
+                    "field_count": summary.field_count,
                     "source": "memory",
                 })
 
