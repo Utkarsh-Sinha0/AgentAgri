@@ -249,8 +249,9 @@ async def request_guardrails(request: Request, call_next):
     response.headers.setdefault("Cross-Origin-Embedder-Policy", "require-corp")
     response.headers.setdefault(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
-        "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+        "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; "
+        "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; "
+        "object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
     )
     if settings.app_env in {"demo", "production"}:
         response.headers.setdefault(
