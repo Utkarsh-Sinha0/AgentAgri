@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     reranker_top_k: int = Field(default=3, alias="RERANKER_TOP_K")
     embedding_max_concurrency: int = Field(default=2, alias="EMBEDDING_MAX_CONCURRENCY")
 
+    # ─── Weather API ─────────────────────
+    weather_api_key: str = Field(default="", alias="WEATHER_API_KEY")
+
     # ─── Telegram ─────────────────────────
     telegram_bot_token: str = Field(default="", alias="TELEGRAM_BOT_TOKEN")
     dashboard_base_url: str = Field(default="http://localhost:8000", alias="AGRIMESH_DASHBOARD_BASE_URL")

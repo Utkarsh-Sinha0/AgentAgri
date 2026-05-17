@@ -892,7 +892,19 @@ def _serialize_advisory_for_showcase(item: Advisory | None) -> dict | None:
 
 pwa_dir = Path(__file__).parent.parent / "pwa" / "dist"
 if pwa_dir.exists():
-    app.mount("/", StaticFiles(directory=str(pwa_dir), html=True), name="pwa")
+    from fastapi.responses import FileResponse
+
+    _pwa_index = pwa_dir / "index.html"
+    app.mount("/assets", StaticFiles(directory=str(pwa_dir / "assets")), name="pwa-assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Serve actual files (manifest, icons, etc.) if they exist
+        candidate = pwa_dir / full_path
+        if full_path and candidate.is_file() and candidate.resolve().is_relative_to(pwa_dir.resolve()):
+            return FileResponse(candidate)
+        # Everything else falls through to index.html for the SPA router
+        return FileResponse(_pwa_index)
 else:
     @app.get("/")
     async def root():
