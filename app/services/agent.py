@@ -405,7 +405,7 @@ class AgentOrchestrator:
             # is wrong for every non-disease intent.
             toolworthy = intent.get("intent") in {"weather_query", "market_query", "finance_query", "scheme_query"}
             tool_response = (
-                self._build_tool_only_response(ctx, tool_results, evidence)
+                self._build_tool_only_response(ctx, tool_results, evidence, intent)
                 if toolworthy or self._is_sell_intent(ctx.message, intent) or self._is_cluster_intent(ctx.message)
                 else None
             )
@@ -1195,6 +1195,7 @@ class AgentOrchestrator:
         ctx: AgentContext,
         tool_results: dict,
         evidence: EvidenceBundle,
+        intent: dict | None = None,
     ) -> str | None:
         """Render a Hindi/English advisory directly from tool outputs.
 
@@ -1205,81 +1206,106 @@ class AgentOrchestrator:
             return None
 
         is_hindi = (ctx.language or "").lower().startswith("hi")
-        lines: list[str] = []
+        intent_name = (intent or {}).get("intent") if isinstance(intent, dict) else None
+        na = "पर्याप्त डेटा उपलब्ध नहीं है।" if is_hindi else "Not enough data available."
+        blocks: list[list[str]] = []
 
         weather = evidence.weather_data
         forecast_rows = (weather or {}).get("forecast") if isinstance(weather, dict) else None
-        if isinstance(forecast_rows, list) and forecast_rows:
-            district = weather.get("district", "")
+        want_weather = intent_name == "weather_query"
+        if (isinstance(forecast_rows, list) and forecast_rows) or want_weather:
+            district = (weather or {}).get("district", "") if isinstance(weather, dict) else ""
+            blk: list[str] = []
             header = (
                 f"मौसम पूर्वानुमान ({district}):" if is_hindi
                 else f"Weather Forecast ({district}):"
             )
-            lines.append(header)
-            for row in forecast_rows[:5]:
-                date = row.get("date", "")
-                tmax = row.get("temp_max")
-                tmin = row.get("temp_min")
-                rain = row.get("rainfall_mm", 0)
-                cond = row.get("condition", "")
-                lines.append(
-                    f"  • {date}: {tmin}-{tmax}°C, "
-                    f"{rain}mm rain, {cond}"
-                )
-            lines.append("")
-            if is_hindi:
-                lines.append("सूचना: बारिश के दिन यूरिया/कीटनाशक न डालें — बह जाएगा।")
+            blk.append(header.replace(" ()", "").replace("()", "").strip())
+            if isinstance(forecast_rows, list) and forecast_rows:
+                for row in forecast_rows[:5]:
+                    date = row.get("date", "")
+                    tmax = row.get("temp_max")
+                    tmin = row.get("temp_min")
+                    rain = row.get("rainfall_mm", 0)
+                    cond = row.get("condition", "")
+                    blk.append(f"  - {date}: {tmin}-{tmax}°C, {rain}mm rain, {cond}")
+                blk.append("")
+                if is_hindi:
+                    blk.append("सूचना: बारिश के दिन यूरिया/कीटनाशक न डालें — बह जाएगा।")
+                else:
+                    blk.append("Note: Avoid urea or pesticide application on rainy days — it will wash off.")
             else:
-                lines.append("Note: Avoid urea or pesticide application on rainy days — it will wash off.")
-            lines.append("")
+                blk.append(f"  {na}")
+            blocks.append(blk)
 
         mandi = evidence.mandi_data
-        if mandi and (mandi.get("prices") or mandi.get("msp")):
-            header = "मंडी भाव:" if is_hindi else "Mandi Prices:"
-            lines.append(header)
-            for entry in (mandi.get("prices") or [])[:2]:
+        want_market = intent_name in {"market_query", "finance_query"}
+        has_mandi = bool(mandi and (mandi.get("prices") or mandi.get("msp")))
+        if has_mandi or want_market:
+            blk = []
+            blk.append("मंडी भाव:" if is_hindi else "Mandi Prices:")
+            rendered_any = False
+            for entry in ((mandi or {}).get("prices") or [])[:2]:
                 if entry.get("history"):
                     latest = entry["history"][0]
-                    lines.append(
-                        f"  • {entry.get('type', 'paddy')}: "
+                    blk.append(
+                        f"  - {entry.get('type', 'paddy')}: "
                         f"₹{latest.get('modal')}/{entry.get('unit', 'qtl')} "
                         f"(min ₹{latest.get('min')}, max ₹{latest.get('max')})"
                     )
-            msp = mandi.get("msp")
+                    rendered_any = True
+            msp = (mandi or {}).get("msp")
             if msp:
-                lines.append(
-                    f"  • MSP (2025-26): ₹{msp}/quintal"
+                blk.append(
+                    f"  - MSP (2025-26): ₹{msp}/quintal"
                     if not is_hindi else
-                    f"  • MSP (2025-26): ₹{msp}/क्विंटल"
+                    f"  - MSP (2025-26): ₹{msp}/क्विंटल"
                 )
-            lines.append("")
-            if is_hindi:
-                lines.append("सूचना: FCI खरीद के लिए आधार, बैंक खाता, और भूमि रिकॉर्ड चाहिए।")
+                rendered_any = True
+            if not rendered_any:
+                blk.append(f"  {na}")
             else:
-                lines.append("Note: FCI procurement requires Aadhaar, bank account, and land records.")
-            lines.append("")
+                blk.append("")
+                if is_hindi:
+                    blk.append("सूचना: FCI खरीद के लिए आधार, बैंक खाता, और भूमि रिकॉर्ड चाहिए।")
+                else:
+                    blk.append("Note: FCI procurement requires Aadhaar, bank account, and land records.")
+            blocks.append(blk)
 
         scheme_lines = self._render_scheme_block(ctx, evidence, is_hindi)
         if scheme_lines:
-            lines.extend(scheme_lines)
+            blocks.append([ln for ln in scheme_lines if ln != ""])
+        elif intent_name == "scheme_query":
+            blocks.append([
+                "सरकारी योजनाएं:" if is_hindi else "Government Schemes:",
+                f"  {na}",
+            ])
 
         sell = tool_results.get("sell_decision")
-        if sell:
-            lines.append("बेचने का निर्णय:" if is_hindi else "Sell Decision:")
-            advice = sell.get("advice_hi" if is_hindi else "advice_en", "")
-            for ln in str(advice).splitlines():
-                ln = ln.strip()
-                if ln:
-                    lines.append(f"  {ln}")
-            storage = sell.get("storage_advice") or {}
+        is_sell = self._is_sell_intent(ctx.message, intent)
+        if sell or is_sell or want_market:
+            blk = []
+            blk.append("बेचने का निर्णय:" if is_hindi else "Sell Decision:")
+            if sell:
+                advice = sell.get("advice_hi" if is_hindi else "advice_en", "")
+                advice_lines = [ln.strip() for ln in str(advice).splitlines() if ln.strip()]
+                if advice_lines:
+                    for ln in advice_lines:
+                        blk.append(f"  {ln}")
+                else:
+                    blk.append(f"  {na}")
+            else:
+                blk.append(f"  {na}")
+            blocks.append(blk)
+
+            storage = (sell or {}).get("storage_advice") or {}
             candidates = storage.get("candidate_storages", []) if storage else []
+            storage_blk: list[str] = ["भंडारण विकल्प:" if is_hindi else "Storage Options:"]
             if storage or candidates:
-                lines.append("")
-                lines.append("भंडारण विकल्प:" if is_hindi else "Storage Options:")
                 if storage.get("action"):
-                    lines.append(f"  Action: {storage.get('action')}")
+                    storage_blk.append(f"  Action: {storage.get('action')}")
                 if storage.get("reasoning"):
-                    lines.append(f"  Reason: {storage.get('reasoning')}")
+                    storage_blk.append(f"  Reason: {storage.get('reasoning')}")
                 for s in candidates[:2]:
                     name = s.get("name", "")
                     district = s.get("district", "")
@@ -1289,21 +1315,34 @@ class AgentOrchestrator:
                         line += f", {district}"
                     if phone:
                         line += f" (Phone: {phone})"
-                    lines.append(line)
-            lines.append("")
+                    storage_blk.append(line)
+            else:
+                storage_blk.append(f"  {na}")
+            blocks.append(storage_blk)
 
         cluster = tool_results.get("cluster_intel")
         if cluster:
-            lines.append("ज़िला संकेत:" if is_hindi else "District Signals:")
+            blk = ["ज़िला संकेत:" if is_hindi else "District Signals:"]
             stages = (cluster.get("stage_distribution") or {}).get("stages") or {}
             pressure = (cluster.get("pest_pressure") or {}).get("signals") or {}
             if stages:
-                lines.append(f"  • {cluster.get('crop')} stage mix: {stages}")
+                blk.append(f"  - {cluster.get('crop')} stage mix: {stages}")
             if pressure:
-                lines.append(f"  • Recent shared pest/disease signals: {pressure}")
+                blk.append(f"  - Recent shared pest/disease signals: {pressure}")
             if not stages and not pressure:
-                lines.append("  • Privacy gate not met yet: at least 3 farmers are needed for aggregate sharing.")
-            lines.append("")
+                blk.append(
+                    "  गोपनीयता शर्त पूरी नहीं: कम-से-कम 3 किसानों का डेटा चाहिए।"
+                    if is_hindi else
+                    "  Privacy gate not met: at least 3 farmers needed for aggregate sharing."
+                )
+            blocks.append(blk)
+
+        # Stitch blocks with a single blank line between them.
+        lines: list[str] = []
+        for i, blk in enumerate(blocks):
+            if i > 0:
+                lines.append("")
+            lines.extend(blk)
 
         if not lines:
             return None
