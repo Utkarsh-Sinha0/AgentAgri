@@ -9,10 +9,12 @@ from __future__ import annotations
 # We use python-telegram-bot v21+ (async)
 import asyncio
 import re
+from contextlib import suppress
 from pathlib import Path
 
 from loguru import logger
 from sqlalchemy import desc, func, select
+from sqlalchemy import update as sa_update
 from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction
 from telegram.error import BadRequest
@@ -39,6 +41,7 @@ from app.models import (
 from app.models_memory import ConversationThread, MemoryAtom
 from app.services.agent import AgentContext, get_agent
 from app.services.demo_seed import seed_demo_memory_palace
+from app.services.voice import _normalize_lang, transcribe, voice_round_trip
 from app.utils.security import hash_password
 from app.utils.time import utc_now
 
@@ -463,9 +466,6 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Voice pipeline: STT -> en -> agent -> target -> TTS
-    from app.services.voice import voice_round_trip, transcribe, _normalize_lang
-    from sqlalchemy import update as sa_update
-
     # Run STT first so we can persist the real transcript before agent reasoning.
     transcript_seed = ""
     try:
@@ -867,10 +867,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except BadRequest:
             await query.message.reply_text("❌ रद्द / Cancelled.")
     elif data == "forgetme_confirm":
-        try:
+        with suppress(BadRequest):
             await query.edit_message_reply_markup(reply_markup=None)
-        except BadRequest:
-            pass
         await _execute_forgetme(query.message, state, user_id)
     elif data == "forgetme_cancel":
         try:
@@ -1400,20 +1398,40 @@ async def _process_farmer_query(
 
         msg += f"\n\n⚡ _{response.latency_ms}ms • {response.model_used} • {response.retrieval_path}_"
 
-        # Translate the body into farmer's preferred language when it isn't
-        # already Hindi/English (the display template is already bilingual hi/en).
+        # Bilingual reply policy:
+        # - text always contains English.
+        # - if detected/preferred is English -> English ONLY.
+        # - else -> English block first, then native block separated by "———".
+        # - audio uses native (detected wins; stored pref is fallback).
         pref_lang = (getattr(farmer, "preferred_language", "") or "").lower()
-        if (
-            settings.enable_voice_pipeline
-            and pref_lang
-            and not pref_lang.startswith(("hi", "en"))
-        ):
+        typed_text = text or ""
+        has_devanagari = any("ऀ" <= c <= "ॿ" for c in typed_text)
+        has_ascii_letters = any("a" <= c.lower() <= "z" for c in typed_text)
+        if has_devanagari and not has_ascii_letters:
+            detected_lang = "hi-IN"
+        elif has_ascii_letters and not has_devanagari:
+            detected_lang = "en-IN"
+        else:
+            detected_lang = ""  # inconclusive
+
+        native_lang = detected_lang if (detected_lang and not detected_lang.startswith("en")) else (pref_lang if pref_lang and not pref_lang.startswith("en") else "")
+        english_only = (detected_lang.startswith("en")) or (not native_lang)
+
+        if settings.enable_voice_pipeline:
             try:
                 from app.services.voice import translate as _sarvam_translate
 
-                msg = await _sarvam_translate(msg, source_lang="hi-IN", target_lang=pref_lang)
+                msg_en = await _sarvam_translate(msg, source_lang="hi-IN", target_lang="en-IN")
+                if english_only:
+                    msg = msg_en
+                else:
+                    msg_native = msg if native_lang.startswith("hi") else await _sarvam_translate(
+                        msg, source_lang="hi-IN", target_lang=native_lang
+                    )
+                    msg = f"{msg_en}\n———\n{msg_native}"
             except Exception as exc:
-                logger.warning(f"reply translate to {pref_lang} skipped: {exc}")
+                logger.warning(f"bilingual render skipped ({detected_lang}/{native_lang}): {exc}")
+        effective_lang = "en-IN" if english_only else (native_lang or "hi-IN")
 
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
         reply_mode = state.get("reply_mode", "text")
@@ -1441,9 +1459,13 @@ async def _process_farmer_query(
             try:
                 from app.services.voice import synthesize as _sarvam_tts
 
-                tts_lang = pref_lang if pref_lang else "hi-IN"
+                tts_lang = effective_lang if effective_lang else (pref_lang or "hi-IN")
                 emotion = RISK_TO_EMOTION.get(response.risk_level, "friendly")
-                tts_text = re.sub(r"[*_`#]", "", msg).strip()
+                # When msg is bilingual (English ——— native), speak only the
+                # native half. When English-only, speak the whole thing.
+                tts_source = msg.split("\n———\n", 1)[1] if "\n———\n" in msg else msg
+                tts_text = re.sub(r"[*_`#]", "", tts_source)
+                tts_text = re.sub(r"[\U0001F300-\U0001FAFF\U00002600-\U000027BF]", "", tts_text).strip()
                 audio_bytes = await _sarvam_tts(tts_text, target_lang=tts_lang, emotion=emotion)
                 if audio_bytes:
                     await update.message.reply_voice(

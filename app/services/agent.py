@@ -148,6 +148,13 @@ class AgentOrchestrator:
             intent = intent_result.get("parsed", {}) or {}
             needs_retrieval = intent.get("needs_retrieval", True)
             needs_tools = intent.get("needs_tool_call", False)
+            # Hard override: factual lookup intents must hit retrieval + tools.
+            # The grammar-constrained classifier sometimes returns the right
+            # intent but with both flags off, which leaves the agent with no
+            # data and produces an irrelevant templated reply.
+            if intent.get("intent") in {"market_query", "scheme_query", "weather_query", "finance_query"}:
+                needs_retrieval = True
+                needs_tools = True
             llm_crop_name = (intent.get("crop_name") or "").strip()
             llm_crop_stage = (intent.get("crop_stage") or "").strip()
             llm_state = (intent.get("state_or_region") or "").strip()
@@ -272,6 +279,23 @@ class AgentOrchestrator:
         if "match_schemes" in tool_results:
             evidence.scheme_data = tool_results.get("match_schemes")
 
+        if needs_retrieval and not evidence.weather_data and (ctx.crop_name or ctx.field_id):
+            try:
+                from app.services.weather import get_forecast, get_historical_weather
+
+                forecast, history = await asyncio.gather(
+                    get_forecast(field_id=ctx.field_id, days=3),
+                    get_historical_weather(field_id=ctx.field_id, days=3),
+                    return_exceptions=True,
+                )
+                evidence.weather_data = {
+                    "forecast": None if isinstance(forecast, Exception) else forecast,
+                    "history": None if isinstance(history, Exception) else history,
+                    "use_as": "weather factor context for agronomic risk, spray timing, disease pressure, water stress, and storage decisions",
+                }
+            except Exception as exc:
+                logger.warning(f"automatic weather context skipped: {exc}")
+
         # Closed-loop market decision: selling/procurement intent should not
         # stop at raw mandi prices. Route to the deterministic sell advisor so
         # the farmer gets sell/wait/store guidance grounded in MSP + storage.
@@ -323,6 +347,7 @@ class AgentOrchestrator:
                     crop=ctx.crop_name,
                     state=state_hint,
                     stage=ctx.crop_stage,
+                    query=ctx.message,
                 ) if should_load_kb else []
             ) or []
             if (
@@ -340,9 +365,12 @@ class AgentOrchestrator:
         # it here instead of re-querying).
         evidence.memory_context = await self._load_memory_context(db, ctx)
         profile_context = await self._load_personal_profile_context(db, ctx)
-        evidence.memory_context = "\n".join(
-            part for part in [profile_context, conversation_context, evidence.memory_context] if part
-        )
+        # Factual lookups (MSP, schemes, weather, finance) are stateless. Past
+        # turns about pests or diseases poison template selection and let the
+        # LLM drag irrelevant prior context into a price/scheme answer.
+        is_factual = intent.get("intent") in {"market_query", "scheme_query", "weather_query", "finance_query"}
+        ctx_parts = [profile_context, evidence.memory_context] if is_factual else [profile_context, conversation_context, evidence.memory_context]
+        evidence.memory_context = "\n".join(part for part in ctx_parts if part)
 
         # Load NDVI satellite data (§10.3)
         evidence.ndvi_data = await self._load_ndvi_data(db, ctx)
@@ -768,7 +796,7 @@ class AgentOrchestrator:
         "LOW": "एहतियात के तौर पर / As a precaution: ",
         "MEDIUM": "हम अनुशंसा करते हैं / We recommend: ",
         "HIGH": "हम दृढ़ता से सुझाते हैं / We strongly recommend: ",
-        "ESCALATE": "⚠️ तुरंत कृषि विशेषज्ञ से संपर्क करें / Urgent — contact expert: ",
+        "ESCALATE": "Urgent — contact agricultural expert immediately: ",
     }
 
     @staticmethod
@@ -794,7 +822,7 @@ class AgentOrchestrator:
             if cursor + len(actions) > action_index:
                 title = art.get("title")
                 if title:
-                    parts.append(f"📚 {title}")
+                    parts.append(f"Source: {title}")
                 break
             cursor += len(actions)
 
@@ -888,12 +916,10 @@ class AgentOrchestrator:
         evidence: EvidenceBundle,
     ) -> str:
         """Build the farmer-facing display text (with E1/E2/E3 evidence)."""
-        risk_emoji = {"NORMAL": "🟢", "WATCH": "🟡", "PREVENTIVE_ACTION": "🟠", "ESCALATE": "🔴"}
-
         # E2: confidence-leveled preamble
         confidence_prefix = self._CONFIDENCE_PREFIX.get(rec.confidence, "")
 
-        header = f"{risk_emoji.get(rec.risk_level, '🟡')} **{rec.risk_level}** — {confidence_prefix}{rec.contextualization}"
+        header = f"[{rec.risk_level}] {confidence_prefix}{rec.contextualization}"
         lines = [header, ""]
 
         # E3: change summary for follow-ups
@@ -902,7 +928,7 @@ class AgentOrchestrator:
                 db, rec, evidence, ctx.previous_advisory_id
             )
             if change_summary:
-                lines.append(f"📊 पिछली सलाह से बदलाव / What changed: {change_summary}")
+                lines.append(f"Change since last advisory: {change_summary}")
                 lines.append("")
 
         # E1: actions with inline citations
@@ -910,7 +936,7 @@ class AgentOrchestrator:
             memory_atoms = self._parse_memory_atoms_from_context(evidence.memory_context)
             peer_atoms: list[dict] = []  # already folded into memory_context for E1 counting
 
-            lines.append("*अनुशंसित कार्य / Recommended Actions:*")
+            lines.append("Recommended Actions:")
             # actions_text and selected_action_indices are 1:1 (built together
             # at parse-time). Pass the global wiki-action index, not the
             # display position, so citations attribute to the right article.
@@ -932,13 +958,13 @@ class AgentOrchestrator:
             lines.append("")
 
         if rec.warnings_text:
-            lines.append("*सावधानियां / Warnings:*")
+            lines.append("Warnings:")
             for warning in rec.warnings_text:
-                lines.append(f"  ⚠️ {warning}")
+                lines.append(f"  - {warning}")
             lines.append("")
 
         if rec.memory_reference:
-            lines.append(f"📋 _{rec.memory_reference}_")
+            lines.append(f"Reference: {rec.memory_reference}")
 
         # If the scheme tool fired alongside wiki retrieval, surface the
         # scheme details inline so scheme-keyword evidence (installment,
@@ -952,8 +978,8 @@ class AgentOrchestrator:
             lines.append("")
             lines.extend(scheme_lines)
 
-        lines.append(f"🎯 *Confidence:* {rec.confidence}")
-        lines.append("📞 Kisan Call Center: 1800-180-1551")
+        lines.append(f"Confidence: {rec.confidence}")
+        lines.append("Kisan Call Center: 1800-180-1551")
         return "\n".join(lines)
 
     def _build_evidence_cards(
@@ -995,13 +1021,14 @@ class AgentOrchestrator:
                 "source_name": art.get("title") or "AgriMesh Knowledge Base",
                 "trust_level": "high" if art.get("review_status") == "published" else "medium",
             })
-        for doc in evidence.universal_kb_docs[:4]:
+        for doc in evidence.universal_kb_docs[:6]:
+            content = doc.get("content", {})
             cards.append({
                 "type": "universal_kb",
                 "label": f"📌 {doc.get('doc_type', 'KB')}",
-                "content": json.dumps(doc.get("content", {}), ensure_ascii=False)[:200],
-                "source_name": "AgentAgri Universal KB",
-                "trust_level": "medium",
+                "content": json.dumps(content, ensure_ascii=False)[:200],
+                "source_name": content.get("title") or content.get("issue") or "AgentAgri Universal KB",
+                "trust_level": content.get("trust_level") or ("high" if content.get("source_ids") else "medium"),
             })
         return cards
 
@@ -1028,6 +1055,21 @@ class AgentOrchestrator:
                     actions = [f"Check eligibility and claim/enrolment window for {content.get('scheme_name') or 'crop insurance'}."]
                 elif dtype == "scheme":
                     actions = [f"Check eligibility for {content.get('scheme_name') or 'government scheme'} and apply via official channel."]
+                elif dtype == "common_issue_memory":
+                    actions = [str(a) for a in (content.get("non_chemical_first") or [])[:4]]
+                    if content.get("field_evidence_needed"):
+                        actions.insert(
+                            0,
+                            "Collect field evidence first: "
+                            + ", ".join(str(x) for x in content.get("field_evidence_needed", [])[:3])
+                        )
+                    warnings = [
+                        str(content.get("safety_note") or "Ask KVK/Kisan Call Centre before chemical use."),
+                        *[str(x) for x in (content.get("chemical_last_resort") or [])[:2]],
+                    ]
+                elif dtype == "official_manual":
+                    actions = [str(a) for a in (content.get("sustainable_first_rules") or [])[:4]]
+                    warnings = [str(content.get("farmer_safety_note") or warnings[0])]
             if actions:
                 articles.append({
                     "id": doc.get("id") or f"universal_kb:{dtype}:{idx}",
@@ -1058,7 +1100,7 @@ class AgentOrchestrator:
         if not scheme or not scheme.get("schemes"):
             return []
         lines: list[str] = []
-        header = "🏛️ *योजनाएं*" if is_hindi else "🏛️ *Government schemes*"
+        header = "Government Schemes:" if not is_hindi else "सरकारी योजनाएं:"
         lines.append(header)
 
         msg_lower = (ctx.message or "").lower()
@@ -1083,12 +1125,12 @@ class AgentOrchestrator:
         for s in ordered[:5]:
             name_en = s.get("scheme_name", "")
             name_hi = s.get("scheme_name_hi", "") or name_en
-            tick = "✅" if s.get("is_eligible") else "ℹ️"
+            tick = "[Eligible]" if s.get("is_eligible") else "[Info]"
             lines.append(f"  {tick} {name_en} / {name_hi}: {s.get('benefit', '')}")
             if not s.get("is_eligible") and s.get("reason"):
                 lines.append(f"     ({s.get('reason')})")
             if s.get("apply_link"):
-                lines.append(f"     🔗 {s['apply_link']}")
+                lines.append(f"     Apply: {s['apply_link']}")
 
             sid = s.get("scheme_id")
             if sid == "pm_kisan":
@@ -1155,8 +1197,8 @@ class AgentOrchestrator:
         if weather and weather.get("forecast"):
             district = weather.get("district", "")
             header = (
-                f"🌦️ *मौसम पूर्वानुमान* ({district})" if is_hindi
-                else f"🌦️ *Weather forecast* ({district})"
+                f"मौसम पूर्वानुमान ({district}):" if is_hindi
+                else f"Weather Forecast ({district}):"
             )
             lines.append(header)
             for row in weather["forecast"][:5]:
@@ -1171,14 +1213,14 @@ class AgentOrchestrator:
                 )
             lines.append("")
             if is_hindi:
-                lines.append("⚠️ बारिश के दिन यूरिया/कीटनाशक न डालें — बह जाएगा।")
+                lines.append("सूचना: बारिश के दिन यूरिया/कीटनाशक न डालें — बह जाएगा।")
             else:
-                lines.append("⚠️ Avoid urea or pesticide application on rainy days — it will wash off.")
+                lines.append("Note: Avoid urea or pesticide application on rainy days — it will wash off.")
             lines.append("")
 
         mandi = evidence.mandi_data
         if mandi and mandi.get("prices"):
-            header = "🏪 *मंडी भाव*" if is_hindi else "🏪 *Mandi prices*"
+            header = "मंडी भाव:" if is_hindi else "Mandi Prices:"
             lines.append(header)
             for entry in mandi["prices"][:2]:
                 if entry.get("history"):
@@ -1197,9 +1239,9 @@ class AgentOrchestrator:
                 )
             lines.append("")
             if is_hindi:
-                lines.append("ℹ️ FCI खरीद के लिए आधार, बैंक खाता, और भूमि रिकॉर्ड चाहिए।")
+                lines.append("सूचना: FCI खरीद के लिए आधार, बैंक खाता, और भूमि रिकॉर्ड चाहिए।")
             else:
-                lines.append("ℹ️ FCI procurement requires Aadhaar, bank account, and land records.")
+                lines.append("Note: FCI procurement requires Aadhaar, bank account, and land records.")
             lines.append("")
 
         scheme_lines = self._render_scheme_block(ctx, evidence, is_hindi)
@@ -1208,7 +1250,7 @@ class AgentOrchestrator:
 
         sell = tool_results.get("sell_decision")
         if sell:
-            lines.append("🏷️ *बेचने का निर्णय*" if is_hindi else "🏷️ *Sell decision*")
+            lines.append("बेचने का निर्णय:" if is_hindi else "Sell Decision:")
             lines.append(sell.get("advice_hi" if is_hindi else "advice_en", ""))
             storage = sell.get("storage_advice") or {}
             if storage:
@@ -1221,7 +1263,7 @@ class AgentOrchestrator:
 
         cluster = tool_results.get("cluster_intel")
         if cluster:
-            lines.append("👥 *ज़िला संकेत*" if is_hindi else "👥 *District signals*")
+            lines.append("ज़िला संकेत:" if is_hindi else "District Signals:")
             stages = (cluster.get("stage_distribution") or {}).get("stages") or {}
             pressure = (cluster.get("pest_pressure") or {}).get("signals") or {}
             if stages:
@@ -1236,9 +1278,9 @@ class AgentOrchestrator:
             return None
 
         if is_hindi:
-            lines.append("📞 किसान कॉल सेंटर: 1800-180-1551")
+            lines.append("किसान कॉल सेंटर: 1800-180-1551")
         else:
-            lines.append("📞 Kisan Call Center: 1800-180-1551")
+            lines.append("Kisan Call Center: 1800-180-1551")
 
         return "\n".join(lines)
 
@@ -1327,7 +1369,7 @@ class AgentOrchestrator:
 
         if is_hindi:
             lines = [
-                "🌾 *फॉलो-अप सलाह / Follow-up advice*",
+                "Follow-up Advice:",
                 "",
                 f"अच्छा (good) कि आपने {action_label_en} किया और {problem_label_en} पर नज़र रखी — "
                 "यह सही दिशा है।",
@@ -1339,11 +1381,11 @@ class AgentOrchestrator:
                 f"  3. {action_label_en} का प्रभाव बनाए रखें — अभी कोई नया रसायन (chemical) न डालें।",
                 "  4. मौसम साफ़ रहे तो 7 दिन बाद अगला कदम तय करेंगे।",
                 "",
-                "📞 अगर हालत बिगड़े: किसान कॉल सेंटर 1800-180-1551 या KVK से संपर्क करें।",
+                "अगर हालत बिगड़े: किसान कॉल सेंटर 1800-180-1551 या KVK से संपर्क करें।",
             ]
         else:
             lines = [
-                "🌾 *Follow-up advice*",
+                "Follow-up Advice:",
                 "",
                 f"Good — you followed through on {action_label_en} and {problem_label_en} "
                 "stopped spreading. That's the right direction.",
@@ -1355,7 +1397,7 @@ class AgentOrchestrator:
                 f"  3. Keep the {action_label_en} effect intact — do not apply any new chemical yet.",
                 "  4. If weather stays clear, we'll decide the next step in 7 days.",
                 "",
-                "📞 If it worsens, call the Kisan Call Center 1800-180-1551 or your local KVK.",
+                "If it worsens, call the Kisan Call Center 1800-180-1551 or your local KVK.",
             ]
         return "\n".join(lines)
 
@@ -1454,23 +1496,23 @@ class AgentOrchestrator:
         is_hindi = (ctx.language or "").lower().startswith("hi")
         if is_hindi:
             display_text = (
-                "🌾 नमस्ते! मुझे आपकी समस्या समझने के लिए और जानकारी चाहिए।\n\n"
+                "नमस्ते। समस्या समझने के लिए कुछ जानकारी चाहिए।\n\n"
                 "कृपया बताएं:\n"
                 "1. कौन सी फसल है?\n"
                 "2. फसल किस अवस्था में है?\n"
                 "3. लक्षण कब से दिख रहे हैं?\n\n"
-                "या फोटो भेजें — मैं फसल की तस्वीर देखकर बेहतर सलाह दे सकता हूं। 📸\n\n"
-                "📞 तत्काल सहायता: किसान कॉल सेंटर 1800-180-1551"
+                "या फसल की फोटो भेजें — तस्वीर देखकर बेहतर सलाह दी जा सकती है।\n\n"
+                "तत्काल सहायता: किसान कॉल सेंटर 1800-180-1551"
             )
         else:
             display_text = (
-                "🌾 Hello! I need a bit more information to help you.\n\n"
+                "Hello. I need a bit more information to help you.\n\n"
                 "Please tell me:\n"
                 "1. Which crop is this?\n"
                 "2. What stage is the crop at?\n"
                 "3. Since when have you been seeing the symptoms?\n\n"
-                "Or send a photo — I can look at the crop and give better advice. 📸\n\n"
-                "📞 Immediate help: Kisan Call Center 1800-180-1551"
+                "Or send a photo — I can review the crop image and give better advice.\n\n"
+                "Immediate help: Kisan Call Center 1800-180-1551"
             )
 
         advisory_id: str | None = None
