@@ -138,13 +138,31 @@ async def translate(text: str, source_lang: str, target_lang: str) -> str:
         raise SarvamError(f"Translate failed: {exc}") from exc
 
 
-async def synthesize(text: str, target_lang: str, speaker: str | None = None) -> bytes:
+# Emotion presets shape Sarvam bulbul's pitch/pace/loudness. bulbul:v2 has no
+# native "emotion" field, so we modulate prosody instead — slightly brighter
+# for routine advice, firmer + slower for escalate.
+EMOTION_PRESETS: dict[str, dict[str, float]] = {
+    "neutral":   {"pitch": 0.0,  "pace": 1.0,  "loudness": 1.0},
+    "friendly":  {"pitch": 0.05, "pace": 1.0,  "loudness": 1.05},
+    "urgent":    {"pitch": 0.1,  "pace": 1.1,  "loudness": 1.15},
+    "concerned": {"pitch": -0.05,"pace": 0.95, "loudness": 1.0},
+    "firm":      {"pitch": -0.1, "pace": 0.9,  "loudness": 1.1},
+}
+
+
+async def synthesize(
+    text: str,
+    target_lang: str,
+    speaker: str | None = None,
+    emotion: str = "friendly",
+) -> bytes:
     if not text.strip():
         return b""
     tgt = _normalize_lang(target_lang)
     if not settings.sarvam_api_key:
         raise SarvamError("SARVAM_API_KEY not configured")
     spk = speaker or settings.sarvam_tts_speaker
+    preset = EMOTION_PRESETS.get(emotion, EMOTION_PRESETS["friendly"])
 
     async def _call() -> bytes:
         async with _client() as client:
@@ -153,9 +171,9 @@ async def synthesize(text: str, target_lang: str, speaker: str | None = None) ->
                 "target_language_code": tgt,
                 "speaker": spk,
                 "model": settings.sarvam_tts_model,
-                "pitch": 0,
-                "pace": 1.0,
-                "loudness": 1.0,
+                "pitch": preset["pitch"],
+                "pace": preset["pace"],
+                "loudness": preset["loudness"],
                 "speech_sample_rate": 22050,
                 "enable_preprocessing": True,
             }
@@ -176,6 +194,7 @@ async def voice_round_trip(
     audio_path: str | Path,
     agent_call: Callable[[str], Awaitable[str]],
     target_lang_hint: str | None = None,
+    emotion: str = "friendly",
 ) -> VoiceRoundTrip:
     """End-to-end: STT -> en -> agent -> target lang -> TTS. Graceful degradation on Sarvam failure."""
     try:
@@ -218,7 +237,7 @@ async def voice_round_trip(
         reply_target = reply_en
 
     try:
-        audio_bytes = await synthesize(reply_target, target_lang=target)
+        audio_bytes = await synthesize(reply_target, target_lang=target, emotion=emotion)
     except Exception as exc:
         logger.exception("TTS failed")
         return VoiceRoundTrip(

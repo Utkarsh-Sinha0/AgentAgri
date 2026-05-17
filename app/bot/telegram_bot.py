@@ -609,6 +609,44 @@ async def cmd_voice_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"✅ Voice language set to {code}.")
 
 
+REPLY_MODES = {"text", "both", "voice"}
+RISK_TO_EMOTION = {
+    "NORMAL": "friendly",
+    "WATCH": "concerned",
+    "PREVENTIVE_ACTION": "urgent",
+    "ESCALATE": "firm",
+}
+
+
+async def cmd_voice_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """/voice_reply <text|both|voice> — choose how the bot replies.
+
+    text  — text only (default)
+    both  — text + voice note (with emotion shaped by risk level)
+    voice — voice note only
+    """
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+    args = context.args or []
+    if not args or args[0].strip().lower() not in REPLY_MODES:
+        current = state.get("reply_mode", "text")
+        keyboard = InlineKeyboardMarkup([[
+            InlineKeyboardButton("📝 Text", callback_data="reply_mode:text"),
+            InlineKeyboardButton("📝+🔊 Both", callback_data="reply_mode:both"),
+            InlineKeyboardButton("🔊 Voice", callback_data="reply_mode:voice"),
+        ]])
+        await update.message.reply_text(
+            f"जवाब कैसे चाहिए? Current: *{current}*\n"
+            "How do you want replies? Pick one:",
+            reply_markup=keyboard,
+            parse_mode="Markdown",
+        )
+        return
+    mode = args[0].strip().lower()
+    state["reply_mode"] = mode
+    await update.message.reply_text(f"✅ Reply mode: {mode}")
+
+
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle inline button callbacks."""
     query = update.callback_query
@@ -772,6 +810,15 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("❌ रद्द / Cancelled.")
         except BadRequest:
             await query.message.reply_text("❌ रद्द / Cancelled.")
+    elif data.startswith("reply_mode:"):
+        mode = data.split(":", 1)[1]
+        if mode in REPLY_MODES:
+            state["reply_mode"] = mode
+            label = {"text": "📝 Text only", "both": "📝+🔊 Text + Voice", "voice": "🔊 Voice only"}[mode]
+            try:
+                await query.edit_message_text(f"✅ Reply mode set: {label}")
+            except BadRequest:
+                await query.message.reply_text(f"✅ Reply mode set: {label}")
 
 
 # ─── Registration Handlers ────────────────────────────────────────────
@@ -1287,21 +1334,44 @@ async def _process_farmer_query(
                 logger.warning(f"reply translate to {pref_lang} skipped: {exc}")
 
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
+        reply_mode = state.get("reply_mode", "text")
+        send_text = reply_mode in {"text", "both"}
+        send_audio = reply_mode in {"both", "voice"} and settings.enable_voice_pipeline
+
         # Agent output is templated text + LLM contextualization; an
         # unbalanced * or _ from the LLM trips Telegram's Markdown parser
         # and raises BadRequest. Fall back to plain text rather than
         # dropping the advisory on the floor — keyboard still attaches.
-        try:
-            await update.message.reply_text(
-                msg,
-                parse_mode="Markdown",
-                reply_markup=reply_markup,
-            )
-        except BadRequest as e:
-            if "can't parse entities" in str(e).lower() or "parse" in str(e).lower():
-                await update.message.reply_text(msg, reply_markup=reply_markup)
-            else:
-                raise
+        if send_text:
+            try:
+                await update.message.reply_text(
+                    msg,
+                    parse_mode="Markdown",
+                    reply_markup=reply_markup,
+                )
+            except BadRequest as e:
+                if "can't parse entities" in str(e).lower() or "parse" in str(e).lower():
+                    await update.message.reply_text(msg, reply_markup=reply_markup)
+                else:
+                    raise
+
+        if send_audio:
+            try:
+                from app.services.voice import synthesize as _sarvam_tts
+
+                tts_lang = pref_lang if pref_lang else "hi-IN"
+                emotion = RISK_TO_EMOTION.get(response.risk_level, "friendly")
+                tts_text = re.sub(r"[*_`#]", "", msg).strip()
+                audio_bytes = await _sarvam_tts(tts_text, target_lang=tts_lang, emotion=emotion)
+                if audio_bytes:
+                    await update.message.reply_voice(
+                        voice=audio_bytes,
+                        reply_markup=reply_markup if not send_text else None,
+                    )
+            except Exception as exc:
+                logger.warning(f"audio reply skipped: {exc}")
+                if not send_text:
+                    await update.message.reply_text(msg, reply_markup=reply_markup)
 
         # Store evidence for callback
         state["last_evidence"] = response.evidence_cards
@@ -2713,6 +2783,7 @@ BOT_COMMAND_MENU: list[tuple[str, str]] = [
     ("sale", "Log a sale"),
     ("finance", "Profit & loss summary"),
     ("voice_lang", "Set voice language (hi-IN…)"),
+    ("voice_reply", "Reply mode: text/both/voice"),
     ("mydata", "Show my saved memory"),
     ("forgetme", "Redact my raw memory"),
     ("why", "Explain last advice"),
@@ -2778,6 +2849,7 @@ def create_bot() -> Application:
     app.add_handler(CommandHandler("newthread", newthread_command))
     app.add_handler(CommandHandler("endthread", endthread_command))
     app.add_handler(CommandHandler("voice_lang", cmd_voice_lang))
+    app.add_handler(CommandHandler("voice_reply", cmd_voice_reply))
 
     # Messages (structured data capture runs first)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
