@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   BarChart3,
   Bot,
+  Check,
   CheckCircle2,
   CloudRain,
   Database,
@@ -19,12 +20,12 @@ import {
   Settings,
   ShieldCheck,
   Sprout,
+  X,
 } from 'lucide-react';
 
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
-import { Input } from './components/ui/input';
 import './styles.css';
 
 const routes = [
@@ -182,20 +183,20 @@ function AppShell() {
   const location = useLocation();
 
   return (
-    <main className="app-shell weather-sunny">
-      <section className="shell app-grid">
+    <main className="app-shell">
+      <section className="app-grid">
         <aside className="side-nav">
-          <div className="brand-block nav-brand">
-            <div className="brand-mark"><Leaf size={22} /></div>
+          <div className="nav-brand">
+            <div className="brand-mark"><Leaf size={20} /></div>
             <div>
-              <h1>AgentAgri</h1>
-              <p>{data.dashboard?.farmer?.name || data.health?.model || 'Gemma farm advisor'}</p>
+              <h1>AgriMesh</h1>
+              <p>{data.health?.model || 'Farm Advisor'}</p>
             </div>
           </div>
           <nav>
             {routes.map((item) => (
               <NavLink key={item.path} to={item.path} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-                <item.icon size={17} />
+                <item.icon size={18} />
                 <span>{item.label}</span>
               </NavLink>
             ))}
@@ -203,17 +204,13 @@ function AppShell() {
         </aside>
 
         <section className="page-panel">
-          <header className="topbar route-topbar">
+          <header className="route-topbar">
             <div>
               <p className="eyebrow">{currentRouteLabel(location.pathname)}</p>
               <h2>{farmerTitle(data.dashboard)}</h2>
             </div>
             <div className="operator-controls">
-              <label className="header-field">
-                <span>API key</span>
-                <Input value={data.apiKey} onChange={(event) => data.setApiKey(event.target.value)} />
-              </label>
-              <Button title="Refresh API-backed page data" variant="secondary" onClick={data.refresh} disabled={data.loading}>
+              <Button variant="secondary" onClick={data.refresh} disabled={data.loading}>
                 <RefreshCw className={data.loading ? 'spin' : ''} size={16} />
                 Refresh
               </Button>
@@ -221,12 +218,14 @@ function AppShell() {
           </header>
 
           {data.error && (
-            <Card className="notice-card">
-              <CardContent>
-                <AlertTriangle size={18} />
-                <span>{data.error}</span>
-              </CardContent>
-            </Card>
+            <div style={{ padding: '0 32px' }}>
+              <Card className="notice-card">
+                <CardContent>
+                  <AlertTriangle size={18} />
+                  <span>{data.error}</span>
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           <PageErrorBoundary locationKey={location.pathname}>
@@ -241,20 +240,73 @@ function AppShell() {
   );
 }
 
+/* ═══════════════════════════════════════════
+   Dashboard Page
+   ═══════════════════════════════════════════ */
+
 function DashboardPage({ data }) {
   const dashboard = data.dashboard;
+  const farmer = dashboard?.farmer;
+  const field = dashboard?.fields?.[0];
   const latest = dashboard?.advisories?.[0] || data.showcase?.latest_advisory;
+
   return (
     <Page title="Farm Command" loading={data.loading && !dashboard}>
+      {/* Hero */}
+      <div className="dashboard-hero">
+        <div className="hero-content">
+          <h2>{farmer?.name || 'Welcome to AgriMesh'}</h2>
+          <p>{farmer ? [farmer.village, farmer.district, farmer.state].filter(Boolean).join(', ') : 'AI-powered agricultural advisory for smallholder farmers'}</p>
+          <div className="hero-badges">
+            {field?.active_crop?.crop_name && (
+              <span className="hero-badge hero-badge-green">
+                <Sprout size={13} />
+                {field.active_crop.crop_name} &middot; {field.active_crop.current_stage || 'growing'}
+              </span>
+            )}
+            {latest?.risk_level && (
+              <span className={`hero-badge ${latest.risk_level === 'ESCALATE' ? 'hero-badge-terracotta' : 'hero-badge-amber'}`}>
+                <AlertTriangle size={13} />
+                {latest.risk_level}
+              </span>
+            )}
+            {field?.area_acres && (
+              <span className="hero-badge hero-badge-green">
+                {field.area_acres} acres
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="hero-status">
+          <div className="hero-status-pill">
+            <span className={`dot ${data.health?.status === 'healthy' ? 'dot-green' : 'dot-amber'}`} />
+            {data.health?.status === 'healthy' ? 'System Online' : 'Checking...'}
+          </div>
+          <div className="hero-status-pill">
+            <Bot size={14} />
+            {data.health?.model || 'Gemma 4'}
+          </div>
+        </div>
+      </div>
+
+      {/* Metrics */}
+      <div className="section-label">Overview</div>
       <section className="metric-grid">
-        <Metric icon={Leaf} label="Farmers" value={data.stats?.farmers ?? 0} />
-        <Metric icon={Sprout} label="Active crop" value={dashboard?.fields?.[0]?.active_crop?.crop_name || 'n/a'} />
-        <Metric icon={AlertTriangle} label="Risk" value={latest?.risk_level || 'n/a'} />
-        <Metric icon={Activity} label="Confidence" value={latest?.confidence || 'n/a'} />
-        <Metric icon={Database} label="Sources" value={data.sources.length} />
-        <Metric icon={GitBranch} label="Impact nodes" value={data.impacts.length} />
+        <MetricCard icon={Leaf} iconStyle="green" label="Farmers" value={data.stats?.farmers ?? 0} />
+        <MetricCard icon={Sprout} iconStyle="green" label="Active Crop" value={field?.active_crop?.crop_name || 'n/a'} />
+        <MetricCard icon={AlertTriangle} iconStyle="amber" label="Risk Level" value={latest?.risk_level || 'n/a'} />
+        <MetricCard icon={Activity} iconStyle="terracotta" label="Confidence" value={latest?.confidence || 'n/a'} />
+        <MetricCard icon={Database} iconStyle="blue" label="Sources" value={data.sources.length} />
+        <MetricCard icon={GitBranch} iconStyle="blue" label="Impact Nodes" value={data.impacts.length} />
       </section>
-      <section className="farmer-overview-grid">
+
+      {/* Readiness */}
+      <div className="section-label">System Readiness</div>
+      <ReadinessStrip data={data} />
+
+      {/* Advisory + Details */}
+      <div className="section-label" style={{ marginTop: 8 }}>Latest Advisory</div>
+      <section className="overview-grid">
         <AdvisoryCard advisory={latest} citations={data.showcase?.citations || []} />
         <SystemReadiness data={data} />
       </section>
@@ -262,13 +314,17 @@ function DashboardPage({ data }) {
   );
 }
 
+/* ═══════════════════════════════════════════
+   Crop Analysis Page
+   ═══════════════════════════════════════════ */
+
 function CropAnalysisPage({ data }) {
   const field = data.dashboard?.fields?.[0];
   const latest = data.showcase?.latest_advisory || data.dashboard?.advisories?.[0];
   return (
     <Page title="Crop Analysis" loading={data.loading && !field}>
       <section className="farmer-overview-grid">
-        <Card>
+        <Card className="card-accent-green">
           <CardHeader>
             <CardTitle>{field?.active_crop?.crop_name || 'No active crop'}</CardTitle>
             <CardDescription>{field?.name || 'Field data loads from /api/farmer-dashboard'}</CardDescription>
@@ -282,22 +338,31 @@ function CropAnalysisPage({ data }) {
         </Card>
         <VisionPanel vision={data.showcase?.vision} advisory={latest} />
       </section>
-      <section className="list-grid">
-        {(field?.tasks || []).map((task) => (
-          <Card key={task.id}>
-            <CardContent className="metric-card">
-              <CheckCircle2 size={18} />
-              <div>
-                <span>{task.stage}</span>
-                <strong>{task.task_name}</strong>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
+      {(field?.tasks || []).length > 0 && (
+        <>
+          <div className="section-label">Crop Tasks</div>
+          <section className="list-grid">
+            {field.tasks.map((task) => (
+              <Card key={task.id}>
+                <CardContent className="metric-card">
+                  <CheckCircle2 size={18} />
+                  <div>
+                    <span>{task.stage}</span>
+                    <strong>{task.task_name}</strong>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </section>
+        </>
+      )}
     </Page>
   );
 }
+
+/* ═══════════════════════════════════════════
+   Market Prices Page
+   ═══════════════════════════════════════════ */
 
 function MarketPricesPage({ data }) {
   const market = data.market?.prices || data.dashboard?.mandi;
@@ -306,10 +371,10 @@ function MarketPricesPage({ data }) {
     <Page title="Market Prices" loading={data.loading && !market}>
       <section className="list-grid">
         {rows.map((row) => (
-          <Card key={row.type}>
+          <Card key={row.type} className="card-accent-amber">
             <CardHeader>
               <CardTitle>{row.type}</CardTitle>
-              <CardDescription>{market.district || data.market?.district || 'district from API'} · {row.unit}</CardDescription>
+              <CardDescription>{market.district || data.market?.district || 'district from API'} &middot; {row.unit}</CardDescription>
             </CardHeader>
             <CardContent>
               {(row.history || []).slice(0, 5).map((entry) => (
@@ -318,11 +383,15 @@ function MarketPricesPage({ data }) {
             </CardContent>
           </Card>
         ))}
-        {!rows.length && <EmptyState icon={IndianRupee} text="No market rows returned by the API." />}
+        {!rows.length && <EmptyState icon={IndianRupee} text="No market prices available yet. Prices appear when the mandi API returns data." hint="Try refreshing or check your API connection." />}
       </section>
     </Page>
   );
 }
+
+/* ═══════════════════════════════════════════
+   Weather Page
+   ═══════════════════════════════════════════ */
 
 function WeatherPage({ data }) {
   const weather = data.weather || data.dashboard?.weather;
@@ -332,20 +401,26 @@ function WeatherPage({ data }) {
       <section className="eval-grid">
         {forecast.map((day) => (
           <Card key={day.date}>
-            <CardContent className="metric-card">
-              <CloudRain size={18} />
-              <div>
+            <CardContent className="weather-card-content">
+              <div className="weather-temp-circle">
+                <CloudRain size={22} />
+              </div>
+              <div className="weather-detail">
                 <span>{day.date}</span>
                 <strong>{day.condition || `${day.rainfall_mm || 0} mm rain`}</strong>
               </div>
             </CardContent>
           </Card>
         ))}
-        {!forecast.length && <EmptyState icon={CloudRain} text="No forecast rows returned by the API." />}
+        {!forecast.length && <EmptyState icon={CloudRain} text="No weather forecast available. Forecast data appears when the weather service responds." hint="Ensure MCP weather server is running on port 9001." />}
       </section>
     </Page>
   );
 }
+
+/* ═══════════════════════════════════════════
+   AI Advisor Page
+   ═══════════════════════════════════════════ */
 
 function AIAdvisorPage({ data }) {
   const showcase = data.showcase || {};
@@ -360,7 +435,7 @@ function AIAdvisorPage({ data }) {
   return (
     <Page title="AI Advisor" loading={data.loading && !showcase}>
       <section className="farmer-overview-grid">
-        <Card>
+        <Card className="card-accent-blue">
           <CardHeader>
             <div className="row-between">
               <CardTitle>Model Toggle</CardTitle>
@@ -396,17 +471,25 @@ function AIAdvisorPage({ data }) {
   );
 }
 
+/* ═══════════════════════════════════════════
+   History Page
+   ═══════════════════════════════════════════ */
+
 function HistoryPage({ data }) {
   const advisories = data.showcase?.history || data.dashboard?.advisories || [];
   return (
     <Page title="History" loading={data.loading && !advisories.length}>
       <section className="list-grid">
         {advisories.map((advisory) => <AdvisoryCard key={advisory.id} advisory={advisory} compact />)}
-        {!advisories.length && <EmptyState icon={History} text="No advisory history returned by the API." />}
+        {!advisories.length && <EmptyState icon={History} text="No advisory history yet. Advisories appear after the AI agent processes farmer queries." hint="Send a message to the Telegram bot to generate your first advisory." />}
       </section>
     </Page>
   );
 }
+
+/* ═══════════════════════════════════════════
+   Settings Page
+   ═══════════════════════════════════════════ */
 
 function SettingsPage({ data }) {
   return (
@@ -440,17 +523,23 @@ function SettingsPage({ data }) {
   );
 }
 
+/* ═══════════════════════════════════════════
+   Shared Components
+   ═══════════════════════════════════════════ */
+
 function Page({ title, loading, children }) {
   if (loading) return <LoadingState title={title} />;
   return <section className="page-stack">{children}</section>;
 }
 
-function Metric({ icon: Icon, label, value }) {
+function MetricCard({ icon: Icon, iconStyle, label, value }) {
   return (
     <Card>
-      <CardContent className="metric-card">
-        <Icon size={18} />
-        <div>
+      <CardContent className="metric-card-v2">
+        <div className={`metric-icon metric-icon-${iconStyle}`}>
+          <Icon size={20} />
+        </div>
+        <div className="metric-text">
           <span>{label}</span>
           <strong>{String(value)}</strong>
         </div>
@@ -459,16 +548,45 @@ function Metric({ icon: Icon, label, value }) {
   );
 }
 
-function AdvisoryCard({ advisory, citations = [], compact = false }) {
-  if (!advisory) return <EmptyState icon={MessageSquareText} text="No advisory returned by the API." />;
+function ReadinessStrip({ data }) {
+  const checks = [
+    ['API Health', Boolean(data.health), Activity],
+    ['Farmer Data', Boolean(data.dashboard?.farmer), Leaf],
+    ['Evidence', data.sources.length > 0, FileSearch],
+    ['Memory', data.memory.length > 0 || (data.stats?.memory_atoms || 0) > 0, Database],
+    ['Impact Graph', data.impacts.length > 0 || (data.stats?.action_impacts || 0) >= 0, GitBranch],
+    ['Safety Eval', Boolean(data.evalData), ShieldCheck],
+  ];
   return (
-    <Card className={compact ? '' : 'wide-card'}>
-      <CardHeader>
-        <div className="row-between">
-          <CardTitle>{advisory.risk_level || 'Advisory'}</CardTitle>
-          <Badge variant={riskVariant(advisory.risk_level)}>{advisory.confidence || 'n/a'}</Badge>
+    <div className="readiness-grid">
+      {checks.map(([label, ok, Icon]) => (
+        <div className="readiness-item" key={label}>
+          <div className={`readiness-check ${ok ? 'readiness-check-ok' : 'readiness-check-warn'}`}>
+            {ok ? <Check size={13} /> : <X size={13} />}
+          </div>
+          <span>{label}</span>
+          <Icon size={15} className="readiness-type-icon" style={{ marginLeft: 'auto' }} />
         </div>
-        <CardDescription>{advisory.contextualization || advisory.created_at || 'Verified advisory details'}</CardDescription>
+      ))}
+    </div>
+  );
+}
+
+function AdvisoryCard({ advisory, citations = [], compact = false }) {
+  if (!advisory) return <EmptyState icon={MessageSquareText} text="No advisory available. The AI agent generates advisories when farmers ask questions." hint="Use the Telegram bot or send a test query." />;
+  return (
+    <Card className={`${compact ? '' : 'wide-card'} ${riskAccent(advisory.risk_level)}`}>
+      <CardHeader>
+        <div className="advisory-header">
+          <CardTitle>{advisory.contextualization || 'Advisory'}</CardTitle>
+          <span className={`risk-indicator ${riskClass(advisory.risk_level)}`}>
+            {advisory.risk_level || 'info'}
+          </span>
+        </div>
+        <CardDescription>
+          {advisory.created_at || 'Verified advisory details'}
+          {advisory.confidence && ` · Confidence: ${advisory.confidence}`}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ActionList items={advisory.actions_text || []} />
@@ -499,15 +617,18 @@ function SystemReadiness({ data }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Readiness</CardTitle>
+        <CardTitle>Detailed Readiness</CardTitle>
         <CardDescription>Derived from live API responses.</CardDescription>
       </CardHeader>
       <CardContent className="readiness-list">
         {checks.map(([label, ok, Icon]) => (
           <div className="readiness-item" key={label}>
-            <Icon size={16} />
+            <div className={`readiness-check ${ok ? 'readiness-check-ok' : 'readiness-check-warn'}`}>
+              {ok ? <Check size={13} /> : <X size={13} />}
+            </div>
+            <Icon size={16} className="readiness-type-icon" />
             <span>{label}</span>
-            <Badge variant={ok ? 'success' : 'warning'}>{ok ? 'ready' : 'check'}</Badge>
+            <Badge variant={ok ? 'success' : 'warning'} style={{ marginLeft: 'auto' }}>{ok ? 'ready' : 'check'}</Badge>
           </div>
         ))}
       </CardContent>
@@ -594,21 +715,24 @@ function CitationPanel({ citations }) {
 
 function LoadingState({ title }) {
   return (
-    <Card>
-      <CardContent className="empty-state">
-        <RefreshCw className="spin" size={22} />
-        <span>{title ? `Loading ${title}` : 'Loading live AgentAgri state'}</span>
-      </CardContent>
-    </Card>
+    <section className="page-stack">
+      <Card>
+        <CardContent className="empty-state">
+          <RefreshCw className="spin" size={24} />
+          <span>{title ? `Loading ${title}...` : 'Loading live AgriMesh state...'}</span>
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 
-function EmptyState({ icon: Icon, text }) {
+function EmptyState({ icon: Icon, text, hint }) {
   return (
     <Card>
       <CardContent className="empty-state">
-        <Icon size={24} />
+        <Icon size={32} />
         <span>{text}</span>
+        {hint && <span className="empty-state-hint">{hint}</span>}
       </CardContent>
     </Card>
   );
@@ -641,21 +765,32 @@ function MetricLine({ label, value }) {
   return <div className="metric-line"><span>{label}</span><strong>{value}</strong></div>;
 }
 
+/* ═══════════════════════════════════════════
+   Helpers
+   ═══════════════════════════════════════════ */
+
 function currentRouteLabel(pathname) {
   return routes.find((item) => item.path === pathname)?.label || 'Dashboard';
 }
 
 function farmerTitle(dashboard) {
   const farmer = dashboard?.farmer;
-  if (!farmer) return 'Production farmer workspace';
+  if (!farmer) return 'Farmer Workspace';
   return [farmer.name, farmer.village, farmer.district].filter(Boolean).join(' · ');
 }
 
-function riskVariant(value) {
-  if (value === 'ESCALATE') return 'destructive';
-  if (value === 'PREVENTIVE_ACTION') return 'warning';
-  if (value === 'WATCH') return 'default';
-  return 'outline';
+function riskClass(value) {
+  if (value === 'ESCALATE') return 'risk-escalate';
+  if (value === 'PREVENTIVE_ACTION') return 'risk-preventive';
+  if (value === 'WATCH') return 'risk-watch';
+  return 'risk-default';
+}
+
+function riskAccent(value) {
+  if (value === 'ESCALATE') return 'card-accent-red';
+  if (value === 'PREVENTIVE_ACTION') return 'card-accent-amber';
+  if (value === 'WATCH') return 'card-accent-blue';
+  return '';
 }
 
 function normalizeImagePath(path) {
@@ -663,6 +798,10 @@ function normalizeImagePath(path) {
   if (path.startsWith('http') || path.startsWith('/')) return path;
   return '';
 }
+
+/* ═══════════════════════════════════════════
+   Mount
+   ═══════════════════════════════════════════ */
 
 createRoot(document.getElementById('root')).render(<App />);
 

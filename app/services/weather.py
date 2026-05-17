@@ -1,6 +1,6 @@
 """
 AgriMesh V4.0 — Weather Service
-Seeded forecast data with real API shape (ready for OpenWeatherMap / IMD swap).
+Live OpenWeatherMap integration with seeded fallback for demo.
 """
 from __future__ import annotations
 
@@ -8,21 +8,141 @@ import json
 from copy import deepcopy
 from datetime import timedelta
 
+import httpx
+from loguru import logger
+
 from app.config import settings
 from app.utils.time import utc_now
 
-# ─── Seed Data ────────────────────────────────────────────────────────
+_OWM_FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
+_OWM_CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
+_OWM_TIMEOUT = 10.0
+
+# Default coordinates (Munger, Bihar) used when no field location is available
+_DEFAULT_LAT = 25.38
+_DEFAULT_LNG = 86.47
+_DEFAULT_DISTRICT = "Munger"
+
+
+# ─── OpenWeatherMap Live ─────────────────────────────────────────────
+
+def _owm_available() -> bool:
+    return bool(settings.weather_api_key)
+
+
+def _owm_condition(weather_main: str) -> str:
+    mapping = {
+        "Clear": "sunny",
+        "Clouds": "partly_cloudy",
+        "Rain": "rain",
+        "Drizzle": "rain",
+        "Thunderstorm": "storm",
+        "Snow": "snow",
+        "Mist": "foggy",
+        "Haze": "foggy",
+        "Fog": "foggy",
+    }
+    return mapping.get(weather_main, "partly_cloudy")
+
+
+async def _owm_forecast(lat: float, lng: float, days: int) -> list[dict]:
+    """Fetch 5-day/3-hour forecast from OpenWeatherMap, aggregate to daily."""
+    async with httpx.AsyncClient(timeout=_OWM_TIMEOUT) as client:
+        resp = await client.get(
+            _OWM_FORECAST_URL,
+            params={
+                "lat": lat,
+                "lon": lng,
+                "appid": settings.weather_api_key,
+                "units": "metric",
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    daily: dict[str, dict] = {}
+    for entry in data.get("list", []):
+        date = entry["dt_txt"][:10]
+        if date not in daily:
+            daily[date] = {
+                "date": date,
+                "temp_max": -999,
+                "temp_min": 999,
+                "humidity": 0,
+                "rainfall_mm": 0.0,
+                "wind_kmh": 0,
+                "condition": "sunny",
+                "_humidity_count": 0,
+                "_wind_count": 0,
+            }
+        d = daily[date]
+        main = entry.get("main", {})
+        d["temp_max"] = max(d["temp_max"], main.get("temp_max", main.get("temp", 0)))
+        d["temp_min"] = min(d["temp_min"], main.get("temp_min", main.get("temp", 50)))
+        d["humidity"] += main.get("humidity", 0)
+        d["_humidity_count"] += 1
+        rain_3h = entry.get("rain", {}).get("3h", 0)
+        d["rainfall_mm"] = round(d["rainfall_mm"] + rain_3h, 1)
+        wind_ms = entry.get("wind", {}).get("speed", 0)
+        d["wind_kmh"] += round(wind_ms * 3.6)
+        d["_wind_count"] += 1
+        weather_main = (entry.get("weather") or [{}])[0].get("main", "")
+        if weather_main in ("Rain", "Drizzle", "Thunderstorm", "Snow"):
+            d["condition"] = _owm_condition(weather_main)
+
+    result = []
+    for date in sorted(daily.keys())[:days]:
+        d = daily[date]
+        h_count = d.pop("_humidity_count", 1) or 1
+        w_count = d.pop("_wind_count", 1) or 1
+        d["humidity"] = round(d["humidity"] / h_count)
+        d["wind_kmh"] = round(d["wind_kmh"] / w_count)
+        if d["condition"] == "sunny" and d["humidity"] > 75:
+            d["condition"] = "partly_cloudy"
+        result.append(d)
+
+    return result
+
+
+async def _owm_current(lat: float, lng: float) -> dict:
+    """Fetch current weather for historical-ish context."""
+    async with httpx.AsyncClient(timeout=_OWM_TIMEOUT) as client:
+        resp = await client.get(
+            _OWM_CURRENT_URL,
+            params={
+                "lat": lat,
+                "lon": lng,
+                "appid": settings.weather_api_key,
+                "units": "metric",
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    main = data.get("main", {})
+    rain_1h = data.get("rain", {}).get("1h", 0)
+    weather_main = (data.get("weather") or [{}])[0].get("main", "Clear")
+    return {
+        "date": utc_now().date().isoformat(),
+        "temp_max": main.get("temp_max", main.get("temp", 0)),
+        "temp_min": main.get("temp_min", main.get("temp", 0)),
+        "humidity": main.get("humidity", 0),
+        "rainfall_mm": round(rain_1h, 1),
+        "wind_kmh": round(data.get("wind", {}).get("speed", 0) * 3.6),
+        "condition": _owm_condition(weather_main),
+    }
+
+
+# ─── Seed Data (fallback) ───────────────────────────────────────────
 
 def _load_seed_weather() -> dict:
     seed_path = settings.seed_dir / "weather.json"
     if seed_path.exists():
         return _normalize_seed_dates(json.loads(seed_path.read_text(encoding="utf-8")))
-    # Built-in seed for demo
     return _builtin_seed()
 
 
 def _normalize_seed_dates(seed: dict) -> dict:
-    """Shift checked-in demo weather dates around utcnow() without mutating the file."""
     normalized = deepcopy(seed)
     today = utc_now().date()
     for field_data in normalized.values():
@@ -37,8 +157,6 @@ def _normalize_seed_dates(seed: dict) -> dict:
 
 
 def _builtin_seed() -> dict:
-    """Built-in seed data for Bihar region (demo). Dates anchored to utcnow() so
-    the demo never goes stale (H18)."""
     today = utc_now().date()
     forecast_rows = [
         {"offset": 0, "temp_max": 38, "temp_min": 26, "humidity": 65, "rainfall_mm": 0, "wind_kmh": 12, "condition": "sunny"},
@@ -58,9 +176,9 @@ def _builtin_seed() -> dict:
     ]
     return {
         "default_field": {
-            "lat": 25.38,
-            "lng": 86.47,
-            "district": "Munger",
+            "lat": _DEFAULT_LAT,
+            "lng": _DEFAULT_LNG,
+            "district": _DEFAULT_DISTRICT,
             "state": "Bihar",
             "forecast": [
                 {**{k: v for k, v in row.items() if k != "offset"},
@@ -83,37 +201,80 @@ def _builtin_seed() -> dict:
 _seed = _load_seed_weather()
 
 
+def _field_coords(field_id: str | None) -> tuple[float, float, str]:
+    """Get lat/lng/district for a field, falling back to seed defaults."""
+    field_data = _seed.get(field_id) if field_id else _seed.get("default_field")
+    if not field_data:
+        field_data = _seed["default_field"]
+    return (
+        field_data.get("lat", _DEFAULT_LAT),
+        field_data.get("lng", _DEFAULT_LNG),
+        field_data.get("district", _DEFAULT_DISTRICT),
+    )
+
+
+# ─── Public API ──────────────────────────────────────────────────────
+
 async def get_forecast(field_id: str | None = None, days: int = 5) -> dict:
-    """
-    Get weather forecast for a field.
-    Seeded data with real API shape. Swap to OpenWeatherMap/IMD for production.
-    """
+    """Get weather forecast — live from OpenWeatherMap if key is set, else seeded."""
+    lat, lng, district = _field_coords(field_id)
+
+    if _owm_available():
+        try:
+            forecast = await _owm_forecast(lat, lng, days)
+            logger.info("Weather forecast from OpenWeatherMap: {} days for {}", len(forecast), district)
+            return {
+                "field_id": field_id or "default",
+                "district": district,
+                "forecast": forecast,
+                "source": "openweathermap",
+                "generated_at": utc_now().isoformat(),
+            }
+        except Exception as exc:
+            logger.warning("OpenWeatherMap forecast failed, falling back to seed: {}", exc)
+
+    # Fallback to seed
     field_data = _seed.get(field_id) if field_id else _seed.get("default_field")
     if not field_data:
         field_data = _seed["default_field"]
 
-    forecast = field_data["forecast"][:days]
     return {
         "field_id": field_id or "default",
         "district": field_data.get("district", "Unknown"),
-        "forecast": forecast,
+        "forecast": field_data["forecast"][:days],
         "source": "seeded",
         "generated_at": utc_now().isoformat(),
     }
 
 
 async def get_historical_weather(field_id: str | None = None, days: int = 7) -> dict:
-    """Get historical weather data for a field."""
+    """Get historical weather — live current snapshot if key is set, else seeded."""
+    lat, lng, district = _field_coords(field_id)
+
+    if _owm_available():
+        try:
+            current = await _owm_current(lat, lng)
+            logger.info("Current weather from OpenWeatherMap for {}", district)
+            return {
+                "field_id": field_id or "default",
+                "historical_days": [current],
+                "total_rainfall_30d_mm": current["rainfall_mm"],
+                "avg_temp_30d": round((current["temp_max"] + current["temp_min"]) / 2, 1),
+                "source": "openweathermap",
+                "generated_at": utc_now().isoformat(),
+            }
+        except Exception as exc:
+            logger.warning("OpenWeatherMap current failed, falling back to seed: {}", exc)
+
+    # Fallback to seed
     field_data = _seed.get(field_id) if field_id else _seed.get("default_field")
     if not field_data:
         field_data = _seed["default_field"]
 
     historical = field_data.get("historical", {})
-    recent = historical.get("last_7_days", [])[:days]
-
     return {
         "field_id": field_id or "default",
-        "historical_days": recent,
+        "historical_days": historical.get("last_7_days", [])[:days],
         "total_rainfall_30d_mm": historical.get("total_rainfall_30d_mm", 0),
         "avg_temp_30d": historical.get("avg_temp_30d", 0),
         "source": "seeded",
