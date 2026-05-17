@@ -1450,15 +1450,37 @@ async def _process_farmer_query(
             try:
                 from app.services.voice import translate as _sarvam_translate
 
-                msg_en = await _sarvam_translate(msg, source_lang="hi-IN", target_lang="en-IN")
+                # Translate line-by-line so internal newlines/dividers survive
+                # (Sarvam Translate collapses whitespace when fed the whole msg).
+                async def _translate_preserving_layout(source: str, target: str) -> str:
+                    out: list[str] = []
+                    for ln in source.split("\n"):
+                        stripped = ln.strip()
+                        if not stripped or stripped in {"​"} or set(stripped) <= {"━", "─", "—", "-"}:
+                            out.append(ln)
+                            continue
+                        # Skip translating already-bold dividers / labels.
+                        if stripped.startswith("*—") and stripped.endswith("—*"):
+                            out.append(ln)
+                            continue
+                        try:
+                            translated = await _sarvam_translate(
+                                stripped, source_lang="hi-IN", target_lang=target
+                            )
+                            # Preserve leading indentation.
+                            indent = ln[: len(ln) - len(ln.lstrip())]
+                            out.append(f"{indent}{translated}")
+                        except Exception:
+                            out.append(ln)
+                    return "\n".join(out)
+
+                msg_en = await _translate_preserving_layout(msg, "en-IN")
                 if english_only:
                     msg = msg_en
                 else:
-                    msg_native = msg if native_lang.startswith("hi") else await _sarvam_translate(
-                        msg, source_lang="hi-IN", target_lang=native_lang
+                    msg_native = msg if native_lang.startswith("hi") else await _translate_preserving_layout(
+                        msg, native_lang
                     )
-                    # Labeled, zero-width-space-padded divider survives
-                    # Telegram's blank-line collapse.
                     ZWSP = "​"
                     divider = f"{ZWSP}\n*— English —*\n{ZWSP}"
                     native_divider = f"{ZWSP}\n*— {native_lang.upper()} —*\n{ZWSP}"
