@@ -58,6 +58,21 @@ def get_user_state(user_id: str) -> dict:
 # ─── Shared copy / helpers ────────────────────────────────────────────
 
 
+def _lang(state: dict) -> str:
+    """Return the farmer's selected onboarding language ('hi' or 'en').
+
+    During registration the picker stores the choice in
+    ``state["data"]["preferred_language"]``. Default to Hindi if unset so
+    legacy paths keep their current behavior.
+    """
+    return (state.get("data") or {}).get("preferred_language") or "hi"
+
+
+def _t(state: dict, hi: str, en: str) -> str:
+    """Pick a string by the farmer's onboarding language."""
+    return hi if _lang(state) == "hi" else en
+
+
 def _help_text() -> str:
     return (
         "ℹ️ *सहायता / Help*\n\n"
@@ -192,8 +207,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ])
     else:
         keyboard.extend([
+            [
+                InlineKeyboardButton("🇮🇳 हिंदी में जारी रखें", callback_data="lang_hi"),
+                InlineKeyboardButton("🇬🇧 Continue in English", callback_data="lang_en"),
+            ],
             [InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")],
-            [InlineKeyboardButton("📝 Register: text step-by-step", callback_data="cmd_register")],
             [_dashboard_button("🧭 Dashboard preview", phone=user_id)],
             [InlineKeyboardButton("ℹ️ Help: see all commands", callback_data="cmd_help")],
         ])
@@ -227,13 +245,24 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_id = str(user.id)
     state = get_user_state(user_id)
-    state["state"] = "registering_name"
+    state.setdefault("data", {})
 
+    # Gate on language pick.
+    if not state["data"].get("preferred_language"):
+        kb = InlineKeyboardMarkup([[
+            InlineKeyboardButton("🇮🇳 हिंदी", callback_data="lang_hi"),
+            InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
+        ]])
+        await update.message.reply_text(
+            "भाषा चुनें / Choose your language:", reply_markup=kb
+        )
+        return
+
+    state["state"] = "registering_name"
     await update.message.reply_text(
-        "📝 *किसान पंजीकरण / Farmer Registration*\n\n"
-        "आवाज़ में एक साथ बोल सकते हैं: नाम, गाँव, ज़िला, मुख्य फसल।\n"
-        "या लिखकर शुरू करें — कृपया अपना पूरा नाम लिखें:\n"
-        "You can speak name, village, district, main crop in one voice note, or type your full name:",
+        _t(state,
+           "📝 *किसान पंजीकरण*\n\nकृपया अपना पूरा नाम लिखें:",
+           "📝 *Farmer Registration*\n\nPlease enter your full name:"),
         parse_mode="Markdown",
     )
 
@@ -741,14 +770,39 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
 
+    if data in ("lang_hi", "lang_en"):
+        lang = "hi" if data == "lang_hi" else "en"
+        state.setdefault("data", {})["preferred_language"] = lang
+        state["state"] = "registering_name"
+        prompt = (
+            "📝 *किसान पंजीकरण*\n\nकृपया अपना पूरा नाम लिखें:"
+            if lang == "hi" else
+            "📝 *Farmer Registration*\n\nPlease enter your full name:"
+        )
+        try:
+            await query.edit_message_text(prompt, parse_mode="Markdown")
+        except BadRequest:
+            await query.message.reply_text(prompt, parse_mode="Markdown")
+        return
     if data == "cmd_demo":
         await _activate_demo_memory(query.message, user_id, state)
     elif data == "cmd_register":
+        # Gate on language pick: if not chosen yet, show picker.
+        if not (state.get("data") or {}).get("preferred_language"):
+            kb = InlineKeyboardMarkup([[
+                InlineKeyboardButton("🇮🇳 हिंदी", callback_data="lang_hi"),
+                InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
+            ]])
+            await query.message.reply_text(
+                "भाषा चुनें / Choose your language:",
+                reply_markup=kb,
+            )
+            return
         state["state"] = "registering_name"
         await query.message.reply_text(
-            "📝 *किसान पंजीकरण / Farmer Registration*\n\n"
-            "कृपया अपना पूरा नाम लिखें:\n"
-            "Please enter your full name:",
+            _t(state,
+               "📝 *किसान पंजीकरण*\n\nकृपया अपना पूरा नाम लिखें:",
+               "📝 *Farmer Registration*\n\nPlease enter your full name:"),
             parse_mode="Markdown",
         )
     elif data == "cmd_crop":
@@ -907,7 +961,9 @@ async def _handle_name_registration(update, user_id: str, name: str, state: dict
     state["data"]["name"] = name
     state["state"] = "registering_phone"
     await update.message.reply_text(
-        f"नमस्ते {name}! 👋\n\nअपना फोन नंबर लिखें (10 अंक):\nEnter your 10-digit phone number:"
+        _t(state,
+           f"नमस्ते {name}! 👋\n\nअपना फोन नंबर लिखें (10 अंक):",
+           f"Hello {name}! 👋\n\nEnter your 10-digit phone number:")
     )
 
 
@@ -915,15 +971,17 @@ async def _handle_phone_registration(update, user_id: str, phone: str, state: di
     phone = phone.replace(" ", "").replace("-", "").replace("+91", "")
     state["data"]["phone"] = phone
     state["state"] = "registering_district"
-    await update.message.reply_text("अपना जिला लिखें / Enter your district (e.g., Munger):")
+    await update.message.reply_text(
+        _t(state, "अपना जिला लिखें (जैसे: मुंगेर):", "Enter your district (e.g., Munger):")
+    )
 
 
 async def _handle_district_registration(update, user_id: str, district: str, state: dict):
     state["data"]["district"] = district
-    state["data"]["preferred_language"] = "hi"
+    # preferred_language is already set from the picker; don't overwrite.
     state["state"] = "registering_tehsil"
     await update.message.reply_text(
-        "तहसील / ब्लॉक का नाम लिखें / Enter your tehsil / block:"
+        _t(state, "तहसील / ब्लॉक का नाम लिखें:", "Enter your tehsil / block:")
     )
 
 
@@ -931,7 +989,7 @@ async def _handle_tehsil_registration(update, user_id: str, tehsil: str, state: 
     state["data"]["tehsil"] = tehsil
     state["state"] = "registering_village"
     await update.message.reply_text(
-        "गाँव का नाम लिखें / Enter your village:"
+        _t(state, "गाँव का नाम लिखें:", "Enter your village:")
     )
 
 
@@ -941,13 +999,14 @@ async def _handle_village_registration(update, user_id: str, village: str, state
     district = state["data"].get("district", "")
     tehsil = state["data"].get("tehsil", "")
 
+    lang_db = "hi" if _lang(state) == "hi" else "en"
     async with async_session_factory() as db:
         import uuid
         existing = await db.execute(select(Farmer).where(Farmer.phone == user_id))
         farmer = existing.scalar_one_or_none()
         if farmer:
             farmer.name = state["data"]["name"]
-            farmer.preferred_language = "hi"
+            farmer.preferred_language = lang_db
             farmer.district = district
             farmer.tehsil = tehsil
             farmer.village = village
@@ -958,7 +1017,7 @@ async def _handle_village_registration(update, user_id: str, village: str, state
                 phone=user_id,
                 hashed_password=hash_password(f"telegram:{user_id}"),
                 name=state["data"]["name"],
-                preferred_language="hi",
+                preferred_language=lang_db,
                 district=district,
                 tehsil=tehsil,
                 village=village,
@@ -971,15 +1030,20 @@ async def _handle_village_registration(update, user_id: str, village: str, state
         except Exception as exc:
             await db.rollback()
             logger.error(f"Farmer registration failed: {exc}")
-            await update.message.reply_text("❌ पंजीकरण में त्रुटि। कृपया /register पुनः करें।")
+            await update.message.reply_text(
+                _t(state,
+                   "❌ पंजीकरण में त्रुटि। कृपया /register पुनः करें।",
+                   "❌ Registration failed. Please try /register again.")
+            )
             state["state"] = "start"
             return
 
-    state["state"] = "start"
+    # Chain straight into field registration — no separate /field needed.
+    state["state"] = "registering_field_name"
     await update.message.reply_text(
-        "✅ *पंजीकरण सफल!*\n\n"
-        "अब /field से अपना खेत पंजीकृत करें।\n"
-        "Now register your field with /field",
+        _t(state,
+           "✅ *पंजीकरण सफल!*\n\n🌿 अब अपना खेत दर्ज करें।\nखेत का नाम लिखें (जैसे: 'पूरब वाला खेत'):",
+           "✅ *Registration successful!*\n\n🌿 Now let's add your field.\nEnter field name (e.g., 'East Field'):"),
         parse_mode="Markdown",
     )
 
@@ -987,27 +1051,41 @@ async def _handle_village_registration(update, user_id: str, village: str, state
 async def _handle_field_name(update, user_id: str, name: str, state: dict):
     state["data"]["field_name"] = name
     state["state"] = "registering_field_area"
-    await update.message.reply_text("खेत का क्षेत्रफल (एकड़ में) / Field area in acres:")
+    await update.message.reply_text(
+        _t(state, "खेत का क्षेत्रफल (एकड़ में):", "Field area in acres:")
+    )
 
 
 async def _handle_field_area(update, user_id: str, area_str: str, state: dict):
     try:
         area = float(area_str)
     except ValueError:
-        await update.message.reply_text("⚠️ कृपया संख्या लिखें। Please enter a number (e.g., 2.5).")
+        await update.message.reply_text(
+            _t(state,
+               "⚠️ कृपया संख्या लिखें (जैसे: 2.5)।",
+               "⚠️ Please enter a number (e.g., 2.5).")
+        )
         return
 
     state["data"]["field_area"] = area
     state["state"] = "registering_field_soil"
 
-    keyboard = [
-        [InlineKeyboardButton("दोमट / Loam", callback_data="soil_loam")],
-        [InlineKeyboardButton("चिकनी / Clay", callback_data="soil_clay")],
-        [InlineKeyboardButton("बलुई / Sandy", callback_data="soil_sandy")],
-        [InlineKeyboardButton("काली / Black Cotton", callback_data="soil_black")],
-    ]
+    if _lang(state) == "hi":
+        keyboard = [
+            [InlineKeyboardButton("दोमट", callback_data="soil_loam")],
+            [InlineKeyboardButton("चिकनी", callback_data="soil_clay")],
+            [InlineKeyboardButton("बलुई", callback_data="soil_sandy")],
+            [InlineKeyboardButton("काली", callback_data="soil_black")],
+        ]
+    else:
+        keyboard = [
+            [InlineKeyboardButton("Loam", callback_data="soil_loam")],
+            [InlineKeyboardButton("Clay", callback_data="soil_clay")],
+            [InlineKeyboardButton("Sandy", callback_data="soil_sandy")],
+            [InlineKeyboardButton("Black Cotton", callback_data="soil_black")],
+        ]
     await update.message.reply_text(
-        "मिट्टी का प्रकार / Soil type:",
+        _t(state, "मिट्टी का प्रकार:", "Soil type:"),
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
@@ -1022,7 +1100,9 @@ async def _handle_field_soil(update, user_id: str, soil: str, state: dict):
         farmer = result.scalar_one_or_none()
 
         if not farmer:
-            await update.message.reply_text("⚠️ पहले /register करें।")
+            await update.message.reply_text(
+                _t(state, "⚠️ पहले /register करें।", "⚠️ Please /register first.")
+            )
             return
 
         import uuid
@@ -1043,9 +1123,12 @@ async def _handle_field_soil(update, user_id: str, soil: str, state: dict):
             logger.error(f"Field registration failed: {exc}")
             return
 
-    state["state"] = "start"
+    # Chain straight into crop registration.
+    state["state"] = "registering_crop_name"
     await update.message.reply_text(
-        "✅ *खेत पंजीकृत!*\n\nअब /crop से अपनी फसल दर्ज करें।",
+        _t(state,
+           "✅ *खेत पंजीकृत!*\n\n🌱 अब फसल दर्ज करें।\nफसल का नाम लिखें (जैसे: धान, गेहूं, मक्का, अरहर):",
+           "✅ *Field registered!*\n\n🌱 Now let's add your crop.\nEnter crop name (e.g., rice, wheat, maize, arhar):"),
         parse_mode="Markdown",
     )
 
@@ -1054,8 +1137,9 @@ async def _handle_crop_name(update, user_id: str, crop_name: str, state: dict):
     state["data"]["crop_name"] = crop_name
     state["state"] = "registering_crop_sowing"
     await update.message.reply_text(
-        "बुवाई की तारीख लिखें (YYYY-MM-DD) / Sowing date (YYYY-MM-DD).\n"
-        "अगर पता न हो, लिखें 'skip' / Type 'skip' if unknown:"
+        _t(state,
+           "बुवाई की तारीख लिखें (YYYY-MM-DD)।\nअगर पता न हो, लिखें 'skip'।",
+           "Sowing date (YYYY-MM-DD).\nType 'skip' if unknown.")
     )
 
 
@@ -1091,23 +1175,35 @@ async def _handle_crop_sowing(update, user_id: str, text: str, state: dict):
     parsed = _parse_sowing_date(text)
     if parsed is None and text.strip().lower() not in ("skip", "छोड़ें", "छोडें", "-", ""):
         await update.message.reply_text(
-            "⚠️ कृपया YYYY-MM-DD में लिखें (जैसे 2026-04-15) या 'skip' लिखें।\n"
-            "Please enter YYYY-MM-DD (e.g. 2026-04-15) or 'skip'."
+            _t(state,
+               "⚠️ कृपया YYYY-MM-DD में लिखें (जैसे 2026-04-15) या 'skip' लिखें।",
+               "⚠️ Please enter YYYY-MM-DD (e.g. 2026-04-15) or 'skip'.")
         )
         return
     state["data"]["sowing_date"] = parsed.isoformat() if parsed else None
     state["state"] = "registering_crop_stage"
 
+    if _lang(state) == "hi":
+        stage_buttons = [
+            [InlineKeyboardButton("🌱 अंकुरण", callback_data="stage_seedling")],
+            [InlineKeyboardButton("🌿 वानस्पतिक", callback_data="stage_vegetative")],
+            [InlineKeyboardButton("🌸 फूल", callback_data="stage_flowering")],
+            [InlineKeyboardButton("🌾 फल/दाना", callback_data="stage_fruiting")],
+            [InlineKeyboardButton("🔪 कटाई", callback_data="stage_harvest")],
+        ]
+    else:
+        stage_buttons = [
+            [InlineKeyboardButton("🌱 Seedling", callback_data="stage_seedling")],
+            [InlineKeyboardButton("🌿 Vegetative", callback_data="stage_vegetative")],
+            [InlineKeyboardButton("🌸 Flowering", callback_data="stage_flowering")],
+            [InlineKeyboardButton("🌾 Fruiting", callback_data="stage_fruiting")],
+            [InlineKeyboardButton("🔪 Harvest", callback_data="stage_harvest")],
+        ]
+
     await update.message.reply_text(
-        "फसल की अवस्था / Crop stage:",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🌱 अंकुरण / Seedling", callback_data="stage_seedling")],
-            [InlineKeyboardButton("🌿 वानस्पतिक / Vegetative", callback_data="stage_vegetative")],
-            [InlineKeyboardButton("🌸 फूल / Flowering", callback_data="stage_flowering")],
-            [InlineKeyboardButton("🌾 फल/दाना / Fruiting", callback_data="stage_fruiting")],
-            [InlineKeyboardButton("🔪 कटाई / Harvest", callback_data="stage_harvest")],
-        ]),
-        )
+        _t(state, "फसल की अवस्था:", "Crop stage:"),
+        reply_markup=InlineKeyboardMarkup(stage_buttons),
+    )
 
 
 async def _persist_field_from_callback(query, user_id: str, soil: str, state: dict):
@@ -1119,7 +1215,7 @@ async def _persist_field_from_callback(query, user_id: str, soil: str, state: di
         farmer = result.scalar_one_or_none()
 
         if not farmer:
-            await query.message.reply_text("⚠️ पहले /register करें।")
+            await query.message.reply_text(_t(state, "⚠️ पहले पंजीकरण करें।", "⚠️ Please register first."))
             return
 
         import uuid
@@ -1138,12 +1234,16 @@ async def _persist_field_from_callback(query, user_id: str, soil: str, state: di
         except Exception as exc:
             await db.rollback()
             logger.error(f"Field registration failed: {exc}")
-            await query.message.reply_text("❌ खेत पंजीकरण में त्रुटि। कृपया फिर कोशिश करें।")
+            await query.message.reply_text(_t(state, "❌ खेत पंजीकरण में त्रुटि। कृपया फिर कोशिश करें।", "❌ Field registration failed. Please try again."))
             return
 
-    state["state"] = "start"
+    state["state"] = "registering_crop_name"
     await query.message.reply_text(
-        "✅ *खेत पंजीकृत!*\n\nअब /crop से अपनी फसल दर्ज करें।",
+        _t(
+            state,
+            "✅ *खेत पंजीकृत!*\n\n🌾 अब अपनी फसल का नाम लिखें (जैसे: धान, गेहूं, मक्का):",
+            "✅ *Field registered!*\n\n🌾 Now enter your crop name (e.g. rice, wheat, maize):",
+        ),
         parse_mode="Markdown",
     )
 
@@ -1156,7 +1256,7 @@ async def _persist_crop_stage_from_callback(query, user_id: str, stage: str, sta
         result = await db.execute(select(Farmer).where(Farmer.phone == phone))
         farmer = result.scalar_one_or_none()
         if not farmer:
-            await query.message.reply_text("⚠️ पहले /register करें।")
+            await query.message.reply_text(_t(state, "⚠️ पहले पंजीकरण करें।", "⚠️ Please register first."))
             return
 
         field_result = await db.execute(
@@ -1164,7 +1264,7 @@ async def _persist_crop_stage_from_callback(query, user_id: str, stage: str, sta
         )
         field = field_result.scalar_one_or_none()
         if not field:
-            await query.message.reply_text("⚠️ पहले /field से अपना खेत पंजीकृत करें।")
+            await query.message.reply_text(_t(state, "⚠️ पहले अपना खेत पंजीकृत करें।", "⚠️ Please register your field first."))
             return
 
         import uuid
@@ -1186,13 +1286,16 @@ async def _persist_crop_stage_from_callback(query, user_id: str, stage: str, sta
         except Exception as exc:
             await db.rollback()
             logger.error(f"Crop cycle creation failed: {exc}")
-            await query.message.reply_text("❌ फसल दर्ज करने में त्रुटि। कृपया फिर कोशिश करें।")
+            await query.message.reply_text(_t(state, "❌ फसल दर्ज करने में त्रुटि। कृपया फिर कोशिश करें।", "❌ Failed to register crop. Please try again."))
             return
 
     state["state"] = "ready"
     await query.message.reply_text(
-        "✅ *सब तैयार! / All Set!*\n\n"
-        "अब आप अपनी फसल की फोटो भेज सकते हैं या समस्या लिख सकते हैं।",
+        _t(
+            state,
+            "✅ *सब तैयार!*\n\nअब आप अपनी फसल की फोटो भेज सकते हैं या कोई भी सवाल पूछ सकते हैं।",
+            "✅ *All set!*\n\nYou can now send a photo of your crop or ask any question.",
+        ),
         parse_mode="Markdown",
     )
 
