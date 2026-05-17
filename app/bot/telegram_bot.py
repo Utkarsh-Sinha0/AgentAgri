@@ -1466,7 +1466,7 @@ async def _process_farmer_query(
                 # When msg is bilingual (English ——— native), speak only the
                 # native half. When English-only, speak the whole thing.
                 tts_source = msg.split("\n———\n", 1)[1] if "\n———\n" in msg else msg
-                tts_text = re.sub(r"[*_`#]", "", tts_source)
+                tts_text = re.sub(r"[*_`#─]+", "", tts_source)
                 tts_text = re.sub(r"[\U0001F300-\U0001FAFF\U00002600-\U000027BF]", "", tts_text).strip()
                 audio_bytes = await _sarvam_tts(tts_text, target_lang=tts_lang, emotion=emotion)
                 if audio_bytes:

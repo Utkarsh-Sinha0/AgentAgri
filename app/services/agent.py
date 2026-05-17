@@ -1337,12 +1337,22 @@ class AgentOrchestrator:
                 )
             blocks.append(blk)
 
-        # Stitch blocks with a single blank line between them.
+        # Stitch blocks with a visible separator so each section renders
+        # as its own paragraph in Telegram (blank lines alone get collapsed
+        # by some clients). Bold the header line of every block.
         lines: list[str] = []
         for i, blk in enumerate(blocks):
             if i > 0:
                 lines.append("")
+                lines.append("─" * 20)
+                lines.append("")
+            if blk:
+                header = blk[0]
+                if header and not (header.startswith("*") and header.endswith("*")):
+                    blk = [f"*{header}*", *blk[1:]]
             lines.extend(blk)
+        lines.append("")
+        lines.append("─" * 20)
 
         if not lines:
             return None
