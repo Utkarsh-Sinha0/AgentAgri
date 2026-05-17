@@ -408,6 +408,7 @@ class AgentOrchestrator:
                 evidence.wiki_articles,
                 evidence.memory_context,
                 evidence.universal_kb_docs,
+                vision_analysis=str((vision_result or {}).get("vision_analysis") or ""),
             )
         else:
             # No wiki evidence. If tools returned something (weather, mandi,
