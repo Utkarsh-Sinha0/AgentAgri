@@ -402,6 +402,7 @@ class AgentOrchestrator:
         if is_factual:
             evidence.wiki_articles = []
         selection_result = None
+        weather_summary = self._summarize_weather(evidence.weather_data)
         if evidence.wiki_articles:
             selection_result = await self.llm.select_template(
                 ctx.message,
@@ -409,6 +410,7 @@ class AgentOrchestrator:
                 evidence.memory_context,
                 evidence.universal_kb_docs,
                 vision_analysis=str((vision_result or {}).get("vision_analysis") or ""),
+                weather_summary=weather_summary,
             )
         else:
             # No wiki evidence. If tools returned something (weather, mandi,
@@ -1008,6 +1010,38 @@ class AgentOrchestrator:
         lines.append("Kisan Call Center: 1800-180-1551")
         return "\n".join(lines)
 
+    def _summarize_weather(self, weather_data: dict | None) -> str:
+        """Compact, LLM-readable weather summary from evidence.weather_data."""
+        if not isinstance(weather_data, dict):
+            return "No live weather data available."
+        inner = weather_data.get("forecast")
+        if isinstance(inner, dict):
+            rows = inner.get("forecast") or []
+            district = inner.get("district", "")
+            source = inner.get("source", "")
+        elif isinstance(inner, list):
+            rows = inner
+            district = weather_data.get("district", "")
+            source = weather_data.get("source", "")
+        else:
+            rows = []
+            district = ""
+            source = ""
+        if not rows:
+            return "No live weather data available."
+        lines = [f"Live forecast for {district or 'farmer location'} (source: {source or 'live'}):"]
+        for row in rows[:5]:
+            lines.append(
+                f"  - {row.get('date','?')}: {row.get('temp_min','?')}-{row.get('temp_max','?')}°C, "
+                f"{row.get('rainfall_mm',0)}mm rain, humidity {row.get('humidity','?')}%, "
+                f"{row.get('condition','?')}"
+            )
+        lines.append(
+            "Use this for spray timing (no urea/pesticide on rain days), disease pressure "
+            "(high humidity + warm = fungal risk), water stress, and storage decisions."
+        )
+        return "\n".join(lines)
+
     def _build_evidence_cards(
         self, evidence: EvidenceBundle, vision: dict | None
     ) -> list[dict]:
@@ -1223,10 +1257,22 @@ class AgentOrchestrator:
         blocks: list[list[str]] = []
 
         weather = evidence.weather_data
-        forecast_rows = (weather or {}).get("forecast") if isinstance(weather, dict) else None
+        # weather_data is wrapped as {"forecast": <get_forecast result>, "history": ...}
+        # where <get_forecast result> = {"forecast": [...rows...], "district": ...}.
+        # Unwrap to the inner rows + district before rendering.
+        _w_inner = (weather or {}).get("forecast") if isinstance(weather, dict) else None
+        if isinstance(_w_inner, dict):
+            forecast_rows = _w_inner.get("forecast")
+            _w_district = _w_inner.get("district", "")
+        elif isinstance(_w_inner, list):
+            forecast_rows = _w_inner
+            _w_district = (weather or {}).get("district", "")
+        else:
+            forecast_rows = None
+            _w_district = ""
         want_weather = intent_name == "weather_query"
         if (isinstance(forecast_rows, list) and forecast_rows) or want_weather:
-            district = (weather or {}).get("district", "") if isinstance(weather, dict) else ""
+            district = _w_district
             blk: list[str] = []
             header = (
                 f"मौसम पूर्वानुमान ({district}):" if is_hindi

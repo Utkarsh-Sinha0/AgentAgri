@@ -309,11 +309,13 @@ class OllamaClient:
         memory: str = "",
         universal_kb_docs: list[dict] | None = None,
         vision_analysis: str = "",
+        weather_summary: str = "",
     ) -> dict:
         """Template selection step (thinking OFF, grammar ON)."""
         evidence_text = _format_evidence(evidence)
         kb_text = _format_universal_kb(universal_kb_docs or [])
         vision_text = (vision_analysis or "").strip() or "No photo provided."
+        weather_text = (weather_summary or "").strip() or "No live weather data available."
         msgs = [
             {"role": "system", "content": AGENT_SYSTEM_PROMPT},
             {"role": "user", "content": TEMPLATE_SELECTION_PROMPT.format(
@@ -322,6 +324,7 @@ class OllamaClient:
                 universal_kb=kb_text,
                 memory_reference=memory or "No previous observations for this farmer.",
                 vision_analysis=vision_text,
+                weather=weather_text,
             )},
         ]
         return await self.structured_chat(msgs, "template_selection", thinking=False)
@@ -490,6 +493,9 @@ TEMPLATE_SELECTION_PROMPT = """Farmer message: {farmer_message}
 
 Photo analysis (vision model description of the crop photo, if any):
 {vision_analysis}
+
+Live weather context (OpenWeatherMap forecast — use for spray timing, disease pressure, water stress, storage decisions):
+{weather}
 
 Retrieved evidence (wiki articles with indexed actions & warnings):
 {evidence}
