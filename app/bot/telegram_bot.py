@@ -409,6 +409,26 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         farmer_id_for_agent = farmer.id
         preferred_lang = getattr(farmer, "preferred_language", None) or preferred_lang
 
+        # State is in-memory and is wiped on bot restart. Rehydrate the
+        # farmer's active field + cycle from the DB so observations always
+        # have non-null FKs.
+        if not state.get("crop_cycle_id") or not state.get("field_id"):
+            _field = await db.scalar(
+                select(Field).where(Field.farmer_id == farmer.id).order_by(Field.id).limit(1)
+            )
+            if _field is not None:
+                state["field_id"] = _field.id
+                _cycle = await db.scalar(
+                    select(CropCycle)
+                    .where(CropCycle.field_id == _field.id, CropCycle.is_active.is_(True))
+                    .order_by(CropCycle.sowing_date.desc())
+                    .limit(1)
+                )
+                if _cycle is not None:
+                    state["crop_cycle_id"] = _cycle.id
+                    state.setdefault("crop_name", _cycle.crop_name)
+                    state.setdefault("crop_stage", _cycle.current_stage)
+
         import uuid
         obs = Observation(
             id=str(uuid.uuid4()),
