@@ -200,6 +200,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
+
+    # First-time users: also send a Hindi voice prompt asking for the one-shot
+    # registration note. Silent if voice pipeline disabled or Sarvam fails.
+    if not state.get("farmer_id") and settings.enable_voice_pipeline:
+        try:
+            from app.services.voice import synthesize as _sarvam_tts
+
+            prompt_hi = (
+                "नमस्ते! अपना नाम, गाँव, ज़िला, और मुख्य फसल — एक ही आवाज़ संदेश में बताइए।"
+            )
+            audio = await _sarvam_tts(prompt_hi, target_lang="hi-IN", emotion="friendly")
+            if audio:
+                await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio)
+        except Exception as exc:
+            logger.warning(f"start voice prompt skipped: {exc}")
+
     state["state"] = "start"
 
 
@@ -435,6 +451,26 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as exc:
         logger.warning(f"Pre-STT transcribe failed (will let round-trip retry): {exc}")
 
+    # Guard: empty or trivial transcript — don't waste an agent turn replying
+    # with a cached MSP. Tell the farmer we didn't hear them and bail.
+    if len(transcript_seed.strip().split()) < 2:
+        await update.message.reply_text(
+            "🎙 आवाज़ साफ़ नहीं सुनाई दी। कृपया दोबारा बोलिए।\n"
+            "Couldn't catch that clearly — please record again."
+        )
+        return
+
+    # Heuristic: a new voice note is rarely a literal follow-up to the prior
+    # advisory. Only treat as a follow-up if the farmer used a follow-up cue
+    # in the transcript ("aapne kaha", "जैसा आपने कहा", "earlier", etc.),
+    # otherwise the agent keeps mutating the old advisory ("Risk: X → Y").
+    followup_cues = (
+        "aapne kaha", "jaisa kaha", "earlier", "pichhli", "पिछली", "जैसा आपने कहा",
+        "आपने कहा", "follow up", "follow-up", "as you said",
+    )
+    is_followup = any(cue in transcript_seed.lower() for cue in followup_cues)
+    prev_advisory_id = state.get("last_advisory_id") if is_followup else None
+
     async def _agent_call(prompt_en: str) -> str:
         async with async_session_factory() as db2:
             ctx = AgentContext(
@@ -447,8 +483,8 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 crop_cycle_id=cycle_id_for_agent,
                 observation_id=state.get("last_observation_id"),
                 image_path=pending_photo_path,
-                is_followup=bool(state.get("last_advisory_id")),
-                previous_advisory_id=state.get("last_advisory_id"),
+                is_followup=is_followup,
+                previous_advisory_id=prev_advisory_id,
             )
             agent = get_agent()
             response = await agent.process(db2, ctx)
@@ -513,12 +549,27 @@ async def _handle_voice_registration(update: Update, context: ContextTypes.DEFAU
         stt = await transcribe(voice_path)
         detected_lang = stt.get("detected_lang") or settings.voice_default_target_lang
         transcript = stt.get("text") or ""
+        if len(transcript.strip().split()) < 3:
+            await update.message.reply_text(
+                "🎙 आवाज़ बहुत छोटी या खाली थी। कृपया एक साथ बोलें: नाम, गाँव, ज़िला, मुख्य फसल।\n"
+                "Voice was empty/too short. Please say: name, village, district, main crop."
+            )
+            return
         transcript_en = await translate(transcript, detected_lang, "en-IN")
         fields = await extract_registration_fields(transcript_en)
         preferred_lang = fields.get("preferred_lang") or detected_lang
     except Exception as exc:
         logger.error(f"Voice registration pipeline failed: {exc}")
         await update.message.reply_text("❌ आवाज़ समझ नहीं आई। कृपया /register से टेक्स्ट में करें या फिर से बोलें।")
+        return
+
+    if not fields.get("extraction_ok"):
+        await update.message.reply_text(
+            f"❓ मैं समझ नहीं पाया। आपने कहा: \"{transcript[:200]}\"\n"
+            "कृपया फिर से बोलें — एक साथ अपना नाम, गाँव, ज़िला, और मुख्य फसल बताएं।\n"
+            "Couldn't extract your details. Please re-record with name, village, district, and main crop, "
+            "or use /register for text step-by-step."
+        )
         return
 
     import uuid

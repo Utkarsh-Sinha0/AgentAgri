@@ -256,29 +256,49 @@ async def voice_round_trip(
 async def extract_registration_fields(transcript_en: str) -> dict:
     """Parse one-shot voice onboarding into farmer/field/crop fields.
 
-    The LLM path is preferred; a tiny deterministic fallback keeps onboarding
-    usable when Ollama is down during demos.
+    Returns a dict with an `extraction_ok` flag: True when the LLM (or
+    deterministic crop sniff) recovered at least name + (district|village),
+    False when the caller should reject the registration and re-prompt.
     """
+    parsed: dict = {}
+    llm_error: str | None = None
     try:
         from app.utils.ollama_client import get_ollama
 
         result = await get_ollama().extract_registration(transcript_en)
         parsed = result.get("parsed", {}) or {}
-    except Exception:
-        parsed = {}
+    except Exception as exc:
+        llm_error = str(exc)
+        logger.warning(f"extract_registration LLM call failed: {exc}")
 
     text = transcript_en.strip()
     lower = text.lower()
     crops = ("rice", "paddy", "wheat", "maize", "potato", "onion", "tomato", "mustard", "arhar")
-    crop = parsed.get("primary_crop") or next((c for c in crops if c in lower), "")
+    sniffed_crop = next((c for c in crops if c in lower), "")
+    crop = parsed.get("primary_crop") or sniffed_crop
     if crop == "paddy":
         crop = "rice"
 
+    name = (parsed.get("name") or "").strip()
+    village = (parsed.get("village") or "").strip()
+    district = (parsed.get("district") or "").strip()
+
+    # Extraction is "ok" if we got a real name AND at least one location hint.
+    extraction_ok = bool(name) and bool(village or district)
+    if not extraction_ok:
+        logger.warning(
+            f"registration extraction insufficient (name={name!r} village={village!r} "
+            f"district={district!r} crop={crop!r} llm_error={llm_error!r}) "
+            f"transcript_en={transcript_en[:200]!r}"
+        )
+
     return {
-        "name": (parsed.get("name") or "Farmer").strip(),
-        "village": (parsed.get("village") or "").strip(),
+        "extraction_ok": extraction_ok,
+        "llm_error": llm_error,
+        "name": name or "Farmer",
+        "village": village,
         "tehsil": (parsed.get("tehsil") or "").strip(),
-        "district": (parsed.get("district") or "").strip(),
+        "district": district,
         "state": (parsed.get("state") or "Bihar").strip(),
         "primary_crop": (crop or "rice").strip().lower(),
         "soil_type": (parsed.get("soil_type") or "loam").strip().lower(),
