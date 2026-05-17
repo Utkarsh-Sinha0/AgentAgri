@@ -216,7 +216,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as exc:
             logger.warning(f"start voice prompt skipped: {exc}")
 
-    state["state"] = "start"
+    state["state"] = "ready" if state.get("farmer_id") else "start"
 
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -361,9 +361,20 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if voice is None:
         return
 
+    # Route to registration only if the farmer is genuinely unregistered.
+    # Checking the DB instead of the in-memory state string protects against
+    # state drift (e.g. /register sets state to 'registering_name' but voice
+    # registration succeeded out-of-band, or /start leaves state at 'start').
     if state.get("state") != "ready":
-        await _handle_voice_registration(update, context, user_id, state, voice)
-        return
+        async with async_session_factory() as _db:
+            _farmer_exists = await _db.scalar(
+                select(Farmer.id).where(Farmer.phone == state.get("phone", user_id))
+            )
+        if not _farmer_exists:
+            await _handle_voice_registration(update, context, user_id, state, voice)
+            return
+        # Farmer is registered; treat this voice as a normal turn and fix state.
+        state["state"] = "ready"
 
     await update.message.chat.send_action(ChatAction.TYPING)
 
