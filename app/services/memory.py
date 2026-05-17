@@ -47,6 +47,11 @@ _HALF_LIVES_DAYS: dict[str, int] = {
     "vision_analysis": 30,
     "advisory_given": 30,
     "observation_recorded": 30,
+    "field_insight": 90,
+    "voice_intent": 30,
+    "playbook_stage_progress": 60,
+    "cold_storage_planned": 45,
+    "insurance_claim_filed": 90,
 }
 
 
