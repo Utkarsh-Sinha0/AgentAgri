@@ -276,6 +276,14 @@ class AgentOrchestrator:
             evidence.weather_data = tool_results.get("get_forecast") or tool_results.get("get_historical_weather")
         if "get_mandi_prices" in tool_results:
             evidence.mandi_data = tool_results.get("get_mandi_prices")
+        if "get_msp" in tool_results:
+            msp_result = tool_results.get("get_msp") or {}
+            if evidence.mandi_data is None:
+                evidence.mandi_data = {}
+            if msp_result.get("msp_rs_per_quintal") and not evidence.mandi_data.get("msp"):
+                evidence.mandi_data["msp"] = msp_result.get("msp_rs_per_quintal")
+            if msp_result.get("crop") and not evidence.mandi_data.get("crop"):
+                evidence.mandi_data["crop"] = msp_result.get("crop")
         if "match_schemes" in tool_results:
             evidence.scheme_data = tool_results.get("match_schemes")
 
@@ -376,6 +384,12 @@ class AgentOrchestrator:
         evidence.ndvi_data = await self._load_ndvi_data(db, ctx)
 
         # ── Step 6: Template selection ───────────────────────────
+        # Factual intents (market/scheme/weather/finance) must answer from
+        # tool data, not from disease/playbook wiki articles. Suppress wiki
+        # articles so the tool-only branch fires and renders the mandi/MSP/
+        # scheme/weather block as the primary response.
+        if is_factual:
+            evidence.wiki_articles = []
         selection_result = None
         if evidence.wiki_articles:
             selection_result = await self.llm.select_template(
@@ -1219,10 +1233,10 @@ class AgentOrchestrator:
             lines.append("")
 
         mandi = evidence.mandi_data
-        if mandi and mandi.get("prices"):
+        if mandi and (mandi.get("prices") or mandi.get("msp")):
             header = "मंडी भाव:" if is_hindi else "Mandi Prices:"
             lines.append(header)
-            for entry in mandi["prices"][:2]:
+            for entry in (mandi.get("prices") or [])[:2]:
                 if entry.get("history"):
                     latest = entry["history"][0]
                     lines.append(
