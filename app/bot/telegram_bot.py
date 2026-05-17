@@ -1405,14 +1405,39 @@ async def _process_farmer_query(
         # - audio uses native (detected wins; stored pref is fallback).
         pref_lang = (getattr(farmer, "preferred_language", "") or "").lower()
         typed_text = text or ""
-        has_devanagari = any("ऀ" <= c <= "ॿ" for c in typed_text)
+        # Sarvam-supported Indic scripts → BCP-47 codes used by STT/Translate/TTS.
+        # Marathi shares Devanagari with Hindi; we default to hi-IN and rely
+        # on Sarvam Translate to disambiguate if the farmer's pref_lang says
+        # mr-IN.
+        _SCRIPT_RANGES = [
+            ("ऀ", "ॿ", "hi-IN"),   # Devanagari (Hindi/Marathi)
+            ("ঀ", "৿", "bn-IN"),   # Bengali
+            ("਀", "੿", "pa-IN"),   # Gurmukhi
+            ("઀", "૿", "gu-IN"),   # Gujarati
+            ("଀", "୿", "od-IN"),   # Oriya
+            ("஀", "௿", "ta-IN"),   # Tamil
+            ("ఀ", "౿", "te-IN"),   # Telugu
+            ("ಀ", "೿", "kn-IN"),   # Kannada
+            ("ഀ", "ൿ", "ml-IN"),   # Malayalam
+        ]
+        script_counts: dict[str, int] = {}
+        for ch in typed_text:
+            for lo, hi, code in _SCRIPT_RANGES:
+                if lo <= ch <= hi:
+                    script_counts[code] = script_counts.get(code, 0) + 1
+                    break
+        has_indic = bool(script_counts)
         has_ascii_letters = any("a" <= c.lower() <= "z" for c in typed_text)
-        if has_devanagari and not has_ascii_letters:
-            detected_lang = "hi-IN"
-        elif has_ascii_letters and not has_devanagari:
+        if has_indic and not has_ascii_letters:
+            detected_lang = max(script_counts.items(), key=lambda kv: kv[1])[0]
+            # If farmer's stored pref is Marathi and we detected Devanagari,
+            # prefer mr-IN over hi-IN.
+            if detected_lang == "hi-IN" and pref_lang.startswith("mr"):
+                detected_lang = "mr-IN"
+        elif has_ascii_letters and not has_indic:
             detected_lang = "en-IN"
         else:
-            detected_lang = ""  # inconclusive
+            detected_lang = ""  # inconclusive (mixed / empty)
 
         native_lang = detected_lang if (detected_lang and not detected_lang.startswith("en")) else (pref_lang if pref_lang and not pref_lang.startswith("en") else "")
         english_only = (detected_lang.startswith("en")) or (not native_lang)
