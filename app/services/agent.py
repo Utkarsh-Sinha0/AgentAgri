@@ -15,10 +15,12 @@ from dataclasses import dataclass
 from typing import Any, ClassVar
 
 from loguru import logger
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
     Advisory,
+    Farmer,
     Field,
 )
 from app.models import (
@@ -268,6 +270,27 @@ class AgentOrchestrator:
             evidence.mandi_data = tool_results.get("get_mandi_prices")
         if "match_schemes" in tool_results:
             evidence.scheme_data = tool_results.get("match_schemes")
+
+        # Universal-KB: synchronous, in-memory, sub-ms per call. No need
+        # to fire it in parallel — just retrieve once crop/state/stage are
+        # known. Falls through silently when the loader has no rows.
+        try:
+            from app.services import universal_kb
+            state_hint = None
+            try:
+                farmer_row = await db.scalar(
+                    select(Farmer.state).where(Farmer.id == ctx.farmer_id)
+                )
+                state_hint = farmer_row
+            except Exception:
+                pass
+            evidence.universal_kb_docs = universal_kb.retrieve(
+                crop=ctx.crop_name,
+                state=state_hint,
+                stage=ctx.crop_stage,
+            ) or []
+        except Exception as exc:
+            logger.debug(f"universal_kb retrieval skipped: {exc}")
 
         # Load memory context (conversation_context was loaded before Step 1
         # so the intent classifier could resolve follow-up references; reuse

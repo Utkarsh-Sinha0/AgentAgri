@@ -1,0 +1,82 @@
+[
+  {
+    "id": "ukb-0001",
+    "category": "msp_lookup",
+    "language": "en",
+    "farmer_persona": {"district": "Munger", "state": "Bihar", "crop": "wheat", "stage": "maturity_harvest", "field_size_acres": 2.0, "literacy": "medium"},
+    "input": {"channel": "telegram", "modality": "text", "user_message": "what is MSP of wheat in Bihar this rabi?"},
+    "expected_kb": {"doc_type": "msp", "crop": "wheat", "state": "Bihar"},
+    "must_contain_any": ["2425", "MSP", "quintal"],
+    "rationale": "MSP lookup must hit seeded universal KB and cite figure."
+  },
+  {
+    "id": "ukb-0002",
+    "category": "msp_lookup",
+    "language": "hi",
+    "farmer_persona": {"district": "Ludhiana", "state": "Punjab", "crop": "wheat", "stage": "heading_flowering"},
+    "input": {"channel": "telegram", "modality": "text", "user_message": "पंजाब में गेहूं का MSP क्या है?"},
+    "expected_kb": {"doc_type": "msp", "crop": "wheat", "state": "Punjab"},
+    "must_contain_any": ["2425", "MSP"],
+    "rationale": "Hindi MSP lookup for Punjab wheat."
+  },
+  {
+    "id": "ukb-0003",
+    "category": "insurance",
+    "language": "en",
+    "farmer_persona": {"district": "Munger", "state": "Bihar", "crop": "rice", "stage": "tillering"},
+    "input": {"channel": "telegram", "modality": "text", "user_message": "PMFBY claim window for kharif rice?"},
+    "expected_kb": {"doc_type": "insurance", "crop": "rice"},
+    "must_contain_any": ["PMFBY", "claim", "72 hours", "intimation"],
+    "rationale": "Insurance claim window must come from seeded policy data."
+  },
+  {
+    "id": "ukb-0004",
+    "category": "cold_storage",
+    "language": "en",
+    "farmer_persona": {"district": "Munger", "state": "Bihar", "crop": "wheat"},
+    "input": {"channel": "telegram", "modality": "text", "user_message": "best cold storage for wheat near Munger?"},
+    "expected_kb": {"doc_type": "cold_storage", "state": "Bihar"},
+    "must_contain_any": ["Munger", "tonnes", "storage"],
+    "rationale": "Cold storage directory lookup."
+  },
+  {
+    "id": "ukb-0005",
+    "category": "playbook",
+    "language": "en",
+    "farmer_persona": {"district": "Munger", "state": "Bihar", "crop": "rice", "stage": "sowing"},
+    "input": {"channel": "telegram", "modality": "text", "user_message": "sustainable rice seeding methods for low water"},
+    "expected_kb": {"doc_type": "playbook", "crop": "rice"},
+    "must_contain_any": ["SRI", "direct seeded", "DSR", "transplant"],
+    "rationale": "Sustainable practice retrieved from rice playbook."
+  },
+  {
+    "id": "ukb-0006",
+    "category": "playbook",
+    "language": "hi",
+    "farmer_persona": {"district": "Ludhiana", "state": "Punjab", "crop": "wheat", "stage": "tillering"},
+    "input": {"channel": "telegram", "modality": "text", "user_message": "गेहूं में जिंक की कमी हो तो क्या करें?"},
+    "expected_kb": {"doc_type": "playbook", "crop": "wheat", "stage": "tillering"},
+    "must_contain_any": ["zinc", "ZnSO4", "जिंक"],
+    "rationale": "Stage-specific deficiency advice from wheat playbook."
+  },
+  {
+    "id": "ukb-0007",
+    "category": "scheme",
+    "language": "en",
+    "farmer_persona": {"district": "Patna", "state": "Bihar", "crop": "rice"},
+    "input": {"channel": "telegram", "modality": "text", "user_message": "any Bihar-specific scheme for rice farmers?"},
+    "expected_kb": {"doc_type": "scheme", "state": "Bihar"},
+    "must_contain_any": ["Bihar", "scheme"],
+    "rationale": "State-specific scheme lookup."
+  },
+  {
+    "id": "ukb-0008",
+    "category": "voice_intent",
+    "language": "hi",
+    "farmer_persona": {"district": "Munger", "state": "Bihar", "crop": "rice", "stage": "tillering"},
+    "input": {"channel": "telegram", "modality": "voice", "user_message": "मेरे धान के खेत में पीले पत्ते हैं क्या करूं"},
+    "expected_kb": {"doc_type": "playbook", "crop": "rice"},
+    "must_contain_any": ["nitrogen", "नाइट्रोजन", "यूरिया", "urea"],
+    "rationale": "Voice intent → vegetative-stage yellowing diagnosis."
+  }
+]

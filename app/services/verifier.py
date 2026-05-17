@@ -66,6 +66,7 @@ class EvidenceBundle:
     scheme_data: dict | None = None
     ndvi_data: dict | None = None
     memory_context: str = ""
+    universal_kb_docs: list[dict] = field(default_factory=list)
 
 
 @dataclass
