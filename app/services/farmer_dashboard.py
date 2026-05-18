@@ -61,7 +61,7 @@ async def get_farmer_dashboard(
         days=7,
         pincode=farmer.pincode,
     )
-    mandi = await get_mandi_prices(crop_name, district=farmer.district or "Munger", days=7)
+    mandi = await get_mandi_prices(crop_name, district=farmer.district or "", days=7)
     advisories = await _latest_advisories(db, farmer.id)
     conversations = await _conversation_summary(db, farmer.id)
     impacts = await _latest_impacts(db, farmer.id)
@@ -495,6 +495,15 @@ async def _cluster_map(
     )
     base_lat = active_field.get("lat") if active_field else None
     base_lng = active_field.get("lng") if active_field else None
+    if (base_lat is None or base_lng is None) and getattr(farmer, "pincode", None):
+        try:
+            from app.services.weather import _owm_coords_from_pincode
+            geo = await _owm_coords_from_pincode(farmer.pincode)
+            if geo:
+                base_lat, base_lng = geo[0], geo[1]
+        except Exception:
+            pass
+    # Last-resort fallback only when no field coords AND no pincode geocode.
     base_lat = base_lat or 25.38
     base_lng = base_lng or 86.47
     clusters = []

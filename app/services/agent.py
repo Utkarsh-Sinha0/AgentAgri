@@ -55,6 +55,9 @@ class AgentContext:
     # Populated from DB at process() entry — real value, never a placeholder.
     land_owned_acres: float | None = None
     pincode: str | None = None
+    district: str | None = None
+    tehsil: str | None = None
+    village: str | None = None
 
 
 @dataclass
@@ -114,18 +117,30 @@ class AgentOrchestrator:
             except Exception as exc:
                 logger.warning(f"Land acres hydration failed: {exc}")
 
-        # Hydrate pincode from the Farmer row so weather is location-correct.
-        if not ctx.pincode and ctx.farmer_id:
+        # Hydrate pincode/district/tehsil/village/state from the Farmer row so
+        # all downstream tools (weather, mandi, schemes, alerts) use the real
+        # farmer location, not a Munger default.
+        if ctx.farmer_id and not all([ctx.pincode, ctx.district]):
             try:
                 from sqlalchemy import select as _sa_select
 
                 from app.models import Farmer as _FarmerModel
-                _res = await db.execute(_sa_select(_FarmerModel.pincode).where(_FarmerModel.id == ctx.farmer_id))
-                _pin = _res.scalar_one_or_none()
-                if _pin:
-                    ctx.pincode = str(_pin).strip()
+                _res = await db.execute(
+                    _sa_select(
+                        _FarmerModel.pincode,
+                        _FarmerModel.district,
+                        _FarmerModel.tehsil,
+                        _FarmerModel.village,
+                    ).where(_FarmerModel.id == ctx.farmer_id)
+                )
+                _row = _res.first()
+                if _row:
+                    ctx.pincode = ctx.pincode or (str(_row[0]).strip() if _row[0] else None)
+                    ctx.district = ctx.district or (str(_row[1]).strip() if _row[1] else None)
+                    ctx.tehsil = ctx.tehsil or (str(_row[2]).strip() if _row[2] else None)
+                    ctx.village = ctx.village or (str(_row[3]).strip() if _row[3] else None)
             except Exception as exc:
-                logger.warning(f"Pincode hydration failed: {exc}")
+                logger.warning(f"Farmer-location hydration failed: {exc}")
 
         # ── Step 0: Vision analysis (if photo provided) ──────────
         vision_result = None
@@ -347,7 +362,7 @@ class AgentOrchestrator:
 
                 tool_results["sell_decision"] = await sell_decision_advisor(
                     crop=ctx.crop_name or llm_crop_name or "rice",
-                    district=getattr(farmer, "district", None) or "Munger",
+                    district=getattr(farmer, "district", None) or "",
                 )
             except Exception as exc:
                 logger.warning(f"sell decision advisor skipped: {exc}")
@@ -650,6 +665,9 @@ class AgentOrchestrator:
                     params["district"] = params.pop(alt)
                 else:
                     params.pop(alt, None)
+            district_default = ctx.district if ctx else None
+            if district_default:
+                params.setdefault("district", district_default)
         elif tool_name == "get_msp":
             if crop_default:
                 params.setdefault("crop", crop_default)
@@ -666,6 +684,10 @@ class AgentOrchestrator:
             acres = ctx.land_owned_acres if ctx else None
             if isinstance(acres, int | float) and "land_owned_acres" not in fp:
                 fp["land_owned_acres"] = float(acres)
+            if ctx and ctx.district and "district" not in fp:
+                fp["district"] = ctx.district
+            if ctx and ctx.pincode and "pincode" not in fp:
+                fp["pincode"] = ctx.pincode
             params["farmer_profile"] = fp
             if "field" not in params and field_default:
                 field_payload = {"field_id": field_default}
