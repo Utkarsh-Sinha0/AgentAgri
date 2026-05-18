@@ -1,0 +1,50 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+pwa/node_modules/
+pwa/.vite/
+
+# Git / IDE
+.git/
+.github/
+.idea/
+.vscode/
+
+# Data / models / logs
+*.log
+logs/
+data/
+models/
+*.sqlite
+*.db
+
+# Build / test artifacts
+dist/
+build/
+.coverage
+htmlcov/
+eval/runs/
+tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files (api reads its own in container)
+.env
+.env.*
+!.env.example
+
+# Already-built PWA stays IN (needed at runtime)
+!pwa/dist/

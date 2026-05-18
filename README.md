@@ -54,6 +54,28 @@ docker-compose up
 
 **That's it! Your agricultural AI agent is ready to serve farmers.**
 
+### 🌱 Demo Data (Auto-Seeded)
+
+On first `docker-compose up` the API container runs `scripts/startup.sh` which:
+
+1. Waits for Postgres → runs Alembic migrations
+2. Seeds the demo farm — idempotent, safe to re-run
+3. Loads wiki articles + source registry + memory backfill
+4. Boots the FastAPI server
+
+You get out-of-the-box:
+
+| What | Where it comes from | Detail |
+|---|---|---|
+| Demo farmer `Ram Kumar` (phone `demo_farmer`, pwd `demo`) | `scripts/seed_data.py` | Munger, Bihar — log in via PWA or Telegram |
+| Field "Purab Wala Khet" (2.5 acres rice/Swarna, vegetative) | same | NDVI history + 9-step crop calendar |
+| Memory palace (observations, advisories, finance, alert cluster) | `app/services/demo_seed.py` ← `data/seed/memory_palace.json` | Drives dashboard tiles instantly |
+| MSP table, mandi prices, schemes, cold-storage directory | `data/seed/*.json` (baked into image) | Used by MCP servers |
+| Rice cultivation encyclopedia | `data/reference/` | Retrieval ground-truth |
+| 5 wiki articles (BLB, fungicide safety, mandi guide, N excess, PM-Kisan) | `wiki/articles/*.json` | Graph-RAG seed |
+
+To reset: `docker-compose down -v` (drops Postgres volume) then `docker-compose up` again.
+
 ---
 
 ## 🤖 How It Works
