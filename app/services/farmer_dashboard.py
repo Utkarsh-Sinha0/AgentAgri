@@ -69,6 +69,7 @@ async def get_farmer_dashboard(
             "phone": farmer.phone,
             "preferred_language": farmer.preferred_language,
             "district": farmer.district,
+            "pincode": farmer.pincode,
             "tehsil": farmer.tehsil,
             "village": farmer.village,
         },

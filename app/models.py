@@ -71,6 +71,7 @@ class Farmer(Base):
     name = Column(String(120), nullable=False)
     preferred_language = Column(String(10), default="hi")  # hi, en
     district = Column(String(80), index=True)
+    pincode = Column(String(6), index=True)
     tehsil = Column(String(80))
     village = Column(String(120))
     registration_date = Column(DateTime, default=utc_now)

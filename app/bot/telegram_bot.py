@@ -314,12 +314,20 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = get_user_state(user_id)
     current_state = state.get("state", "start")
 
+    # Registration gate: only when not already in a registering_* step and not a bypass command.
+    if not current_state.startswith("registering_") and not _command_is_bypassed(text):
+        if await _enforce_registration_gate(update, user_id, state):
+            return
+        current_state = state.get("state", "start")
+
     if current_state == "registering_name":
         await _handle_name_registration(update, user_id, text, state)
     elif current_state == "registering_phone":
         await _handle_phone_registration(update, user_id, text, state)
     elif current_state == "registering_district":
         await _handle_district_registration(update, user_id, text, state)
+    elif current_state == "registering_pincode":
+        await _handle_pincode_registration(update, user_id, text, state)
     elif current_state == "registering_tehsil":
         await _handle_tehsil_registration(update, user_id, text, state)
     elif current_state == "registering_village":
@@ -354,6 +362,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle photo uploads (crop photos for disease diagnosis)."""
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
+
+    if await _enforce_registration_gate(update, user_id, state):
+        return
 
     if state.get("state") != "ready":
         await update.message.reply_text("⚠️ Please complete /register, /field, and /crop first.")
@@ -407,6 +418,10 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         # Farmer is registered; treat this voice as a normal turn and fix state.
         state["state"] = "ready"
+
+    # Block voice queries until pincode/tehsil/village are filled.
+    if await _enforce_registration_gate(update, user_id, state):
+        return
 
     await update.message.chat.send_action(ChatAction.TYPING)
 
@@ -651,9 +666,12 @@ async def _handle_voice_registration(update: Update, context: ContextTypes.DEFAU
             farmer.name = fields["name"]
             farmer.preferred_language = preferred_lang
             farmer.district = fields["district"]
+            farmer.pincode = fields.get("pincode") or farmer.pincode
             farmer.tehsil = fields.get("tehsil") or farmer.tehsil
             farmer.village = fields.get("village") or farmer.village
             farmer.is_active = True
+        if fields.get("pincode") and not getattr(farmer, "pincode", None):
+            farmer.pincode = fields["pincode"]
 
         field = Field(
             id=str(uuid.uuid4()),
@@ -675,15 +693,22 @@ async def _handle_voice_registration(update: Update, context: ContextTypes.DEFAU
         db.add(cycle)
         await db.commit()
 
+    next_state = "ready" if farmer.pincode else "registering_pincode"
     state.update({
-        "state": "ready",
+        "state": next_state,
         "farmer_id": farmer.id,
         "phone": user_id,
         "field_id": field.id,
         "crop_cycle_id": cycle.id,
         "crop_name": cycle.crop_name,
         "crop_stage": cycle.current_stage,
+        "data": dict(state.get("data") or {}, name=farmer.name, district=farmer.district),
     })
+    if next_state == "registering_pincode":
+        await update.message.reply_text(
+            "📮 6 अंकों का पिनकोड लिखें (e.g., 811201): / Please enter your 6-digit pincode:"
+        )
+        return
     msg = (
         f"✅ पंजीकरण पूरा: {farmer.name}, {farmer.village or '-'}, {farmer.district}; "
         f"फसल: {cycle.crop_name}. अब फोटो, टेक्स्ट या आवाज़ से सवाल पूछें।"
@@ -955,6 +980,101 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await query.message.reply_text(f"✅ Reply mode set: {label}")
 
 
+# ─── Registration gate ───────────────────────────────────────────────
+
+# Fields required before the bot will answer any agronomic question.
+# Order matters: the gate resumes registration at the first missing one.
+_REGISTRATION_FIELDS: list[tuple[str, str, str, str]] = [
+    # (attr, registering_state, hi_prompt, en_prompt)
+    ("name", "registering_name", "अपना पूरा नाम लिखें:", "Please enter your full name:"),
+    ("phone", "registering_phone", "अपना 10-अंकीय फोन नंबर लिखें:", "Enter your 10-digit phone number:"),
+    ("district", "registering_district", "अपना जिला लिखें (जैसे: मुंगेर):", "Enter your district (e.g., Munger):"),
+    ("pincode", "registering_pincode", "6 अंकों का पिनकोड लिखें (जैसे: 811201):", "Enter your 6-digit pincode (e.g., 811201):"),
+    ("tehsil", "registering_tehsil", "तहसील / ब्लॉक का नाम लिखें:", "Enter your tehsil / block:"),
+    ("village", "registering_village", "गाँव का नाम लिखें:", "Enter your village:"),
+]
+
+
+def _missing_registration_field(farmer: Farmer | None) -> tuple[str, str, str, str] | None:
+    """Return the first registration field that's not yet filled, or None."""
+    if farmer is None:
+        return _REGISTRATION_FIELDS[0]
+    for entry in _REGISTRATION_FIELDS:
+        attr = entry[0]
+        if attr == "phone":
+            # Phone is the Telegram id at registration time; always present.
+            continue
+        if not getattr(farmer, attr, None):
+            return entry
+    return None
+
+
+async def _enforce_registration_gate(update: Update, user_id: str, state: dict) -> bool:
+    """Block downstream handlers until name+district+pincode+tehsil+village exist.
+
+    Returns True when the gate fired (caller MUST return immediately).
+    Returns False when the farmer is fully registered.
+    """
+    # Already mid-registration? let the dispatcher route to the right step.
+    current = state.get("state", "start")
+    if current.startswith("registering_"):
+        return False
+
+    async with async_session_factory() as db:
+        farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
+    missing = _missing_registration_field(farmer)
+    if missing is None:
+        if farmer is not None and not state.get("farmer_id"):
+            state["farmer_id"] = farmer.id
+        return False
+
+    _attr, next_state, hi, en = missing
+    state.setdefault("data", {})
+    if farmer is not None:
+        # Hydrate state.data so resumed registration handlers see existing values.
+        for entry in _REGISTRATION_FIELDS:
+            attr = entry[0]
+            val = getattr(farmer, attr, None)
+            if val and not state["data"].get(attr):
+                state["data"][attr] = val
+    state["state"] = next_state
+    body = _t(state, hi, en)
+    await update.message.reply_text(
+        _t(
+            state,
+            f"📝 कृपया पहले पंजीकरण पूरा करें।\n{body}",
+            f"📝 Please finish registration first.\n{body}",
+        )
+    )
+    return True
+
+
+# Commands that must always work, even before registration is complete.
+_GATE_BYPASS_COMMANDS = {"/start", "/register", "/help", "/lang", "/voice_lang", "/dashboard"}
+
+
+def _command_is_bypassed(text: str) -> bool:
+    head = text.split(maxsplit=1)[0].lower() if text else ""
+    # Strip /@botname suffix if present.
+    head = head.split("@", 1)[0]
+    return head in _GATE_BYPASS_COMMANDS
+
+
+def gated_command(handler):
+    """Decorator: block a command handler until farmer registration is complete."""
+    from functools import wraps
+
+    @wraps(handler)
+    async def wrapper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        user_id = str(update.effective_user.id)
+        state = get_user_state(user_id)
+        if await _enforce_registration_gate(update, user_id, state):
+            return
+        return await handler(update, context)
+
+    return wrapper
+
+
 # ─── Registration Handlers ────────────────────────────────────────────
 
 async def _handle_name_registration(update, user_id: str, name: str, state: dict):
@@ -979,6 +1099,26 @@ async def _handle_phone_registration(update, user_id: str, phone: str, state: di
 async def _handle_district_registration(update, user_id: str, district: str, state: dict):
     state["data"]["district"] = district
     # preferred_language is already set from the picker; don't overwrite.
+    state["state"] = "registering_pincode"
+    await update.message.reply_text(
+        _t(state,
+           "6 अंकों का पिनकोड लिखें (जैसे: 811201):",
+           "Enter your 6-digit pincode (e.g., 811201):")
+    )
+
+
+async def _handle_pincode_registration(update, user_id: str, pincode: str, state: dict):
+    import re
+
+    cleaned = pincode.strip().replace(" ", "")
+    if not re.fullmatch(r"[1-9][0-9]{5}", cleaned):
+        await update.message.reply_text(
+            _t(state,
+               "❌ पिनकोड 6 अंकों का होना चाहिए (जैसे: 811201). दोबारा लिखें:",
+               "❌ Pincode must be 6 digits (e.g., 811201). Please re-enter:")
+        )
+        return
+    state["data"]["pincode"] = cleaned
     state["state"] = "registering_tehsil"
     await update.message.reply_text(
         _t(state, "तहसील / ब्लॉक का नाम लिखें:", "Enter your tehsil / block:")
@@ -997,6 +1137,7 @@ async def _handle_village_registration(update, user_id: str, village: str, state
     state["data"]["village"] = village
 
     district = state["data"].get("district", "")
+    pincode = state["data"].get("pincode", "")
     tehsil = state["data"].get("tehsil", "")
 
     lang_db = "hi" if _lang(state) == "hi" else "en"
@@ -1008,6 +1149,7 @@ async def _handle_village_registration(update, user_id: str, village: str, state
             farmer.name = state["data"]["name"]
             farmer.preferred_language = lang_db
             farmer.district = district
+            farmer.pincode = pincode or farmer.pincode
             farmer.tehsil = tehsil
             farmer.village = village
             farmer.is_active = True
@@ -1019,6 +1161,7 @@ async def _handle_village_registration(update, user_id: str, village: str, state
                 name=state["data"]["name"],
                 preferred_language=lang_db,
                 district=district,
+                pincode=pincode or None,
                 tehsil=tehsil,
                 village=village,
             )
@@ -3126,41 +3269,49 @@ def create_bot() -> Application:
 
     app = Application.builder().token(token).post_init(_post_init).build()
 
-    # Commands
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("demo", demo_command))
-    app.add_handler(CommandHandler("register", register))
-    app.add_handler(CommandHandler("profile", profile_command))
-    app.add_handler(CommandHandler("field", field_command))
-    app.add_handler(CommandHandler("fields", fields_command))
-    app.add_handler(CommandHandler("usefield", usefield_command))
-    app.add_handler(CommandHandler("crop", crop_command))
-    app.add_handler(CommandHandler("crops", crops_command))
-    app.add_handler(CommandHandler("usecrop", usecrop_command))
-    app.add_handler(CommandHandler("newcycle", newcycle_command))
-    app.add_handler(CommandHandler("closecycle", closecycle_command))
-    app.add_handler(CommandHandler("tasks", tasks_command))
-    app.add_handler(CommandHandler("calendar", calendar_command))
-    app.add_handler(CommandHandler("prices", prices_command))
-    app.add_handler(CommandHandler("expense", expense_command))
-    app.add_handler(CommandHandler("sale", sale_command))
-    app.add_handler(CommandHandler("finance", finance_command))
-    app.add_handler(CommandHandler("memory", memory_command))
-    app.add_handler(CommandHandler("mydata", mydata_command))
-    app.add_handler(CommandHandler("forgetme", forgetme_command))
-    app.add_handler(CommandHandler("edit", edit_command))
-    app.add_handler(CommandHandler("dashboard", dashboard_command))
-    app.add_handler(CommandHandler("why", why_command))
-    app.add_handler(CommandHandler("sources", sources_command))
-    app.add_handler(CommandHandler("feedback", feedback_command))
-    app.add_handler(CommandHandler("outcome", outcome_command))
-    app.add_handler(CommandHandler("health", health_command))
-    app.add_handler(CommandHandler("threads", threads_command))
-    app.add_handler(CommandHandler("newthread", newthread_command))
-    app.add_handler(CommandHandler("endthread", endthread_command))
-    app.add_handler(CommandHandler("voice_lang", cmd_voice_lang))
-    app.add_handler(CommandHandler("voice_reply", cmd_voice_reply))
+    # Handlers that must work pre-registration. Everything else is wrapped
+    # in `gated_command` so the bot refuses to act until name+district+
+    # pincode+tehsil+village are filled in.
+    _gate_bypass = {"start", "help", "register", "lang", "voice_lang", "dashboard"}
+
+    def _add(name: str, handler):
+        h = handler if name in _gate_bypass else gated_command(handler)
+        app.add_handler(CommandHandler(name, h))
+
+    _add("start", start)
+    _add("help", help_command)
+    _add("demo", demo_command)
+    _add("register", register)
+    _add("profile", profile_command)
+    _add("field", field_command)
+    _add("fields", fields_command)
+    _add("usefield", usefield_command)
+    _add("crop", crop_command)
+    _add("crops", crops_command)
+    _add("usecrop", usecrop_command)
+    _add("newcycle", newcycle_command)
+    _add("closecycle", closecycle_command)
+    _add("tasks", tasks_command)
+    _add("calendar", calendar_command)
+    _add("prices", prices_command)
+    _add("expense", expense_command)
+    _add("sale", sale_command)
+    _add("finance", finance_command)
+    _add("memory", memory_command)
+    _add("mydata", mydata_command)
+    _add("forgetme", forgetme_command)
+    _add("edit", edit_command)
+    _add("dashboard", dashboard_command)
+    _add("why", why_command)
+    _add("sources", sources_command)
+    _add("feedback", feedback_command)
+    _add("outcome", outcome_command)
+    _add("health", health_command)
+    _add("threads", threads_command)
+    _add("newthread", newthread_command)
+    _add("endthread", endthread_command)
+    _add("voice_lang", cmd_voice_lang)
+    _add("voice_reply", cmd_voice_reply)
 
     # Messages (structured data capture runs first)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))

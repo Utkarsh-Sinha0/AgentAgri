@@ -9,7 +9,8 @@
     "primary_crop": {"type": "string"},
     "soil_type": {"type": "string"},
     "field_area_acres": {"type": "number"},
-    "preferred_lang": {"type": "string"}
+    "preferred_lang": {"type": "string"},
+    "pincode": {"type": "string"}
   },
   "required": ["name", "district", "primary_crop", "preferred_lang"],
   "additionalProperties": false
