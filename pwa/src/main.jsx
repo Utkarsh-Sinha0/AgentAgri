@@ -97,8 +97,13 @@ function useAppData() {
   const [lastEventAt, setLastEventAt] = useState('');
   const [liveBadge, setLiveBadge] = useState(false);
 
-  async function refresh({ background = false } = {}) {
-    if (!background) setLoading(true);
+  async function refresh(opts) {
+    // Treat a SyntheticEvent (passed by onClick={data.refresh}) as a manual
+    // refresh, but never block paint with a loading screen once we already
+    // have data — subsequent fetches always swap in place.
+    const background = !!(opts && typeof opts === 'object' && opts.background);
+    const hasData = !!state.dashboard;
+    if (!background && !hasData) setLoading(true);
     setError('');
     const farmerQuery = farmerId ? `?farmer_id=${encodeURIComponent(farmerId)}` : '';
     // Prefer the signed share token minted by the Telegram bot when present.
@@ -169,7 +174,7 @@ function useAppData() {
     } catch (err) {
       setError(err.message);
     } finally {
-      if (!background) setLoading(false);
+      setLoading(false);
     }
   }
 
