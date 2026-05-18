@@ -509,6 +509,12 @@ Message: "मैंने पानी निकाल दिया, अब क�
 Reasoning: the farmer is reporting they completed the prior "drain" action; the prior problem was brown spot. Resolve both labels from the recent advisory.
 Output: intent=disease_diagnosis, is_followup=true, crop_name="", referenced_action="drain", referenced_problem="brown spot", topic_tags=["disease"]
 
+Example 6 — TOPIC SWITCH after a disease advisory (do NOT carry the prior topic forward)
+Recent conversation: "Agent: Your rice photo shows brown spot symptoms. Drain the field..."
+Message: "What will the weather be in Patna?" / "पटना में मौसम कैसा रहेगा?"
+Reasoning: the farmer is asking a standalone weather question about a named city. It does NOT reference the prior advisory, does NOT mention a crop, and does NOT continue the disease thread. This is a fresh topic — treat it as a new query, not a follow-up.
+Output: intent=weather_query, is_followup=false, crop_name="", state_or_region="Patna", topic_tags=["weather"], referenced_action="", referenced_problem=""
+
 Farmer message:
 {user_message}"""
 

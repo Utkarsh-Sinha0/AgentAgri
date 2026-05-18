@@ -655,6 +655,15 @@ class AgentOrchestrator:
             pincode_default = ctx.pincode if ctx else None
             if pincode_default:
                 params.setdefault("pincode", pincode_default)
+            # Planner may emit a free-form location (city/district) when the
+            # farmer asks about somewhere other than their registered pincode.
+            for alt in ("state_or_region", "region", "city", "location", "place"):
+                if alt in params and not params.get("place"):
+                    val = params.pop(alt)
+                    if isinstance(val, str) and val.strip():
+                        params["place"] = val.strip()
+                else:
+                    params.pop(alt, None)
             if "days_ahead" in params and "days" not in params:
                 params["days"] = params.pop("days_ahead")
         elif tool_name == "get_mandi_prices":
