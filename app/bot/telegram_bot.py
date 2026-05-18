@@ -1577,11 +1577,14 @@ async def _process_farmer_query(
         db.add(observation)
         await db.commit()
 
-        # Build agent context
+        # Build agent context — detect input language per turn so the agent
+        # can prompt itself in the right register.
+        _typed = text or ""
+        _ctx_lang = "hi" if any("ऀ" <= ch <= "ॿ" for ch in _typed) else "en"
         ctx = AgentContext(
             farmer_id=farmer.id,
             message=text or "crop photo attached",
-            language="hi",
+            language=_ctx_lang,
             crop_name=cycle.crop_name if cycle else state.get("crop_name"),
             crop_stage=cycle.current_stage if cycle else state.get("crop_stage"),
             field_id=field.id if field else state.get("field_id"),
@@ -1699,11 +1702,19 @@ async def _process_farmer_query(
         else:
             detected_lang = ""  # inconclusive (mixed / empty)
 
-        # Native = detected script first; fall back to farmer's stored pref.
-        # Render bilingual whenever a native (non-English) lang is in play,
-        # regardless of whether the farmer typed in English or native — the
-        # English half doubles as a literacy aid; the native half drives TTS.
-        native_lang = detected_lang if (detected_lang and not detected_lang.startswith("en")) else (pref_lang if pref_lang and not pref_lang.startswith("en") else "")
+        # Per-message language policy: detected language wins outright.
+        # - English input  → English-only reply (text + voice).
+        # - Indic input    → bilingual text (detected first, then English),
+        #                    voice in detected language.
+        # - Inconclusive   → fall back to farmer's stored pref.
+        if detected_lang.startswith("en"):
+            native_lang = ""
+        elif detected_lang:
+            native_lang = detected_lang
+        elif pref_lang and not pref_lang.startswith("en"):
+            native_lang = pref_lang
+        else:
+            native_lang = ""
         english_only = not native_lang
 
         if settings.enable_voice_pipeline:
@@ -1780,9 +1791,12 @@ async def _process_farmer_query(
                         msg, native_lang
                     )
                     ZWSP = "​"
-                    divider = f"{ZWSP}\n*— English —*\n{ZWSP}"
                     native_divider = f"{ZWSP}\n*— {native_lang.upper()} —*\n{ZWSP}"
-                    msg = f"{divider}\n{msg_en}\n{native_divider}\n{msg_native}"
+                    english_divider = f"{ZWSP}\n*— English —*\n{ZWSP}"
+                    # Detected language first (the farmer's choice this turn),
+                    # English second as a literacy aid. Clearly separated; no
+                    # leakage because each block was translated independently.
+                    msg = f"{native_divider}\n{msg_native}\n{english_divider}\n{msg_en}"
             except Exception as exc:
                 logger.warning(f"bilingual render skipped ({detected_lang}/{native_lang}): {exc}")
         effective_lang = "en-IN" if english_only else (native_lang or "hi-IN")
@@ -1832,14 +1846,18 @@ async def _process_farmer_query(
                 # Speak only the native half of a bilingual reply. The
                 # native section starts after the labeled native divider
                 # (matches whatever we built above).
-                native_marker_token = "*— "
                 if english_only:
                     tts_source = msg
                 else:
-                    # Take everything after the LAST occurrence of the
-                    # native-language divider line we inserted.
-                    parts = msg.rsplit(f"*— {native_lang.upper()} —*", 1)
-                    tts_source = parts[1] if len(parts) == 2 else msg
+                    # Native block sits between the native divider and the
+                    # English divider (in that order). Extract just that slice
+                    # so TTS speaks only the detected-language half.
+                    native_marker = f"*— {native_lang.upper()} —*"
+                    english_marker = "*— English —*"
+                    after_native = msg.split(native_marker, 1)
+                    body = after_native[1] if len(after_native) == 2 else msg
+                    before_english = body.split(english_marker, 1)
+                    tts_source = before_english[0] if before_english else body
                 tts_text = re.sub(r"[*_`#─━​]+", "", tts_source)
                 tts_text = re.sub(r"[\U0001F300-\U0001FAFF\U00002600-\U000027BF]", "", tts_text).strip()
                 audio_bytes = await _sarvam_tts(tts_text, target_lang=tts_lang, emotion=emotion)
