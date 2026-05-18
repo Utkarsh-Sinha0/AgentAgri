@@ -348,9 +348,204 @@ def test_create_bot_registers_command_handler(bot_app, command, callback_name):
     found = []
     for handlers in bot_app.handlers.values():
         for h in handlers:
-            if not isinstance(h, CommandHandler) or h.callback is not expected:
+            if not isinstance(h, CommandHandler):
+                continue
+            # `gated_command` wraps non-bypass handlers; unwrap before identity check.
+            cb = getattr(h.callback, "__wrapped__", h.callback)
+            if cb is not expected:
                 continue
             commands = h.commands  # python-telegram-bot stores commands as frozenset[str]
             if command in commands:
                 found.append(h)
     assert found, f"/{command} -> {callback_name} not wired"
+
+
+# ─── Sprint A4: pincode validation + registration gate ────────────────
+
+
+def _make_update(user_id: str = "999111", text: str = ""):
+    """Minimal Update stub that captures reply_text calls."""
+    sent: list[str] = []
+
+    async def reply_text(*args, **kwargs):
+        if args:
+            sent.append(args[0])
+
+    msg = SimpleNamespace(reply_text=reply_text, text=text)
+    user = SimpleNamespace(id=int(user_id), full_name="Test User", language_code="en")
+    update = SimpleNamespace(
+        message=msg,
+        effective_user=user,
+        effective_message=msg,
+    )
+    return update, sent
+
+
+@pytest.mark.asyncio
+async def test_pincode_rejects_invalid():
+    from app.bot.telegram_bot import _handle_pincode_registration, get_user_state
+
+    state = get_user_state("888001")
+    state.setdefault("data", {})
+    state["state"] = "registering_pincode"
+    state["data"]["preferred_language"] = "en"
+
+    update, sent = _make_update()
+    await _handle_pincode_registration(update, "888001", "12abc", state)
+
+    assert state["state"] == "registering_pincode"
+    assert "pincode" not in state["data"]
+    assert any("6 digits" in s.lower() or "6 digits" in s for s in sent)
+
+
+@pytest.mark.asyncio
+async def test_pincode_rejects_leading_zero():
+    from app.bot.telegram_bot import _handle_pincode_registration, get_user_state
+
+    state = get_user_state("888002")
+    state.setdefault("data", {})
+    state["state"] = "registering_pincode"
+    state["data"]["preferred_language"] = "en"
+
+    update, _ = _make_update()
+    await _handle_pincode_registration(update, "888002", "012345", state)
+
+    assert state["state"] == "registering_pincode"
+    assert "pincode" not in state["data"]
+
+
+@pytest.mark.asyncio
+async def test_pincode_accepts_valid_and_advances():
+    from app.bot.telegram_bot import _handle_pincode_registration, get_user_state
+
+    state = get_user_state("888003")
+    state.setdefault("data", {})
+    state["state"] = "registering_pincode"
+    state["data"]["preferred_language"] = "en"
+
+    update, _ = _make_update()
+    await _handle_pincode_registration(update, "888003", " 811201 ", state)
+
+    assert state["data"]["pincode"] == "811201"
+    assert state["state"] == "registering_tehsil"
+
+
+@pytest.mark.asyncio
+async def test_gate_fires_for_unregistered_user():
+    from app.bot.telegram_bot import _enforce_registration_gate, get_user_state
+
+    state = get_user_state("777001")
+    state["state"] = "ready"  # pretend prior session left them here
+    state.setdefault("data", {})["preferred_language"] = "en"
+
+    update, sent = _make_update()
+    gated = await _enforce_registration_gate(update, "777001", state)
+
+    assert gated is True
+    assert state["state"].startswith("registering_")
+    assert any("finish registration" in s.lower() for s in sent)
+
+
+@pytest.mark.asyncio
+async def test_gate_passes_for_fully_registered_farmer():
+    from app.bot.telegram_bot import _enforce_registration_gate, get_user_state
+    from app.database import async_session_factory
+    from app.models import Farmer
+
+    user_id = "777002"
+    async with async_session_factory() as db:
+        db.add(Farmer(
+            phone=user_id,
+            hashed_password="x",
+            name="Ramu",
+            district="Munger",
+            pincode="811201",
+            tehsil="Tarapur",
+            village="Asarganj",
+            preferred_language="en",
+        ))
+        await db.commit()
+
+    state = get_user_state(user_id)
+    state["state"] = "ready"
+
+    update, sent = _make_update(user_id)
+    gated = await _enforce_registration_gate(update, user_id, state)
+
+    assert gated is False
+    assert sent == []
+
+
+@pytest.mark.asyncio
+async def test_gate_skips_active_registration_step():
+    from app.bot.telegram_bot import _enforce_registration_gate, get_user_state
+
+    state = get_user_state("777003")
+    state["state"] = "registering_district"
+
+    update, sent = _make_update()
+    gated = await _enforce_registration_gate(update, "777003", state)
+
+    assert gated is False
+    assert sent == []
+
+
+@pytest.mark.parametrize("cmd", ["/start", "/register", "/help", "/lang", "/voice_lang", "/dashboard"])
+def test_gate_bypass_commands(cmd):
+    from app.bot.telegram_bot import _command_is_bypassed
+
+    assert _command_is_bypassed(cmd) is True
+    assert _command_is_bypassed(f"{cmd}@AgriBot") is True
+
+
+@pytest.mark.parametrize("cmd", ["/field", "/crop", "/prices", "hello", ""])
+def test_gate_bypass_excludes_others(cmd):
+    from app.bot.telegram_bot import _command_is_bypassed
+
+    assert _command_is_bypassed(cmd) is False
+
+
+def test_gated_command_wraps_non_bypass_handlers(bot_app):
+    """`/field` and other non-bypass commands must go through `gated_command`."""
+    from telegram.ext import CommandHandler
+
+    from app.bot import telegram_bot as tb
+
+    gated_targets = {"field", "crop", "prices", "expense", "feedback", "outcome"}
+    bypass_targets = {"start", "register", "help", "dashboard"}
+
+    for handlers in bot_app.handlers.values():
+        for h in handlers:
+            if not isinstance(h, CommandHandler):
+                continue
+            for cmd in h.commands:
+                wrapped = getattr(h.callback, "__wrapped__", None)
+                if cmd in gated_targets:
+                    assert wrapped is not None, f"/{cmd} must be gated but isn't wrapped"
+                if cmd in bypass_targets:
+                    assert wrapped is None, f"/{cmd} must NOT be gated but is wrapped"
+
+
+@pytest.mark.asyncio
+async def test_missing_registration_field_order():
+    from app.bot.telegram_bot import _missing_registration_field
+    from app.models import Farmer
+
+    # Nothing yet -> name first.
+    assert _missing_registration_field(None)[0] == "name"
+
+    # Through district, missing pincode.
+    f = Farmer(phone="1", name="Ramu", district="Munger", preferred_language="en")
+    assert _missing_registration_field(f)[0] == "pincode"
+
+    # Pincode set, tehsil missing.
+    f.pincode = "811201"
+    assert _missing_registration_field(f)[0] == "tehsil"
+
+    # Tehsil set, village missing.
+    f.tehsil = "Tarapur"
+    assert _missing_registration_field(f)[0] == "village"
+
+    # All set -> None.
+    f.village = "Asarganj"
+    assert _missing_registration_field(f) is None
