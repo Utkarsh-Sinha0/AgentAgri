@@ -477,6 +477,13 @@ async def gemma4_capabilities():
     return snapshot()
 
 
+@app.get("/api/demo/architecture")
+async def demo_architecture():
+    """Judge-facing capability map: Gemma 4 features → code → scripted /demo scenarios."""
+    from app.services.demo_architecture import architecture_payload
+    return architecture_payload()
+
+
 @app.put("/api/farmers/{farmer_id}/profile")
 async def update_farmer_profile(
     farmer_id: str,
@@ -697,8 +704,8 @@ async def weather_forecast(
     _: bool = Depends(require_api_key),
 ):
     """Return seeded weather forecast data in the same shape used by the agent tools."""
-    from app.services.weather import get_forecast, get_historical_weather
     from app.models import Farmer
+    from app.services.weather import get_forecast, get_historical_weather
 
     bounded_days = min(max(days, 1), 10)
     if not pincode and farmer_id:
@@ -947,7 +954,7 @@ if pwa_dir.exists():
         if full_path and candidate.is_file() and candidate.resolve().is_relative_to(pwa_dir.resolve()):
             # index.html and the manifest must always be revalidated so a
             # rebuild with new asset hashes is picked up on next load.
-            if candidate.name in {"index.html", "manifest.webmanifest"}:
+            if candidate.name in {"index.html", "manifest.webmanifest", "sw.js"}:
                 return FileResponse(candidate, headers=_NO_CACHE)
             return FileResponse(candidate)
         return FileResponse(_pwa_index, headers=_NO_CACHE)

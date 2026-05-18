@@ -2429,11 +2429,42 @@ async def _apply_edit(update, user_id: str, value: str, state: dict) -> None:
 
 
 async def demo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /demo — bind a rich demo memory palace to this Telegram user."""
+    """Handle /demo — judge demo menu, /demo N scripted scenario, or bare graft."""
+    from app.services.demo_architecture import format_demo_index, format_scenario
+
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
     await update.message.reply_chat_action(ChatAction.TYPING)
-    await _activate_demo_memory(update.message, user_id, state)
+
+    args = context.args if context and context.args else []
+    if not args:
+        # No arg: show the judge menu (does NOT graft — graft happens on /start register).
+        await update.message.reply_text(format_demo_index(), parse_mode="Markdown")
+        return
+
+    arg = args[0].strip().lower()
+    if arg in {"seed", "memory", "palace"}:
+        await _activate_demo_memory(update.message, user_id, state)
+        return
+
+    try:
+        n = int(arg)
+    except ValueError:
+        await update.message.reply_text(format_demo_index(), parse_mode="Markdown")
+        return
+
+    text = format_scenario(n)
+    if text is None:
+        await update.message.reply_text(format_demo_index(), parse_mode="Markdown")
+        return
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+
+async def architecture_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /architecture — show Gemma 4 → AgriMesh capability map."""
+    from app.services.demo_architecture import format_architecture
+    await update.message.reply_chat_action(ChatAction.TYPING)
+    await update.message.reply_text(format_architecture(), parse_mode="Markdown")
 
 
 async def _activate_demo_memory(message, user_id: str, state: dict):
@@ -3503,6 +3534,8 @@ BOT_COMMAND_MENU: list[tuple[str, str]] = [
     ("why", "Explain last advice"),
     ("sources", "Show evidence sources"),
     ("help", "All commands"),
+    ("demo", "Judge demo menu (/demo N for scenario)"),
+    ("architecture", "Gemma 4 capability map"),
 ]
 
 
@@ -3532,7 +3565,7 @@ def create_bot() -> Application:
     # Handlers that must work pre-registration. Everything else is wrapped
     # in `gated_command` so the bot refuses to act until name+district+
     # pincode+tehsil+village are filled in.
-    _gate_bypass = {"start", "help", "register", "lang", "voice_lang", "dashboard"}
+    _gate_bypass = {"start", "help", "register", "lang", "voice_lang", "dashboard", "demo", "architecture"}
 
     def _add(name: str, handler):
         h = handler if name in _gate_bypass else gated_command(handler)
@@ -3541,6 +3574,7 @@ def create_bot() -> Application:
     _add("start", start)
     _add("help", help_command)
     _add("demo", demo_command)
+    _add("architecture", architecture_command)
     _add("register", register)
     _add("profile", profile_command)
     _add("field", field_command)
