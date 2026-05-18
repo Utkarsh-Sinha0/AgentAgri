@@ -97,8 +97,8 @@ function useAppData() {
   const [lastEventAt, setLastEventAt] = useState('');
   const [liveBadge, setLiveBadge] = useState(false);
 
-  async function refresh() {
-    setLoading(true);
+  async function refresh({ background = false } = {}) {
+    if (!background) setLoading(true);
     setError('');
     const farmerQuery = farmerId ? `?farmer_id=${encodeURIComponent(farmerId)}` : '';
     // Prefer the signed share token minted by the Telegram bot when present.
@@ -169,7 +169,7 @@ function useAppData() {
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   }
 
@@ -181,13 +181,21 @@ function useAppData() {
 
   useEffect(() => {
     refresh();
-    // Live mode: when arriving via the Telegram bot's signed link, poll every
-    // 5s so the dashboard mirrors the latest bot interactions in near-real-time.
     if (!dashboardToken) return undefined;
-    const id = setInterval(() => {
-      refresh();
-    }, 5000);
-    return () => clearInterval(id);
+    // Background poll every 20s; pause when the tab is hidden so we don't
+    // burn API calls on a backgrounded tab. Background refreshes skip the
+    // loading skeleton so the UI updates in place without flicker.
+    const tick = () => {
+      if (document.visibilityState === 'visible') {
+        refresh({ background: true });
+      }
+    };
+    const id = setInterval(tick, 20000);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', tick);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dashboardToken]);
 
