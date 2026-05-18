@@ -81,3 +81,20 @@ async def test_per_step_graft_mutates_fields_in_order(db_session):
     assert cycle is not None
     await db_session.refresh(cycle)
     assert cycle.crop_name == "wheat"
+
+    # Seeded alert clusters should follow the judge's geography so the
+    # pre-baked outbreak covers wherever they registered.
+    from app.models import AlertCluster, AlertStatus
+    clusters = (
+        await db_session.execute(
+            select(AlertCluster).where(AlertCluster.status == AlertStatus.PENDING)
+        )
+    ).scalars().all()
+    assert clusters, "expected at least one pending cluster from seed"
+    rice_cluster = next((c for c in clusters if (c.crop_name or "").lower() == "wheat"), None)
+    # The primary cluster started as 'rice' and should now read 'wheat'.
+    assert rice_cluster is not None, "primary cluster should be re-homed to judge's crop"
+    assert rice_cluster.village == "Naubatpur"
+    assert rice_cluster.tehsil == "Phulwari"
+    assert rice_cluster.district == "Patna"
+    assert rice_cluster.pincode == "800001"

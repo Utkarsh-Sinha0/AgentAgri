@@ -682,5 +682,37 @@ async def graft_demo_farmer(
                     setattr(field, key, value)
                     changed[f"field.{key}"] = value
 
+    # Re-home seeded alert clusters that belong to this demo farmer so the
+    # pre-baked outbreak (e.g. brown_planthopper) always covers wherever the
+    # judge says they're from. Without this the demo cluster stays anchored
+    # to Bariarpur/Munger and the judge's geography never matches.
+    geo_keys = {"village", "tehsil", "district", "pincode"}
+    crop_keys = {"crop_name"}
+    if any(k in (partial_profile or {}) for k in geo_keys | crop_keys):
+        clusters_q = await db.execute(
+            select(AlertCluster).where(AlertCluster.status == AlertStatus.PENDING)
+        )
+        for cluster in clusters_q.scalars().all():
+            mutated = False
+            for key in geo_keys:
+                value = (partial_profile or {}).get(key)
+                if value in (None, ""):
+                    continue
+                if hasattr(cluster, key):
+                    setattr(cluster, key, value)
+                    mutated = True
+                    changed[f"cluster.{key}"] = value
+            crop_value = (partial_profile or {}).get("crop_name")
+            if crop_value and cluster.crop_name and cluster.crop_name.lower() != crop_value.lower():
+                # Only re-home crop on the farmer's primary cluster (matches
+                # the seeded farmer's current crop). Leave unrelated crop
+                # clusters (e.g. wheat karnal bunt) alone.
+                if cluster.crop_name.lower() == "rice":
+                    cluster.crop_name = crop_value
+                    mutated = True
+                    changed["cluster.crop_name"] = crop_value
+            if mutated:
+                pass  # commit happens once below
+
     await db.commit()
     return {"status": "ok", "farmer_id": farmer.id, "changed": changed}
