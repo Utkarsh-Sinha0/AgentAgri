@@ -691,14 +691,24 @@ async def model_options(_: bool = Depends(require_api_key)):
 async def weather_forecast(
     field_id: str | None = None,
     days: int = 5,
+    pincode: str | None = None,
+    farmer_id: str | None = None,
+    db: AsyncSession = Depends(get_db),
     _: bool = Depends(require_api_key),
 ):
     """Return seeded weather forecast data in the same shape used by the agent tools."""
     from app.services.weather import get_forecast, get_historical_weather
+    from app.models import Farmer
 
     bounded_days = min(max(days, 1), 10)
-    forecast = await get_forecast(field_id=field_id, days=bounded_days)
-    history = await get_historical_weather(field_id=field_id, days=min(bounded_days, 7))
+    if not pincode and farmer_id:
+        farmer = await db.scalar(select(Farmer).where(Farmer.id == farmer_id))
+        if farmer and farmer.pincode:
+            pincode = farmer.pincode
+    forecast = await get_forecast(field_id=field_id, days=bounded_days, pincode=pincode)
+    history = await get_historical_weather(
+        field_id=field_id, days=min(bounded_days, 7), pincode=pincode
+    )
     return {"forecast": forecast, "history": history}
 
 

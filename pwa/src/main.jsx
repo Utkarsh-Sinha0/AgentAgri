@@ -130,7 +130,7 @@ function useAppData() {
         api('/api/eval/latest').catch(() => null),
         api('/api/models').catch(() => null),
         api(`/api/ai/showcase${farmerQuery}`).catch(() => null),
-        api('/api/weather/forecast').catch(() => null),
+        api(`/api/weather/forecast${farmerQuery}`).catch(() => null),
         api('/api/market-prices?crop=rice').catch(() => null),
         api('/health').catch(() => null),
         api('/api/v1/capabilities').catch(() => null),
@@ -472,10 +472,16 @@ function MarketPricesPage({ data }) {
    ═══════════════════════════════════════════ */
 
 function WeatherPage({ data }) {
-  const weather = data.weather || data.dashboard?.weather;
-  const forecast = weather?.forecast || [];
+  // /api/weather/forecast returns { forecast: { forecast: [...], district, ... }, history: {...} }.
+  // dashboard.weather is the inner object directly. Normalize both.
+  const dashWeather = data.dashboard?.weather;
+  const apiWeather = data.weather?.forecast;
+  const weather = dashWeather || apiWeather;
+  const forecastRaw = weather?.forecast;
+  const forecast = Array.isArray(forecastRaw) ? forecastRaw : [];
+  const district = weather?.district;
   return (
-    <Page title="Weather" loading={data.loading && !weather}>
+    <Page title={district ? `Weather — ${district}` : 'Weather'} loading={data.loading && !weather}>
       <section className="eval-grid">
         {forecast.map((day) => (
           <Card key={day.date}>

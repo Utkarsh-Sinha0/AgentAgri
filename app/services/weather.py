@@ -16,7 +16,34 @@ from app.utils.time import utc_now
 
 _OWM_FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
 _OWM_CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
+_OWM_GEO_ZIP_URL = "https://api.openweathermap.org/geo/1.0/zip"
 _OWM_TIMEOUT = 10.0
+
+# Cache pincode -> (lat, lng, district) so we don't re-geocode every refresh.
+_PINCODE_CACHE: dict[str, tuple[float, float, str]] = {}
+
+
+async def _owm_coords_from_pincode(pincode: str) -> tuple[float, float, str] | None:
+    """Resolve an Indian PIN code to (lat, lng, place_name) via OWM geo API."""
+    pin = (pincode or "").strip()
+    if not pin or not _owm_available():
+        return None
+    if pin in _PINCODE_CACHE:
+        return _PINCODE_CACHE[pin]
+    try:
+        async with httpx.AsyncClient(timeout=_OWM_TIMEOUT) as client:
+            resp = await client.get(
+                _OWM_GEO_ZIP_URL,
+                params={"zip": f"{pin},IN", "appid": settings.weather_api_key},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+        coords = (float(data["lat"]), float(data["lon"]), str(data.get("name") or pin))
+        _PINCODE_CACHE[pin] = coords
+        return coords
+    except Exception as exc:
+        logger.warning("Pincode geocode failed for {}: {}", pin, exc)
+        return None
 
 # Default coordinates (Munger, Bihar) used when no field location is available
 _DEFAULT_LAT = 25.38
@@ -215,9 +242,17 @@ def _field_coords(field_id: str | None) -> tuple[float, float, str]:
 
 # ─── Public API ──────────────────────────────────────────────────────
 
-async def get_forecast(field_id: str | None = None, days: int = 5) -> dict:
+async def get_forecast(
+    field_id: str | None = None,
+    days: int = 5,
+    pincode: str | None = None,
+) -> dict:
     """Get weather forecast — live from OpenWeatherMap if key is set, else seeded."""
     lat, lng, district = _field_coords(field_id)
+    if pincode:
+        geo = await _owm_coords_from_pincode(pincode)
+        if geo:
+            lat, lng, district = geo
 
     if _owm_available():
         try:
@@ -247,9 +282,17 @@ async def get_forecast(field_id: str | None = None, days: int = 5) -> dict:
     }
 
 
-async def get_historical_weather(field_id: str | None = None, days: int = 7) -> dict:
+async def get_historical_weather(
+    field_id: str | None = None,
+    days: int = 7,
+    pincode: str | None = None,
+) -> dict:
     """Get historical weather — live current snapshot if key is set, else seeded."""
     lat, lng, district = _field_coords(field_id)
+    if pincode:
+        geo = await _owm_coords_from_pincode(pincode)
+        if geo:
+            lat, lng, district = geo
 
     if _owm_available():
         try:

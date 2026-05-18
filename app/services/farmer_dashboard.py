@@ -51,8 +51,16 @@ async def get_farmer_dashboard(
     active_crop = active_field["active_crop"] if active_field else None
     crop_name = active_crop["crop_name"] if active_crop else "rice"
 
-    weather = await get_forecast(active_field["id"] if active_field else None, days=5)
-    historical_weather = await get_historical_weather(active_field["id"] if active_field else None, days=7)
+    weather = await get_forecast(
+        active_field["id"] if active_field else None,
+        days=5,
+        pincode=farmer.pincode,
+    )
+    historical_weather = await get_historical_weather(
+        active_field["id"] if active_field else None,
+        days=7,
+        pincode=farmer.pincode,
+    )
     mandi = await get_mandi_prices(crop_name, district=farmer.district or "Munger", days=7)
     advisories = await _latest_advisories(db, farmer.id)
     conversations = await _conversation_summary(db, farmer.id)
