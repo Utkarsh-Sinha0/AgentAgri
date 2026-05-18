@@ -2810,7 +2810,10 @@ async def dashboard_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def _dashboard_url(farmer_id: str | None = None, phone: str | None = None) -> str:
     base = settings.dashboard_base_url.rstrip("/")
     if farmer_id:
-        return f"{base}/?mode=farmer&farmer_id={farmer_id}"
+        from app.utils.security import issue_dashboard_token
+
+        token = issue_dashboard_token(farmer_id)
+        return f"{base}/?mode=farmer&t={token}"
     if phone:
         return f"{base}/?mode=farmer&phone={phone}"
     return f"{base}/?mode=farmer"

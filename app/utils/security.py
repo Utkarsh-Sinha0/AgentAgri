@@ -127,6 +127,68 @@ def get_agent_limiter() -> RateLimiter:
     return _agent_limiter
 
 
+# ─── Dashboard Share Tokens ───────────────────────────────────────────
+
+import base64
+import json
+
+
+def _token_secret() -> bytes:
+    """HMAC key for short-lived farmer dashboard share tokens.
+
+    Falls back to a per-process random key when no API key is configured —
+    tokens minted in that case won't survive a restart, which is fine for
+    local dev; production deploys must set AGRIMESH_API_KEY.
+    """
+    from app.config import settings
+
+    raw = (settings.api_key or "").encode("utf-8")
+    if raw:
+        return raw
+    global _ephemeral_token_secret
+    try:
+        return _ephemeral_token_secret  # type: ignore[name-defined]
+    except NameError:
+        import secrets as _secrets
+
+        _ephemeral_token_secret = _secrets.token_bytes(32)
+        logger.warning("AGRIMESH_API_KEY unset — dashboard tokens use ephemeral secret")
+        return _ephemeral_token_secret
+
+
+def _b64u_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def _b64u_decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+
+def issue_dashboard_token(farmer_id: str, ttl_seconds: int = 24 * 3600) -> str:
+    """Mint a signed token that grants read access to one farmer's dashboard."""
+    payload = {"fid": farmer_id, "exp": int(time.time()) + int(ttl_seconds)}
+    body = _b64u_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+    sig = hmac.new(_token_secret(), body.encode("ascii"), hashlib.sha256).digest()
+    return f"{body}.{_b64u_encode(sig)}"
+
+
+def verify_dashboard_token(token: str) -> str | None:
+    """Return the farmer_id encoded in `token`, or None if invalid/expired."""
+    try:
+        body, sig_b64 = token.split(".", 1)
+        expected = hmac.new(_token_secret(), body.encode("ascii"), hashlib.sha256).digest()
+        if not hmac.compare_digest(expected, _b64u_decode(sig_b64)):
+            return None
+        payload = json.loads(_b64u_decode(body))
+        if int(payload.get("exp", 0)) < int(time.time()):
+            return None
+        fid = payload.get("fid")
+        return fid if isinstance(fid, str) and fid else None
+    except Exception:
+        return None
+
+
 # ─── Consent & Privacy ────────────────────────────────────────────────
 
 class PrivacyManager:

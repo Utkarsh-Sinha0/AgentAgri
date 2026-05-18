@@ -446,6 +446,30 @@ async def current_farmer_dashboard(
     return data
 
 
+@app.get("/api/v1/dashboard/{token}")
+async def farmer_dashboard_by_token(
+    token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Token-authenticated farmer dashboard payload for the PWA.
+
+    The token is minted by `/dashboard` in the Telegram bot, signed with the
+    server's API key, and carries the farmer_id + expiry. No API key header
+    required — the token is the credential.
+    """
+    from app.services.farmer_dashboard import get_farmer_dashboard
+    from app.utils.security import verify_dashboard_token
+
+    farmer_id = verify_dashboard_token(token)
+    if not farmer_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid or expired token")
+
+    data = await get_farmer_dashboard(db, farmer_id=farmer_id)
+    if data.get("error") == "farmer_not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farmer not found")
+    return data
+
+
 @app.put("/api/farmers/{farmer_id}/profile")
 async def update_farmer_profile(
     farmer_id: str,
