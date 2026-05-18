@@ -795,6 +795,20 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
 
+    # Gate action buttons (price/photo/finance/mydata) on registration.
+    # Buttons that help complete registration are exempt.
+    _GATED_CB = {"cmd_prices", "cmd_photo", "cmd_finance", "cmd_mydata"}
+    if data in _GATED_CB:
+        async with async_session_factory() as db:
+            farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
+        if _missing_registration_field(farmer) is not None:
+            await query.message.reply_text(
+                _t(state,
+                   "📝 कृपया पहले पंजीकरण पूरा करें। /register भेजें।",
+                   "📝 Please finish /register first."),
+            )
+            return
+
     if data in ("lang_hi", "lang_en"):
         lang = "hi" if data == "lang_hi" else "en"
         state.setdefault("data", {})["preferred_language"] = lang
