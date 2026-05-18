@@ -1,5 +1,5 @@
-const CACHE_NAME = 'agrimesh-shell-v1';
-const SHELL_ASSETS = ['/', '/manifest.webmanifest'];
+const CACHE_NAME = 'agrimesh-shell-v2';
+const SHELL_ASSETS = ['/manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -23,14 +23,15 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.pathname.startsWith('/api/')) return;
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) return;
 
   event.respondWith(
-    caches.match(request).then((cached) => (
-      cached || fetch(request).then((response) => {
+    fetch(request).then((response) => {
+      if (response.ok) {
         const copy = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-        return response;
-      }).catch(() => caches.match('/'))
-    )),
+      }
+      return response;
+    }).catch(() => caches.match(request)),
   );
 });

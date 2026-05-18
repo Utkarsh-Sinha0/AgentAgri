@@ -4,8 +4,10 @@ Argon2id password hashing, rate limiting, consent management.
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
+import json
 import time
 from collections import defaultdict
 
@@ -129,10 +131,6 @@ def get_agent_limiter() -> RateLimiter:
 
 # ─── Dashboard Share Tokens ───────────────────────────────────────────
 
-import base64
-import json
-
-
 def _token_secret() -> bytes:
     """HMAC key for short-lived farmer dashboard share tokens.
 
@@ -177,10 +175,14 @@ def verify_dashboard_token(token: str) -> str | None:
     """Return the farmer_id encoded in `token`, or None if invalid/expired."""
     try:
         body, sig_b64 = token.split(".", 1)
-        expected = hmac.new(_token_secret(), body.encode("ascii"), hashlib.sha256).digest()
-        if not hmac.compare_digest(expected, _b64u_decode(sig_b64)):
+        body_bytes = _b64u_decode(body)
+        sig = _b64u_decode(sig_b64)
+        if _b64u_encode(body_bytes) != body or _b64u_encode(sig) != sig_b64:
             return None
-        payload = json.loads(_b64u_decode(body))
+        expected = hmac.new(_token_secret(), body.encode("ascii"), hashlib.sha256).digest()
+        if not hmac.compare_digest(expected, sig):
+            return None
+        payload = json.loads(body_bytes)
         if int(payload.get("exp", 0)) < int(time.time()):
             return None
         fid = payload.get("fid")

@@ -10,6 +10,7 @@ sqlalchemy==2.0.36
 asyncpg==0.30.0
 psycopg2-binary==2.9.10
 alembic==1.14.0
+greenlet==3.2.4
 
 # Ollama / LLM
 ollama==0.4.7

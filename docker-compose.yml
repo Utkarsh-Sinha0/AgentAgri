@@ -28,18 +28,50 @@ services:
       retries: 5
 
   api:
+    image: agentagri-api:latest
     build: .
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+asyncpg://agrimesh:agrimesh_dev@postgres:5432/agrimesh
-      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_HOST=${DOCKER_OLLAMA_HOST:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma4:e4b}
+      - OLLAMA_FALLBACK_MODEL=${OLLAMA_FALLBACK_MODEL:-gemma4:e2b}
+      - OLLAMA_NUM_CTX=${OLLAMA_NUM_CTX:-16384}
+      - OLLAMA_NUM_BATCH=${OLLAMA_NUM_BATCH:-512}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:--1}
+      - OLLAMA_TIMEOUT_SECONDS=${OLLAMA_TIMEOUT_SECONDS:-90}
+      - OLLAMA_MAX_CONCURRENCY=${OLLAMA_MAX_CONCURRENCY:-2}
+      - USE_GRAMMAR_DECODING=${USE_GRAMMAR_DECODING:-1}
       - REDIS_URL=redis://redis:6379/0
-      - APP_ENV=development
-      - AGRIMESH_REQUIRE_API_KEY=false
-      - ALLOWED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
-      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,host.docker.internal
-      - LOG_LEVEL=INFO
+      - APP_ENV=${APP_ENV:-development}
+      - AGRIMESH_REQUIRE_API_KEY=${AGRIMESH_REQUIRE_API_KEY:-false}
+      - AGRIMESH_API_KEY=${AGRIMESH_API_KEY:-}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,0.0.0.0,host.docker.internal}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - AGRIMESH_DASHBOARD_BASE_URL=${AGRIMESH_DASHBOARD_BASE_URL:-http://localhost:8000}
+      - DEFAULT_REPLY_MODE=${DEFAULT_REPLY_MODE:-text}
+      - SHOW_RESPONSE_DEBUG_FOOTER=${SHOW_RESPONSE_DEBUG_FOOTER:-false}
+      - SARVAM_API_KEY=${SARVAM_API_KEY:-}
+      - SARVAM_BASE_URL=${SARVAM_BASE_URL:-https://api.sarvam.ai}
+      - SARVAM_STT_MODEL=${SARVAM_STT_MODEL:-saarika:v2.5}
+      - SARVAM_TTS_MODEL=${SARVAM_TTS_MODEL:-bulbul:v2}
+      - SARVAM_TTS_SPEAKER=${SARVAM_TTS_SPEAKER:-meera}
+      - SARVAM_TIMEOUT_SECONDS=${SARVAM_TIMEOUT_SECONDS:-30}
+      - ENABLE_VOICE_PIPELINE=${ENABLE_VOICE_PIPELINE:-false}
+      - VOICE_DEFAULT_TARGET_LANG=${VOICE_DEFAULT_TARGET_LANG:-hi-IN}
+      - USE_GEMMA_AUDIO=${USE_GEMMA_AUDIO:-false}
+      - ENABLE_VOICE_STT=${ENABLE_VOICE_STT:-false}
+      - ENABLE_SMS=${ENABLE_SMS:-false}
+      - ENABLE_BHOJPURI=${ENABLE_BHOJPURI:-false}
+      - WEATHER_API_KEY=${WEATHER_API_KEY:-}
+      - MCP_WEATHER_PORT=9001
+      - MCP_MANDI_PORT=9002
+      - MCP_SCHEME_PORT=9003
+      - MCP_FINANCE_PORT=9004
+      - MCP_CROP_KB_PORT=9005
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       postgres:
         condition: service_healthy

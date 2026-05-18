@@ -30,9 +30,9 @@ def _sync_migration_url(url: str) -> str:
     """Alembic runs synchronously; map async app URLs to sync DBAPI drivers."""
     parsed = make_url(url)
     if parsed.drivername == "sqlite+aiosqlite":
-        return str(parsed.set(drivername="sqlite"))
+        return parsed.set(drivername="sqlite").render_as_string(hide_password=False)
     if parsed.drivername == "postgresql+asyncpg":
-        return str(parsed.set(drivername="postgresql+psycopg2"))
+        return parsed.set(drivername="postgresql+psycopg2").render_as_string(hide_password=False)
     return url
 
 

@@ -272,7 +272,8 @@ def _help_text() -> str:
 
 async def _send_prices(message, state: dict):
     crop = state.get("crop_name", "rice")
-    district = "Munger"
+    data = state.get("data") or {}
+    district = (data.get("district") or state.get("district") or "").strip()
     await message.chat.send_action(ChatAction.TYPING)
     from app.services.mandi import get_mandi_prices, get_msp
     prices = await get_mandi_prices(crop=crop, district=district)
@@ -1372,8 +1373,15 @@ async def _push_post_reg_outbreak(message, user_id: str, state: dict) -> None:
 
         body = banner
         if tips_text:
-            body = f"{banner}\n\n*🛡️ Preventive measures:*\n{tips_text}"
-        await message.reply_text(body, parse_mode="Markdown")
+            body = f"{banner}\n\n🛡️ Preventive measures:\n{tips_text}"
+        try:
+            await message.reply_text(body)
+        except Exception as send_exc:
+            logger.warning(f"Outbreak push send failed, retrying plain banner: {send_exc}")
+            try:
+                await message.reply_text(banner)
+            except Exception as send_exc2:
+                logger.warning(f"Outbreak push plain banner also failed: {send_exc2}")
     except Exception as exc:
         logger.warning(f"Post-reg outbreak push failed (non-fatal): {exc}")
 
@@ -1887,10 +1895,17 @@ async def _process_farmer_query(
         db.add(observation)
         await db.commit()
 
-        # Build agent context — detect input language per turn so the agent
-        # can prompt itself in the right register.
+        # Build agent context — honour the farmer's CHOSEN language first.
+        # Script detection is only a fallback for users who never picked one,
+        # otherwise a Tamil farmer typing English-script "MSP rice" gets
+        # answered in Hindi+English instead of Tamil+English.
         _typed = text or ""
-        _ctx_lang = "hi" if any("ऀ" <= ch <= "ॿ" for ch in _typed) else "en"
+        _stored_lang = (state.get("data") or {}).get("preferred_language") or getattr(farmer, "preferred_language", None) or ""
+        _stored_lang = (_stored_lang or "").lower()[:2]
+        if _stored_lang:
+            _ctx_lang = _stored_lang
+        else:
+            _ctx_lang = "hi" if any("ऀ" <= ch <= "ॿ" for ch in _typed) else "en"
         ctx = AgentContext(
             farmer_id=farmer.id,
             message=text or "crop photo attached",
@@ -2551,8 +2566,18 @@ async def demo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     args = context.args if context and context.args else []
     if not args:
-        # No arg: show the judge menu (does NOT graft — graft happens on /start register).
+        # No arg: show the judge menu, then auto-kick into the registration
+        # ladder so the per-step graft + post-reg outbreak push can fire.
         await update.message.reply_text(format_demo_index(lang=lang), parse_mode="Markdown")
+        state["state"] = "registering_name"
+        await update.message.reply_text(
+            _t(
+                state,
+                "📝 *किसान पंजीकरण*\n\nकृपया अपना पूरा नाम लिखें:",
+                "📝 *Farmer Registration*\n\nPlease enter your full name:",
+            ),
+            parse_mode="Markdown",
+        )
         return
 
     arg = args[0].strip().lower()

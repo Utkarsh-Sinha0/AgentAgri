@@ -116,9 +116,14 @@ async def main() -> int:
 
     checks: dict[str, bool] = {}
 
-    # 1. /start as unregistered user
+    # 1. /start as unregistered user shows the frozen 11-language picker first.
     sink: list[dict] = []
     await tb.start(make_update_for_command(user_id_unreg, "/start", sink), ctx)
+    checks["start_language_picker"] = "lang_hi" in str(sink) and "lang_en" in str(sink)
+
+    # Pick Hindi, then the bilingual welcome + action keyboard appears.
+    sink = []
+    await tb.handle_callback(make_update_for_callback(user_id_unreg, "lang_hi", sink), ctx)
     txt = joined(sink)
     checks["start_welcome_bilingual"] = "AgriMesh" in txt and "आवाज़" in txt
     checks["start_unreg_keyboard"] = any(
@@ -143,9 +148,13 @@ async def main() -> int:
     txt = joined(sink)
     checks["demo_seeded"] = ("Demo" in txt or "demo" in txt or "memory palace" in txt.lower() or len(txt) > 50)
 
-    # 5. /start as now-registered demo user
+    # 5. /start as now-registered demo user still starts with language picker;
+    # after language confirmation, registered actions appear.
     sink = []
     await tb.start(make_update_for_command(user_id_demo, "/start", sink), ctx)
+    checks["start_registered_picker"] = "lang_hi" in str(sink) and "lang_en" in str(sink)
+    sink = []
+    await tb.handle_callback(make_update_for_callback(user_id_demo, "lang_hi", sink), ctx)
     reg_kbd = any(
         "threads_list" in str(e.get("kwargs", {})) or "Continue" in str(e.get("kwargs", {}))
         for e in sink
@@ -198,9 +207,11 @@ async def main() -> int:
     await tb.handle_callback(make_update_for_callback(user_id_demo, "cmd_photo", sink), ctx)
     checks["callback_photo_prompt"] = "फोटो" in joined(sink) or "photo" in joined(sink).lower()
 
-    # 13. /start unregistered still has demo+register buttons (not lost)
+    # 13. /start -> language choice for unregistered still has demo+register buttons.
     sink = []
     await tb.start(make_update_for_command(user_id_unreg, "/start", sink), ctx)
+    sink = []
+    await tb.handle_callback(make_update_for_callback(user_id_unreg, "lang_hi", sink), ctx)
     raw = str(sink)
     checks["start_unreg_has_demo_button"] = "cmd_demo" in raw and "cmd_register" in raw
 

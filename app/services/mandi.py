@@ -49,11 +49,16 @@ def _builtin_seed() -> dict:
 _seed = _load_seed_mandi()
 
 
-async def get_mandi_prices(crop: str, district: str = "Munger", days: int = 7) -> dict:
+async def get_mandi_prices(crop: str, district: str = "", days: int = 7) -> dict:
     """
     Get recent mandi prices for a crop in a district.
     Seeded data with real agmarknet.gov.in API shape.
+
+    When ``district`` is empty we report an all-India view rather than
+    silently defaulting to Munger — that default surprised users whose
+    profile lives elsewhere.
     """
+    district = (district or "").strip() or "All-India"
     crop_key = crop.lower().strip()
     crop_data = _seed.get(crop_key)
 

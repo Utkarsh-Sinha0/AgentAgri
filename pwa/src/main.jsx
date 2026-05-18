@@ -1,4 +1,4 @@
-import React, { Component, useEffect, useMemo, useState } from 'react';
+import React, { Component, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import {
@@ -96,13 +96,15 @@ function useAppData() {
   const [dashboardToken, setDashboardToken] = useState(readDashboardToken());
   const [lastEventAt, setLastEventAt] = useState('');
   const [liveBadge, setLiveBadge] = useState(false);
+  const hasLoadedOnce = useRef(false);
+  const lastEventAtRef = useRef('');
 
   async function refresh(opts) {
     // Treat a SyntheticEvent (passed by onClick={data.refresh}) as a manual
     // refresh, but never block paint with a loading screen once we already
     // have data — subsequent fetches always swap in place.
     const background = !!(opts && typeof opts === 'object' && opts.background);
-    const hasData = !!state.dashboard;
+    const hasData = hasLoadedOnce.current;
     if (!background && !hasData) setLoading(true);
     setError('');
     const farmerQuery = farmerId ? `?farmer_id=${encodeURIComponent(farmerId)}` : '';
@@ -146,13 +148,14 @@ function useAppData() {
         setFarmerId(dashboard.farmer.id);
       }
       const incomingEventAt = dashboard?.sync?.last_event_at || '';
-      if (incomingEventAt && incomingEventAt !== lastEventAt) {
-        if (lastEventAt) {
+      if (incomingEventAt && incomingEventAt !== lastEventAtRef.current) {
+        if (lastEventAtRef.current) {
           // Only flash once we have a prior cursor — avoids a spurious
           // "new activity" on the very first load.
           setLiveBadge(true);
           setTimeout(() => setLiveBadge(false), 3000);
         }
+        lastEventAtRef.current = incomingEventAt;
         setLastEventAt(incomingEventAt);
       }
       setState({
@@ -170,6 +173,7 @@ function useAppData() {
         health,
         capabilities,
       });
+      hasLoadedOnce.current = true;
       setError(dashboard?.error || stats?.error || '');
     } catch (err) {
       setError(err.message);
@@ -186,7 +190,6 @@ function useAppData() {
 
   useEffect(() => {
     refresh();
-    if (!dashboardToken) return undefined;
     // Background poll every 20s; pause when the tab is hidden so we don't
     // burn API calls on a backgrounded tab. Background refreshes skip the
     // loading skeleton so the UI updates in place without flicker.

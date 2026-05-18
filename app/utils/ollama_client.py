@@ -44,6 +44,48 @@ class OllamaTimeoutError(RuntimeError):
     """Raised when an Ollama call exceeds the configured timeout."""
 
 
+_LANG_NAMES = {
+    "en": ("English", "Latin"),
+    "hi": ("Hindi", "Devanagari"),
+    "bn": ("Bengali", "Bengali script"),
+    "ta": ("Tamil", "Tamil script"),
+    "te": ("Telugu", "Telugu script"),
+    "mr": ("Marathi", "Devanagari"),
+    "gu": ("Gujarati", "Gujarati script"),
+    "kn": ("Kannada", "Kannada script"),
+    "ml": ("Malayalam", "Malayalam script"),
+    "pa": ("Punjabi", "Gurmukhi"),
+    "or": ("Odia", "Odia script"),
+    "ur": ("Urdu", "Perso-Arabic"),
+}
+
+
+def _language_directive(preferred_language: str) -> str:
+    """Hard binding directive injected into the system prompt so the LLM
+    honours the farmer's chosen language regardless of the script their
+    current message happens to be typed in. Defaults to no-op when no
+    language is set."""
+    code = (preferred_language or "").strip().lower()[:2]
+    if not code or code == "auto":
+        return "Language: follow the script of the farmer's most recent message."
+    if code == "en":
+        return (
+            "LANGUAGE BINDING: The farmer has chosen English as their preferred "
+            "language. Reply ENTIRELY in English. Do NOT include Hindi or any "
+            "Indic-script tokens. Do NOT emit a bilingual block divider. "
+            "Single English block only."
+        )
+    name, script = _LANG_NAMES.get(code, ("the farmer's chosen language", "its native script"))
+    return (
+        f"LANGUAGE BINDING: The farmer has chosen {name} as their preferred "
+        f"language. Emit TWO blocks using the EXACT divider syntax:\n"
+        f"*— {name} —*\n<block written in {name} using {script}>\n\n"
+        f"*— English —*\n<block in English>\n"
+        f"Do NOT substitute Hindi for {name}. Do NOT mix scripts inside a block. "
+        f"Each block stays in ONE language only."
+    )
+
+
 def _load_schema(name: str) -> dict:
     if name not in _SCHEMA_CACHE:
         path = Path(__file__).parent.parent / "schemas" / f"{name}.schema.json"
@@ -308,12 +350,17 @@ class OllamaClient:
         return await self.structured_chat(msgs, "intent_classification", thinking=False)
 
     async def plan_tools(self, user_message: str, context: dict) -> dict:
-        """ReAct planning step (thinking ON, grammar ON)."""
+        """ReAct planning step (thinking OFF, grammar ON).
+
+        Thinking is disabled because Gemma e2b under thinking + GBNF often
+        emits an empty JSON body — all output goes to the think block. Plain
+        grammar decoding gives a reliable plan for tool selection.
+        """
         msgs = [
             {"role": "system", "content": AGENT_SYSTEM_PROMPT},
             {"role": "user", "content": f"Context: {json.dumps(context, ensure_ascii=False)}\n\nFarmer: {user_message}\n\nPlan which tools to call."},
         ]
-        result = await self.structured_chat(msgs, "tool_call", thinking=True)
+        result = await self.structured_chat(msgs, "tool_call", thinking=False)
         try:
             parsed = result.get("parsed") or {}
             tools = parsed.get("tools") or parsed.get("tool_calls") or []
@@ -332,6 +379,7 @@ class OllamaClient:
         universal_kb_docs: list[dict] | None = None,
         vision_analysis: str = "",
         weather_summary: str = "",
+        preferred_language: str = "",
     ) -> dict:
         """Template selection step (thinking OFF, grammar ON)."""
         evidence_text = _format_evidence(evidence)
@@ -340,6 +388,7 @@ class OllamaClient:
         weather_text = (weather_summary or "").strip() or "No live weather data available."
         msgs = [
             {"role": "system", "content": AGENT_SYSTEM_PROMPT},
+            {"role": "system", "content": _language_directive(preferred_language)},
             {"role": "user", "content": TEMPLATE_SELECTION_PROMPT.format(
                 farmer_message=user_message,
                 evidence=evidence_text,
@@ -554,14 +603,16 @@ Based ONLY on the evidence and knowledge base above, select actions and warnings
     Do NOT default to WATCH when the farmer describes active damage — that under-reports risk.
 - confidence: LOW (unclear evidence), MEDIUM (some evidence), HIGH (strong evidence match)
 - contextualization: explain why you chose these actions, referencing the evidence. 2-4 short sentences per language block.
-    If the farmer wrote in English ONLY, write a single English block — no divider, no translation.
-    If the farmer wrote in Hindi, Hinglish, or any other Indic language/script, emit TWO blocks separated by the EXACT dividers below:
-        *— <NativeLanguageName> —*
-        <native block in the farmer's language/script — 2-4 short sentences>
+    The "LANGUAGE BINDING" system message above this prompt is AUTHORITATIVE. Follow it EXACTLY:
+      • If the binding says "Reply ENTIRELY in English" → single English block, no divider, no Indic tokens.
+      • If the binding names a non-English language (Hindi, Bengali, Tamil, Telugu, Marathi, Gujarati, Kannada, Malayalam, Punjabi, Odia, Urdu) → emit TWO blocks using the EXACT divider format the binding specifies:
+            *— <BoundLanguageName> —*
+            <block written ENTIRELY in that language using its native script — 2-4 short sentences>
 
-        *— English —*
-        <English block — 2-4 short sentences>
-    Where <NativeLanguageName> is the English name of the language the farmer used (e.g. Hindi, Hinglish, Bengali, Marathi, Tamil, Telugu, Kannada, Punjabi, Gujarati, Odia). Use the EXACT marker syntax `*— LANG —*` (asterisks, em-dash U+2014, single space each side). Do NOT use slashed bilingual phrases inside a block like "हम अनुशंसा करते हैं / We recommend". Each block stays in ONE language only.
+            *— English —*
+            <block in English — 2-4 short sentences>
+        The native block MUST use the script the binding specifies (Devanagari for Hindi/Marathi, Bengali for Bengali, Tamil for Tamil, etc.). NEVER substitute Hindi when the binding asks for another language. NEVER mix scripts inside a block. NEVER use slashed bilingual phrases like "सलाह / advice" inside a block.
+    Ignore the script of the farmer's current message — the binding overrides typed script. A Hindi-bound farmer who happens to type in Roman script still gets Devanagari + English.
 - memory_reference: set only when the farmer explicitly asks about memory/previous advice/history, or this turn is a clear follow-up. Otherwise return an empty string."""
 
 SAFETY_CHECKER_PROMPT = """You are a safety auditor for agricultural advice in India.

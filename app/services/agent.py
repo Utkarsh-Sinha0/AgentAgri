@@ -280,6 +280,26 @@ class AgentOrchestrator:
                 plan = plan_result.get("parsed", {})
                 tool_calls = plan.get("tool_calls", [])
 
+                if not tool_calls:
+                    intent_name = intent.get("intent")
+                    region = llm_state or ctx.crop_name or ""
+                    crop = llm_crop_name or ctx.crop_name or ""
+                    intent_to_tools = {
+                        "weather_query": [{"tool_name": "get_forecast", "parameters": {"region": region}}],
+                        "market_query": [
+                            {"tool_name": "get_msp", "parameters": {"crop": crop}},
+                            {"tool_name": "get_mandi_prices", "parameters": {"crop": crop, "region": region}},
+                        ],
+                        "scheme_query": [{"tool_name": "match_schemes", "parameters": {"crop": crop, "region": region}}],
+                        "finance_query": [{"tool_name": "compute_pnl", "parameters": {"farmer_id": ctx.farmer_id}}],
+                    }
+                    fallback = intent_to_tools.get(intent_name) or []
+                    if fallback:
+                        logger.warning(
+                            f"ReAct plan empty for intent={intent_name}; using intent-based fallback"
+                        )
+                        tool_calls = fallback
+
                 # Execute MCP tool calls in parallel. Keep a parallel list of
                 # the executable calls so results map back by index — using
                 # the unfiltered ``tool_calls`` here mis-indexes whenever the
@@ -463,6 +483,7 @@ class AgentOrchestrator:
                 evidence.universal_kb_docs,
                 vision_analysis=str((vision_result or {}).get("vision_analysis") or ""),
                 weather_summary=weather_summary,
+                preferred_language=(ctx.language or ""),
             )
         else:
             # No wiki evidence. If tools returned something (weather, mandi,
@@ -496,7 +517,14 @@ class AgentOrchestrator:
                     return await self._tool_only_response(
                         db, ctx, t0, fu_response, tool_results
                     )
-            # No evidence at all — fall back to conservative clarification.
+            # No evidence at all — try a best-effort web search before
+            # giving up. On failure, return a graceful "data not available"
+            # message that names the planned web-crawler integration.
+            web_response = await self._try_web_fallback(ctx, intent)
+            if web_response is not None:
+                return await self._tool_only_response(
+                    db, ctx, t0, web_response, tool_results
+                )
             return await self._no_evidence_response(db, ctx, t0)
 
         parsed = selection_result.get("parsed", {})
@@ -898,6 +926,135 @@ class AgentOrchestrator:
         "ESCALATE": "ज़रूरी — तुरंत कृषि विशेषज्ञ से संपर्क करें: ",
     }
 
+    # Per-language scaffold labels for the farmer-facing advisory display.
+    # Keys are 2-letter ISO codes (hi/bn/ta/te/mr/gu/kn/ml/pa/or/ur/en); the
+    # English row is the fallback when the user's language is unknown.
+    _DISPLAY_LABELS: ClassVar[dict[str, dict[str, str]]] = {
+        "hi": {
+            "actions": "सुझाए गए कदम:",
+            "warnings": "चेतावनी:",
+            "reference": "संदर्भ",
+            "confidence": "विश्वास",
+            "helpline": "किसान कॉल सेंटर: 1800-180-1551",
+            "change": "पिछली सलाह के बाद बदलाव",
+        },
+        "bn": {
+            "actions": "প্রস্তাবিত পদক্ষেপ:",
+            "warnings": "সতর্কতা:",
+            "reference": "তথ্যসূত্র",
+            "confidence": "আত্মবিশ্বাস",
+            "helpline": "কিষাণ কল সেন্টার: 1800-180-1551",
+            "change": "শেষ পরামর্শের পর পরিবর্তন",
+        },
+        "ta": {
+            "actions": "பரிந்துரைக்கப்பட்ட நடவடிக்கைகள்:",
+            "warnings": "எச்சரிக்கைகள்:",
+            "reference": "குறிப்பு",
+            "confidence": "நம்பகத்தன்மை",
+            "helpline": "கிசான் கால் சென்டர்: 1800-180-1551",
+            "change": "கடைசி ஆலோசனைக்குப் பிறகான மாற்றம்",
+        },
+        "te": {
+            "actions": "సూచించిన చర్యలు:",
+            "warnings": "హెచ్చరికలు:",
+            "reference": "సూచన",
+            "confidence": "విశ్వాసం",
+            "helpline": "కిసాన్ కాల్ సెంటర్: 1800-180-1551",
+            "change": "చివరి సలహా తర్వాత మార్పు",
+        },
+        "mr": {
+            "actions": "शिफारस केलेल्या कृती:",
+            "warnings": "इशारे:",
+            "reference": "संदर्भ",
+            "confidence": "विश्वास",
+            "helpline": "किसान कॉल सेंटर: 1800-180-1551",
+            "change": "मागील सल्ल्यानंतरचा बदल",
+        },
+        "gu": {
+            "actions": "ભલામણ કરેલ પગલાં:",
+            "warnings": "ચેતવણીઓ:",
+            "reference": "સંદર્ભ",
+            "confidence": "વિશ્વાસ",
+            "helpline": "કિસાન કૉલ સેન્ટર: 1800-180-1551",
+            "change": "છેલ્લી સલાહ પછીનો ફેરફાર",
+        },
+        "kn": {
+            "actions": "ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮಗಳು:",
+            "warnings": "ಎಚ್ಚರಿಕೆಗಳು:",
+            "reference": "ಉಲ್ಲೇಖ",
+            "confidence": "ವಿಶ್ವಾಸ",
+            "helpline": "ಕಿಸಾನ್ ಕಾಲ್ ಸೆಂಟರ್: 1800-180-1551",
+            "change": "ಕೊನೆಯ ಸಲಹೆಯ ನಂತರದ ಬದಲಾವಣೆ",
+        },
+        "ml": {
+            "actions": "ശുപാർശ ചെയ്ത നടപടികൾ:",
+            "warnings": "മുന്നറിയിപ്പുകൾ:",
+            "reference": "റഫറൻസ്",
+            "confidence": "ആത്മവിശ്വാസം",
+            "helpline": "കിസാൻ കോൾ സെന്റർ: 1800-180-1551",
+            "change": "അവസാന ഉപദേശത്തിന് ശേഷമുള്ള മാറ്റം",
+        },
+        "pa": {
+            "actions": "ਸਿਫ਼ਾਰਸ਼ ਕੀਤੇ ਕਦਮ:",
+            "warnings": "ਚੇਤਾਵਨੀਆਂ:",
+            "reference": "ਹਵਾਲਾ",
+            "confidence": "ਭਰੋਸਾ",
+            "helpline": "ਕਿਸਾਨ ਕਾਲ ਸੈਂਟਰ: 1800-180-1551",
+            "change": "ਪਿਛਲੀ ਸਲਾਹ ਤੋਂ ਬਾਅਦ ਬਦਲਾਅ",
+        },
+        "or": {
+            "actions": "ସୁପାରିଶ କରାଯାଇଥିବା ପଦକ୍ଷେପ:",
+            "warnings": "ସତର୍କତା:",
+            "reference": "ସନ୍ଦର୍ଭ",
+            "confidence": "ବିଶ୍ୱାସ",
+            "helpline": "କିଷାନ କଲ ସେଣ୍ଟର: 1800-180-1551",
+            "change": "ଶେଷ ପରାମର୍ଶ ପରେ ପରିବର୍ତ୍ତନ",
+        },
+        "ur": {
+            "actions": "تجویز کردہ اقدامات:",
+            "warnings": "انتباہات:",
+            "reference": "حوالہ",
+            "confidence": "اعتماد",
+            "helpline": "کسان کال سینٹر: 1800-180-1551",
+            "change": "آخری مشورے کے بعد تبدیلی",
+        },
+        "en": {
+            "actions": "Recommended Actions:",
+            "warnings": "Warnings:",
+            "reference": "Reference",
+            "confidence": "Confidence",
+            "helpline": "Kisan Call Center: 1800-180-1551",
+            "change": "Change since last advisory",
+        },
+    }
+
+    # Confidence-prefix preamble localized per language. Falls back to English.
+    _CONFIDENCE_PREFIX_BY_LANG: ClassVar[dict[str, dict[str, str]]] = {
+        "hi": {
+            "LOW": "एहतियात के तौर पर: ",
+            "MEDIUM": "हम अनुशंसा करते हैं: ",
+            "HIGH": "हम दृढ़ता से सुझाते हैं: ",
+            "ESCALATE": "ज़रूरी — तुरंत कृषि विशेषज्ञ से संपर्क करें: ",
+        },
+        "en": {
+            "LOW": "As a precaution: ",
+            "MEDIUM": "We recommend: ",
+            "HIGH": "We strongly suggest: ",
+            "ESCALATE": "Urgent — contact an agricultural expert immediately: ",
+        },
+    }
+
+    @classmethod
+    def _labels_for(cls, language: str | None) -> dict[str, str]:
+        code = (language or "").strip().lower()[:2]
+        return cls._DISPLAY_LABELS.get(code) or cls._DISPLAY_LABELS["en"]
+
+    @classmethod
+    def _confidence_prefix_for(cls, language: str | None, confidence: str) -> str:
+        code = (language or "").strip().lower()[:2]
+        table = cls._CONFIDENCE_PREFIX_BY_LANG.get(code) or cls._CONFIDENCE_PREFIX_BY_LANG["en"]
+        return table.get(confidence, "")
+
     @staticmethod
     def _build_action_citation(
         action_index: int,
@@ -1015,8 +1172,8 @@ class AgentOrchestrator:
         evidence: EvidenceBundle,
     ) -> str:
         """Build the farmer-facing display text (with E1/E2/E3 evidence)."""
-        # E2: confidence-leveled preamble
-        confidence_prefix = self._CONFIDENCE_PREFIX.get(rec.confidence, "")
+        labels = self._labels_for(ctx.language)
+        confidence_prefix = self._confidence_prefix_for(ctx.language, rec.confidence)
 
         header = f"[{rec.risk_level}] {confidence_prefix}{rec.contextualization}"
         lines = [header, ""]
@@ -1027,7 +1184,7 @@ class AgentOrchestrator:
                 db, rec, evidence, ctx.previous_advisory_id
             )
             if change_summary:
-                lines.append(f"Change since last advisory: {change_summary}")
+                lines.append(f"{labels['change']}: {change_summary}")
                 lines.append("")
 
         # E1: actions with inline citations
@@ -1035,7 +1192,7 @@ class AgentOrchestrator:
             memory_atoms = self._parse_memory_atoms_from_context(evidence.memory_context)
             peer_atoms: list[dict] = []  # already folded into memory_context for E1 counting
 
-            lines.append("Recommended Actions:")
+            lines.append(labels["actions"])
             # actions_text and selected_action_indices are 1:1 (built together
             # at parse-time). Pass the global wiki-action index, not the
             # display position, so citations attribute to the right article.
@@ -1057,13 +1214,13 @@ class AgentOrchestrator:
             lines.append("")
 
         if rec.warnings_text:
-            lines.append("Warnings:")
+            lines.append(labels["warnings"])
             for warning in rec.warnings_text:
                 lines.append(f"  - {warning}")
             lines.append("")
 
         if rec.memory_reference:
-            lines.append(f"Reference: {rec.memory_reference}")
+            lines.append(f"{labels['reference']}: {rec.memory_reference}")
 
         # If the scheme tool fired alongside wiki retrieval, surface the
         # scheme details inline so scheme-keyword evidence (installment,
@@ -1077,8 +1234,8 @@ class AgentOrchestrator:
             lines.append("")
             lines.extend(scheme_lines)
 
-        lines.append(f"Confidence: {rec.confidence}")
-        lines.append("Kisan Call Center: 1800-180-1551")
+        lines.append(f"{labels['confidence']}: {rec.confidence}")
+        lines.append(labels["helpline"])
         return "\n".join(lines)
 
     def _summarize_weather(self, weather_data: dict | None) -> str:
@@ -1696,6 +1853,64 @@ class AgentOrchestrator:
             thinking_enabled=True,
         )
 
+    async def _try_web_fallback(
+        self, ctx: AgentContext, intent: dict
+    ) -> str | None:
+        """Best-effort web search → LLM summary, else graceful unknown message.
+
+        Returns a display string ready to send. Returns the graceful unknown
+        message even when scraping fails so the bot never goes silent on
+        novel queries.
+        """
+        from app.services.web_search import graceful_unknown_message, web_search
+
+        query = (ctx.message or "").strip()
+        if not query:
+            return None
+        try:
+            results = await web_search(query, max_results=3, timeout_s=5.0)
+        except Exception as exc:
+            logger.warning(f"web_search raised: {exc}")
+            results = []
+
+        if not results:
+            return graceful_unknown_message(ctx.language)
+
+        snippets = "\n\n".join(
+            f"[{i+1}] {r['title']}\n{r['snippet']}\nSource: {r['url']}"
+            for i, r in enumerate(results)
+        )
+        from app.utils.ollama_client import _LANG_NAMES, _language_directive
+        lang_code = (ctx.language or "").lower()[:2]
+        lang_name = _LANG_NAMES.get(lang_code, ("English", "Latin"))[0]
+        sys_prompt = (
+            "You are an Indian agricultural advisor. Use ONLY the web snippets "
+            "below to answer the farmer's question. If the snippets don't "
+            "actually contain the answer, say so honestly in one line. "
+            "Keep to 4 short lines. End with: 'Source: web search "
+            "(best-effort, not yet verified).'\n\n"
+            + _language_directive(ctx.language or "")
+            + f"\n(If a bilingual divider is required, the native side is {lang_name}.)"
+        )
+        user_prompt = f"Farmer question: {query}\n\nWeb snippets:\n{snippets}"
+        try:
+            result = await self.llm.chat(
+                messages=[
+                    {"role": "system", "content": sys_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.2,
+                max_tokens=400,
+            )
+            text = (result.get("content") or "").strip()
+        except Exception as exc:
+            logger.warning(f"web fallback LLM compose failed: {exc}")
+            text = ""
+
+        if not text:
+            return graceful_unknown_message(ctx.language)
+        return text
+
     async def _no_evidence_response(
         self, db: AsyncSession, ctx: AgentContext, t0: float
     ) -> AgentResponse:
@@ -1707,27 +1922,8 @@ class AgentOrchestrator:
         bot answers but the analytics side never sees the miss.
         """
         latency_ms = int((time.perf_counter() - t0) * 1000)
-        is_hindi = (ctx.language or "").lower().startswith("hi")
-        if is_hindi:
-            display_text = (
-                "नमस्ते। समस्या समझने के लिए कुछ जानकारी चाहिए।\n\n"
-                "कृपया बताएं:\n"
-                "1. कौन सी फसल है?\n"
-                "2. फसल किस अवस्था में है?\n"
-                "3. लक्षण कब से दिख रहे हैं?\n\n"
-                "या फसल की फोटो भेजें — तस्वीर देखकर बेहतर सलाह दी जा सकती है।\n\n"
-                "तत्काल सहायता: किसान कॉल सेंटर 1800-180-1551"
-            )
-        else:
-            display_text = (
-                "Hello. I need a bit more information to help you.\n\n"
-                "Please tell me:\n"
-                "1. Which crop is this?\n"
-                "2. What stage is the crop at?\n"
-                "3. Since when have you been seeing the symptoms?\n\n"
-                "Or send a photo — I can review the crop image and give better advice.\n\n"
-                "Immediate help: Kisan Call Center 1800-180-1551"
-            )
+        from app.services.web_search import graceful_unknown_message
+        display_text = graceful_unknown_message(ctx.language)
 
         advisory_id: str | None = None
         if ctx.observation_id:
