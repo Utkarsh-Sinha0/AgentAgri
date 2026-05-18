@@ -3,7 +3,7 @@ name = "agrimesh"
 version = "4.0.0"
 description = "AI Agricultural Advisory for Smallholder Farmers — Gemma 4 E4B + RAG + MCP"
 requires-python = ">=3.11"
-license = {text = "Apache-2.0"}
+license = {text = "CC-BY-4.0"}
 readme = "README.md"
 
 [tool.ruff]
