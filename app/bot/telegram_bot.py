@@ -413,20 +413,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as exc:
         logger.warning(f"start-hint thread lookup failed: {exc}")
 
-    chosen_lang = (state.get("data") or {}).get("preferred_language")
-
-    # New user OR no stored language → show picker only and stop.
-    if not farmer or chosen_lang not in WELCOME_TEXTS:
-        await update.message.reply_text(
-            PICKER_PROMPT,
-            parse_mode="Markdown",
-            reply_markup=_picker_keyboard(),
-        )
-        state["state"] = "start"
-        return
-
-    # Returning farmer: render welcome in their language directly.
-    await _send_welcome_for_language(update.message, context, user_id, state, chosen_lang)
+    # Always show language picker on /start — let the farmer confirm or
+    # switch tongue every session. Welcome renders only after pick.
+    await update.message.reply_text(
+        PICKER_PROMPT,
+        parse_mode="Markdown",
+        reply_markup=_picker_keyboard(),
+    )
+    state["state"] = "start"
 
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -589,10 +583,14 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if voice is None:
         return
 
-    # Route to registration only if the farmer is genuinely unregistered.
-    # Checking the DB instead of the in-memory state string protects against
-    # state drift (e.g. /register sets state to 'registering_name' but voice
-    # registration succeeded out-of-band, or /start leaves state at 'start').
+    # Route to registration only if the farmer is genuinely unregistered,
+    # OR the user is mid-registration flow (e.g. just clicked /register or
+    # picked a language and we're waiting for their name).
+    _reg_states = {"registering_name", "registering_district", "registering_pincode",
+                   "registering_tehsil", "registering_village", "registering_crop_name"}
+    if state.get("state") in _reg_states:
+        await _handle_voice_registration(update, context, user_id, state, voice)
+        return
     if state.get("state") != "ready":
         async with async_session_factory() as _db:
             _farmer_exists = await _db.scalar(
