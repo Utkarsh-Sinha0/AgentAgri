@@ -149,6 +149,16 @@
       "effective_date": "2025-10-01",
       "source_url": "http://agriharyana.gov.in/",
       "notes": "approx; verify against CACP"
-    }
+    },
+    {"state": "Bihar", "crop": "maize", "variety": null, "season": "kharif", "msp_rs_per_quintal": 2225, "effective_date": "2025-06-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "CACP 2025-26"},
+    {"state": "Bihar", "crop": "moong", "variety": null, "season": "kharif", "msp_rs_per_quintal": 8682, "effective_date": "2025-06-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "CACP 2025-26"},
+    {"state": "Bihar", "crop": "arhar", "variety": null, "season": "kharif", "msp_rs_per_quintal": 7550, "effective_date": "2025-06-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "CACP 2025-26"},
+    {"state": "Bihar", "crop": "urad", "variety": null, "season": "kharif", "msp_rs_per_quintal": 7400, "effective_date": "2025-06-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "CACP 2025-26"},
+    {"state": "Bihar", "crop": "masoor", "variety": null, "season": "rabi", "msp_rs_per_quintal": 6700, "effective_date": "2025-10-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "CACP 2025-26"},
+    {"state": "Bihar", "crop": "chana", "variety": null, "season": "rabi", "msp_rs_per_quintal": 5650, "effective_date": "2025-10-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "CACP 2025-26"},
+    {"state": "Bihar", "crop": "mustard", "variety": null, "season": "rabi", "msp_rs_per_quintal": 5950, "effective_date": "2025-10-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "CACP 2025-26"},
+    {"state": "Bihar", "crop": "groundnut", "variety": null, "season": "kharif", "msp_rs_per_quintal": 7263, "effective_date": "2025-06-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "CACP 2025-26"},
+    {"state": "Bihar", "crop": "soybean", "variety": null, "season": "kharif", "msp_rs_per_quintal": 4892, "effective_date": "2025-06-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "CACP 2025-26"},
+    {"state": "Bihar", "crop": "sugarcane", "variety": null, "season": "annual", "msp_rs_per_quintal": 340, "effective_date": "2025-10-01", "source_url": "https://dbtagriculture.bihar.gov.in/", "notes": "FRP, not MSP"}
   ]
 }

@@ -44,6 +44,42 @@
       "eligibility": {"organic_farming": true, "min_cluster_size": 50},
       "benefit": "₹50,000/ha over 3 years",
       "apply_link": "https://pgsindia-ncof.gov.in"
+    },
+    {
+      "id": "pmksy",
+      "name": "PM Krishi Sinchayee Yojana",
+      "name_hi": "प्रधानमंत्री कृषि सिंचाई योजना",
+      "description": "Per-drop-more-crop micro-irrigation subsidy",
+      "eligibility": {"all_farmers": true},
+      "benefit": "Up to 55% subsidy on drip/sprinkler (small/marginal); 45% otherwise",
+      "apply_link": "https://pmksy.gov.in"
+    },
+    {
+      "id": "enam",
+      "name": "e-NAM (National Agriculture Market)",
+      "name_hi": "ई-नाम (राष्ट्रीय कृषि बाज़ार)",
+      "description": "Pan-India electronic trading platform linking 1000+ APMC mandis",
+      "eligibility": {"all_farmers": true},
+      "benefit": "Better price discovery, transparent online trade",
+      "apply_link": "https://enam.gov.in"
+    },
+    {
+      "id": "agri_infra_fund",
+      "name": "Agriculture Infrastructure Fund",
+      "name_hi": "कृषि अवसंरचना कोष",
+      "description": "Loans for post-harvest infrastructure (cold storage, warehouses, processing units)",
+      "eligibility": {"farmers": true, "fpos": true, "agri_entrepreneurs": true},
+      "benefit": "Loans up to ₹2 crore with 3% interest subvention and CGTMSE cover",
+      "apply_link": "https://agriinfra.dac.gov.in"
+    },
+    {
+      "id": "rashtriya_gokul_mission",
+      "name": "Rashtriya Gokul Mission",
+      "name_hi": "राष्ट्रीय गोकुल मिशन",
+      "description": "Indigenous bovine breed development and dairy productivity",
+      "eligibility": {"dairy_farmers": true},
+      "benefit": "Subsidised semen, training, breeding services",
+      "apply_link": "https://dahd.nic.in/schemes/programmes/rashtriya-gokul-mission"
     }
   ]
 }

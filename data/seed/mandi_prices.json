@@ -6,19 +6,53 @@
   },
   "wheat": {
     "grain": {"min": 2350, "max": 2650, "modal": 2500, "unit": "₹/quintal"},
+    "lokwan": {"min": 2450, "max": 2750, "modal": 2600, "unit": "₹/quintal"},
+    "sharbati": {"min": 2800, "max": 3400, "modal": 3100, "unit": "₹/quintal"},
     "msp_2025_26": 2425
   },
   "maize": {
     "grain": {"min": 2000, "max": 2400, "modal": 2200, "unit": "₹/quintal"},
+    "hybrid": {"min": 2100, "max": 2500, "modal": 2300, "unit": "₹/quintal"},
     "msp_2025_26": 2225
   },
   "pulses": {
     "moong": {"min": 8000, "max": 9500, "modal": 8700, "unit": "₹/quintal"},
     "arhar": {"min": 7500, "max": 9000, "modal": 8300, "unit": "₹/quintal"},
+    "urad": {"min": 7400, "max": 8600, "modal": 8000, "unit": "₹/quintal"},
+    "masoor": {"min": 6200, "max": 7400, "modal": 6800, "unit": "₹/quintal"},
+    "chana": {"min": 5500, "max": 6800, "modal": 6100, "unit": "₹/quintal"},
     "msp_2025_26_moong": 8682,
-    "msp_2025_26_arhar": 7550
+    "msp_2025_26_arhar": 7550,
+    "msp_2025_26_urad": 7400,
+    "msp_2025_26_masoor": 6700,
+    "msp_2025_26_chana": 5650
   },
-  "last_updated": "2026-05-12",
+  "oilseeds": {
+    "mustard": {"min": 5500, "max": 6800, "modal": 6100, "unit": "₹/quintal"},
+    "groundnut": {"min": 6200, "max": 7800, "modal": 7000, "unit": "₹/quintal"},
+    "soybean": {"min": 4500, "max": 5300, "modal": 4900, "unit": "₹/quintal"},
+    "sesame": {"min": 10500, "max": 13500, "modal": 12000, "unit": "₹/quintal"},
+    "msp_2025_26_mustard": 5950,
+    "msp_2025_26_groundnut": 7263,
+    "msp_2025_26_soybean": 4892,
+    "msp_2025_26_sesame": 9846
+  },
+  "vegetables": {
+    "potato": {"min": 800, "max": 1500, "modal": 1100, "unit": "₹/quintal"},
+    "onion": {"min": 1200, "max": 2400, "modal": 1700, "unit": "₹/quintal"},
+    "tomato": {"min": 1500, "max": 3500, "modal": 2400, "unit": "₹/quintal"}
+  },
+  "sugarcane": {
+    "cane": {"min": 340, "max": 380, "modal": 360, "unit": "₹/quintal"},
+    "fair_remunerative_price_2025_26": 340
+  },
+  "cotton": {
+    "long_staple": {"min": 7100, "max": 7800, "modal": 7450, "unit": "₹/quintal"},
+    "medium_staple": {"min": 6500, "max": 7200, "modal": 6850, "unit": "₹/quintal"},
+    "msp_2025_26_long": 7521,
+    "msp_2025_26_medium": 7121
+  },
+  "last_updated": "2026-05-18",
   "source": "seeded — agmarknet.gov.in compatible format",
-  "mandis_tracked": ["Munger", "Bhagalpur", "Patna", "Begusarai", "Khagaria"]
+  "mandis_tracked": ["Munger", "Bhagalpur", "Patna", "Begusarai", "Khagaria", "Bariarpur", "Lakhisarai"]
 }
