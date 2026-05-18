@@ -631,8 +631,18 @@ async def _handle_voice_registration(update: Update, context: ContextTypes.DEFAU
                 "Voice was empty/too short. Please say: name, village, district, main crop."
             )
             return
-        transcript_en = await translate(transcript, detected_lang, "en-IN")
-        fields = await extract_registration_fields(transcript_en)
+        # Gemma handles Indic input directly — try raw transcript first.
+        # Fall back to Sarvam translate -> extract only if raw extraction fails.
+        fields = await extract_registration_fields(transcript)
+        if not fields.get("extraction_ok"):
+            try:
+                transcript_en = await translate(transcript, detected_lang, "en-IN")
+                if transcript_en and transcript_en.strip() and transcript_en.strip() != transcript.strip():
+                    fields_fallback = await extract_registration_fields(transcript_en)
+                    if fields_fallback.get("extraction_ok"):
+                        fields = fields_fallback
+            except Exception as fb_exc:
+                logger.warning(f"Sarvam translate fallback for onboarding failed: {fb_exc}")
         preferred_lang = fields.get("preferred_lang") or detected_lang
     except Exception as exc:
         logger.error(f"Voice registration pipeline failed: {exc}")
