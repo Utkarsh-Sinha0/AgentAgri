@@ -1,0 +1,1290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AgriMesh | Evidence-Based Gemma 4 Agricultural Agent</title>
+  <style>
+    :root {
+      --leaf: #1f6f43;
+      --leaf-dark: #123620;
+      --leaf-soft: #e7f3e7;
+      --gold: #c9952e;
+      --gold-soft: #fff3d4;
+      --terracotta: #b05e3f;
+      --sky: #dceff0;
+      --blue: #356f78;
+      --soil: #5a4431;
+      --cream: #fbfaf2;
+      --paper: #ffffff;
+      --ink: #172019;
+      --muted: #637268;
+      --line: #d7dfd4;
+      --shadow: 0 24px 70px rgba(31, 55, 37, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, #f7fbf4 0%, var(--cream) 42%, #eef5ec 100%);
+      line-height: 1.58;
+    }
+
+    a { color: var(--leaf); }
+
+    .hero {
+      min-height: 92vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      align-items: center;
+      gap: 48px;
+      position: relative;
+      padding: 36px clamp(22px, 6vw, 82px) 58px;
+      color: #ffffff;
+      background:
+        linear-gradient(118deg, rgba(12, 53, 31, 0.98), rgba(33, 105, 65, 0.92) 52%, rgba(242, 231, 192, 0.72)),
+        url("../Gemini_Generated_Image_j2f3kzj2f3kzj2f3.png") right center / contain no-repeat;
+      overflow: hidden;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 850;
+      letter-spacing: 0;
+      margin-bottom: 48px;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #f0c455;
+      color: #123620;
+      font-weight: 900;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero h1 {
+      margin: 0;
+      max-width: 880px;
+      font-size: 5.7rem;
+      line-height: 0.92;
+      letter-spacing: 0;
+    }
+
+    .hero .subtitle {
+      max-width: 820px;
+      margin: 28px 0 30px;
+      font-size: 1.28rem;
+      color: #edf8ec;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      max-width: 900px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      color: #f8fff7;
+      font-weight: 750;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-panel {
+      align-self: end;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--ink);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-panel h2 {
+      margin: 0 0 12px;
+      font-size: 1.45rem;
+      color: var(--leaf-dark);
+    }
+
+    .hero-panel dl {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 9px 14px;
+      margin: 0;
+      font-size: 0.95rem;
+    }
+
+    .hero-panel dt {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .hero-panel dd {
+      margin: 0;
+      color: var(--ink);
+    }
+
+    .next-hint {
+      position: absolute;
+      bottom: 18px;
+      left: clamp(22px, 6vw, 82px);
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.92rem;
+      font-weight: 750;
+    }
+
+    main {
+      padding: 0 clamp(22px, 6vw, 82px) 76px;
+    }
+
+    section {
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 78px 0 0;
+    }
+
+    .section-kicker {
+      margin-bottom: 10px;
+      color: var(--gold);
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 3.35rem;
+      line-height: 1.04;
+      color: var(--leaf-dark);
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 1.18rem;
+      line-height: 1.22;
+      color: #173a25;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .lead {
+      max-width: 930px;
+      color: var(--muted);
+      font-size: 1.12rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card,
+    .spec-card,
+    .flow-step,
+    .lane,
+    .endpoint,
+    .check-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 12px 34px rgba(33, 64, 43, 0.08);
+    }
+
+    .card,
+    .spec-card,
+    .check-card {
+      padding: 22px;
+    }
+
+    .metric {
+      margin-bottom: 10px;
+      color: var(--leaf);
+      font-size: 2.05rem;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      margin-bottom: 12px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--leaf-soft);
+      color: var(--leaf-dark);
+      font-size: 0.78rem;
+      font-weight: 850;
+    }
+
+    .tag.gold {
+      background: var(--gold-soft);
+      color: #6a4a0c;
+    }
+
+    .tag.blue {
+      background: var(--sky);
+      color: #1c4f57;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .spec-card {
+      min-height: 176px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .spec-card::after {
+      content: "";
+      position: absolute;
+      right: -32px;
+      bottom: -44px;
+      width: 112px;
+      height: 112px;
+      border-radius: 999px;
+      background: rgba(31, 111, 67, 0.08);
+    }
+
+    .spec-label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .spec-value {
+      margin: 7px 0 8px;
+      color: var(--leaf-dark);
+      font-size: 1.2rem;
+      font-weight: 900;
+      line-height: 1.18;
+    }
+
+    .spec-note {
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .architecture-map {
+      margin-top: 34px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .arch-row {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .arch-label {
+      display: grid;
+      place-items: center;
+      min-height: 78px;
+      border-radius: 8px;
+      background: var(--leaf-dark);
+      color: #ffffff;
+      font-weight: 900;
+      text-align: center;
+      padding: 14px;
+    }
+
+    .arch-items {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .arch-item {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+
+    .arch-item strong {
+      display: block;
+      color: var(--leaf);
+      margin-bottom: 6px;
+    }
+
+    .flow {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .flow-step {
+      min-height: 164px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .flow-step::before {
+      content: attr(data-step);
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      margin-bottom: 12px;
+      border-radius: 999px;
+      background: var(--leaf);
+      color: #ffffff;
+      font-weight: 900;
+    }
+
+    .flow-step p,
+    .arch-item p,
+    .card p,
+    .spec-card p,
+    .check-card p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .process-board {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .lane {
+      padding: 20px;
+      background: linear-gradient(180deg, #ffffff 0%, #f7fbf4 100%);
+    }
+
+    .lane h3 {
+      display: flex;
+      align-items: center;
+      min-height: 40px;
+    }
+
+    .lane ol {
+      margin: 12px 0 0;
+      padding-left: 20px;
+      color: var(--muted);
+    }
+
+    .lane li {
+      margin: 8px 0;
+    }
+
+    .band {
+      margin-top: 44px;
+      padding: 40px;
+      border-radius: 8px;
+      color: #ffffff;
+      background:
+        linear-gradient(135deg, rgba(18, 54, 32, 0.96), rgba(31, 111, 67, 0.88)),
+        url("../Gemini_Generated_Image_j2f3kzj2f3kzj2f3.png") center / cover no-repeat;
+      box-shadow: var(--shadow);
+    }
+
+    .band h2,
+    .band h3 {
+      color: #ffffff;
+    }
+
+    .band p {
+      color: #eff8ed;
+    }
+
+    .band-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .band-cell {
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(8px);
+    }
+
+    .matrix {
+      width: 100%;
+      margin-top: 26px;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 8px 26px rgba(31, 70, 42, 0.06);
+    }
+
+    .matrix th,
+    .matrix td {
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .matrix th {
+      background: #eef5e9;
+      color: var(--leaf-dark);
+      font-size: 0.88rem;
+      text-transform: uppercase;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .matrix tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .endpoint-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .endpoint {
+      padding: 15px;
+      min-height: 112px;
+    }
+
+    .endpoint code {
+      display: inline-block;
+      margin-bottom: 8px;
+      word-break: break-word;
+    }
+
+    .diagram-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      margin-top: 30px;
+    }
+
+    .diagram-grid.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .diagram-card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 12px 34px rgba(33, 64, 43, 0.08);
+      overflow: hidden;
+    }
+
+    .diagram-card h3 {
+      margin-bottom: 6px;
+    }
+
+    .diagram-card p {
+      max-width: 920px;
+      margin-bottom: 16px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .mermaid {
+      width: 100%;
+      min-height: 120px;
+      overflow-x: auto;
+      padding: 16px;
+      border: 1px solid #e2e8de;
+      border-radius: 8px;
+      background: #fbfdf8;
+    }
+
+    code {
+      background: #eef5e9;
+      color: #173b24;
+      border-radius: 5px;
+      padding: 2px 6px;
+      font-size: 0.92em;
+    }
+
+    .quote {
+      max-width: 960px;
+      margin-top: 34px;
+      padding-left: 24px;
+      border-left: 5px solid var(--gold);
+      color: #21452c;
+      font-size: 1.28rem;
+    }
+
+    .footer {
+      margin-top: 80px;
+      padding: 32px clamp(22px, 6vw, 82px);
+      background: #102418;
+      color: #dbeadd;
+    }
+
+    .footer strong {
+      color: #ffffff;
+    }
+
+    @media (max-width: 1120px) {
+      .hero {
+        grid-template-columns: 1fr;
+        background:
+          linear-gradient(118deg, rgba(12, 53, 31, 0.98), rgba(33, 105, 65, 0.92));
+      }
+
+      .hero h1 {
+        font-size: 4.2rem;
+      }
+
+      .hero-panel {
+        max-width: 760px;
+      }
+
+      .spec-grid,
+      .grid.four,
+      .arch-items,
+      .flow,
+      .band-grid,
+      .diagram-grid.two,
+      .endpoint-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      .hero {
+        min-height: auto;
+        padding-bottom: 76px;
+      }
+
+      .brand {
+        margin-bottom: 34px;
+      }
+
+      .hero h1 {
+        font-size: 3rem;
+      }
+
+      .hero .subtitle,
+      .lead {
+        font-size: 1rem;
+      }
+
+      h2 {
+        font-size: 2.15rem;
+      }
+
+      .hero-panel dl,
+      .arch-row,
+      .grid,
+      .grid.two,
+      .grid.four,
+      .spec-grid,
+      .arch-items,
+      .flow,
+      .process-board,
+      .band-grid,
+      .diagram-grid.two,
+      .endpoint-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel dl {
+        gap: 4px;
+      }
+
+      section {
+        padding-top: 58px;
+      }
+
+      .band {
+        padding: 28px;
+      }
+
+      .matrix {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div>
+      <div class="brand"><span class="brand-mark">A</span><span>AgriMesh for Kaggle Gemma 4 Good</span></div>
+      <h1>Evidence-based agricultural intelligence for every field decision.</h1>
+      <p class="subtitle">A Gemma 4-powered agent that connects crop diagnosis, weather-aware planning, mandi and MSP context, schemes, finance, outbreak intelligence, safety verification, and living farmer memory.</p>
+      <div class="hero-actions">
+        <span class="pill">Gemma 4 via Ollama</span>
+        <span class="pill">Telegram farmer interface</span>
+        <span class="pill">React PWA dashboard</span>
+        <span class="pill">Graph-Wiki RAG</span>
+        <span class="pill">MCP tool servers</span>
+      </div>
+    </div>
+    <aside class="hero-panel" aria-label="Core system specification">
+      <h2>Core Specs</h2>
+      <dl>
+        <dt>Model</dt><dd><code>gemma4:e4b</code> primary, <code>gemma4:e2b</code> fallback</dd>
+        <dt>Runtime</dt><dd>Ollama local inference, FastAPI backend, Telegram bot, React/Vite PWA</dd>
+        <dt>Data</dt><dd>SQLite for development, Postgres/pgvector production path, Redis optional</dd>
+        <dt>Tools</dt><dd>Weather, mandi/MSP, scheme, finance, crop knowledge MCP services</dd>
+        <dt>Proof</dt><dd><code>/api/v1/capabilities</code>, PWA <code>/gemma4</code>, capability log</dd>
+      </dl>
+    </aside>
+    <div class="next-hint">Scroll for actual specs, workflows, and verification surfaces</div>
+  </header>
+
+  <main>
+    <section>
+      <div class="section-kicker">Executive position</div>
+      <h2>One agent for the full agricultural solution loop.</h2>
+      <p class="lead">AgriMesh is built around a practical thesis: a farmer's question rarely belongs to only one category. Crop health, weather, market timing, scheme access, finance, and previous actions all affect the right next step. AgriMesh brings these signals into a single evidence-checked workflow.</p>
+      <div class="grid">
+        <div class="card"><div class="metric">1/3</div><h3>Food-system relevance</h3><p>FAO reports that small family farmers produce around one-third of the world's food.</p></div>
+        <div class="card"><div class="metric">40%</div><h3>Crop-risk urgency</h3><p>FAO/IPPC reports that plant pests can destroy up to 40% of global crop production annually.</p></div>
+        <div class="card"><div class="metric">86%</div><h3>Indian smallholder focus</h3><p>India's Agriculture Census 2015-16 reports that small and marginal holdings form about 86% of operational holdings.</p></div>
+      </div>
+      <p class="quote">The more farmers use AgriMesh, the more useful its local memory becomes: observation, evidence, advisory, outcome, and stronger future context.</p>
+    </section>
+
+    <section>
+      <div class="section-kicker">Actual technical specs</div>
+      <h2>What the build is made of.</h2>
+      <p class="lead">These are the concrete implementation specs represented in the repository and exposed through the app surface.</p>
+      <div class="spec-grid">
+        <article class="spec-card">
+          <div class="spec-label">Backend</div>
+          <div class="spec-value">FastAPI service</div>
+          <p class="spec-note"><code>app/main.py</code> serves REST APIs, health checks, model metadata, cluster review, eval outputs, and the built PWA.</p>
+        </article>
+        <article class="spec-card">
+          <div class="spec-label">Farmer channel</div>
+          <div class="spec-value">Telegram bot</div>
+          <p class="spec-note"><code>app/bot/telegram_bot.py</code> handles onboarding, text, photo, voice, commands, buttons, and dashboard links.</p>
+        </article>
+        <article class="spec-card">
+          <div class="spec-label">Dashboard</div>
+          <div class="spec-value">React/Vite PWA</div>
+          <p class="spec-note"><code>pwa/src/main.jsx</code> shows farm state, market, weather, AI trace, history, settings, and Gemma proof.</p>
+        </article>
+        <article class="spec-card">
+          <div class="spec-label">Agent brain</div>
+          <div class="spec-value">AgentOrchestrator</div>
+          <p class="spec-note"><code>app/services/agent.py</code> coordinates vision, intent, retrieval, tools, memory, verifier, citations, and persistence.</p>
+        </article>
+        <article class="spec-card">
+          <div class="spec-label">Model runtime</div>
+          <div class="spec-value">Ollama + Gemma 4</div>
+          <p class="spec-note"><code>gemma4:e4b</code> is primary, <code>gemma4:e2b</code> is fallback, with local inference by default.</p>
+        </article>
+        <article class="spec-card">
+          <div class="spec-label">Retrieval</div>
+          <div class="spec-value">Graph-Wiki RAG</div>
+          <p class="spec-note">BGE-M3 dense retrieval, lexical boost, BGE reranker, follow-up bias, and official manuals create evidence bundles.</p>
+        </article>
+        <article class="spec-card">
+          <div class="spec-label">Persistence</div>
+          <div class="spec-value">SQLite or Postgres</div>
+          <p class="spec-note">SQLite supports development. Production path uses Postgres/pgvector with Redis for rate limiting and sessions.</p>
+        </article>
+        <article class="spec-card">
+          <div class="spec-label">Verification</div>
+          <div class="spec-value">Safety gate</div>
+          <p class="spec-note"><code>app/services/verifier.py</code> checks structure, calibration, contradictions, and pesticide safety before replies.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-kicker">System workflow</div>
+      <h2>From farmer signal to verified advisory.</h2>
+      <p class="lead">This is the main end-to-end workflow implemented by the agent, shown as a clean spec-to-action pipeline.</p>
+      <div class="flow">
+        <article class="flow-step" data-step="1">
+          <h3>Capture</h3>
+          <p>Farmer sends text, voice, or a crop photo through Telegram, or views farm state through the PWA.</p>
+        </article>
+        <article class="flow-step" data-step="2">
+          <h3>Understand</h3>
+          <p>Gemma 4 analyzes crop images when present and classifies intent with grammar-constrained JSON.</p>
+        </article>
+        <article class="flow-step" data-step="3">
+          <h3>Ground</h3>
+          <p>Graph-Wiki retrieval collects crop, pest, scheme, and official reference evidence.</p>
+        </article>
+        <article class="flow-step" data-step="4">
+          <h3>Call tools</h3>
+          <p>Gemma 4 plans MCP calls for weather, mandi/MSP, schemes, finance, and crop knowledge.</p>
+        </article>
+        <article class="flow-step" data-step="5">
+          <h3>Use memory</h3>
+          <p>Field, crop stage, profile, NDVI, previous actions, and outcome atoms shape the response.</p>
+        </article>
+        <article class="flow-step" data-step="6">
+          <h3>Verify</h3>
+          <p>Safety, confidence, evidence indices, and memory contradictions are checked before delivery.</p>
+        </article>
+      </div>
+      <div class="band">
+        <h2>Workflow guarantee</h2>
+        <p>AgriMesh is designed to cite or hedge, escalate when uncertain, avoid fabricated market/weather/scheme numbers, and never expose another farmer's raw details.</p>
+        <div class="band-grid">
+          <div class="band-cell"><h3>Evidence first</h3><p>Official manuals, wiki articles, tool outputs, and memory atoms form the evidence bundle.</p></div>
+          <div class="band-cell"><h3>Tool-grounded facts</h3><p>Weather, mandi, MSP, scheme, and finance data are retrieved from tool services.</p></div>
+          <div class="band-cell"><h3>Outcome learning</h3><p>Advice outcomes strengthen or downgrade future memory through structured atoms.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-kicker">Architecture map</div>
+      <h2>The stack, layer by layer.</h2>
+      <div class="architecture-map">
+        <div class="arch-row">
+          <div class="arch-label">User Surface</div>
+          <div class="arch-items">
+            <div class="arch-item"><strong>Telegram</strong><p>Registration, commands, text/photo/voice advisories, evidence buttons, dashboard links.</p></div>
+            <div class="arch-item"><strong>React PWA</strong><p>Farm overview, crop analysis, weather, market prices, AI trace, Gemma proof, history.</p></div>
+            <div class="arch-item"><strong>Demo API</strong><p>Demo session, dashboard payloads, architecture payload, model metadata.</p></div>
+            <div class="arch-item"><strong>Operator routes</strong><p>Cluster review, eval outputs, stats, sources, degradation health.</p></div>
+          </div>
+        </div>
+        <div class="arch-row">
+          <div class="arch-label">Agent Layer</div>
+          <div class="arch-items">
+            <div class="arch-item"><strong>Intent</strong><p>Grammar-constrained classification for agriculture, market, scheme, finance, and follow-up flows.</p></div>
+            <div class="arch-item"><strong>Gemma 4 vision</strong><p>Crop photo analysis becomes structured context for the advisory pipeline.</p></div>
+            <div class="arch-item"><strong>Tool planner</strong><p>Thinking-mode ReAct planning selects weather, mandi, scheme, finance, and crop KB calls.</p></div>
+            <div class="arch-item"><strong>Template selector</strong><p>Structured action and warning selection prepares farmer-ready replies.</p></div>
+          </div>
+        </div>
+        <div class="arch-row">
+          <div class="arch-label">Grounding Layer</div>
+          <div class="arch-items">
+            <div class="arch-item"><strong>Graph-Wiki RAG</strong><p>BGE-M3 dense search, lexical boosts, reranker, previous article bias.</p></div>
+            <div class="arch-item"><strong>MCP servers</strong><p>Weather :9001, mandi :9002, scheme :9003, finance :9004, crop KB :9005.</p></div>
+            <div class="arch-item"><strong>Memory atoms</strong><p>Temporal decay, outcome boost, causal chain, privacy scope, redaction support.</p></div>
+            <div class="arch-item"><strong>Verifier</strong><p>Structural, contradiction, calibration, and pesticide-safety checks.</p></div>
+          </div>
+        </div>
+        <div class="arch-row">
+          <div class="arch-label">Data Layer</div>
+          <div class="arch-items">
+            <div class="arch-item"><strong>Database</strong><p>Farmers, fields, crop cycles, observations, advisories, reports, threads.</p></div>
+            <div class="arch-item"><strong>Seed data</strong><p>Demo farmer, crop calendar, prices, schemes, weather, memory, and KB sections.</p></div>
+            <div class="arch-item"><strong>Reference docs</strong><p>Runtime knowledge assets and official manuals support evidence-based replies.</p></div>
+            <div class="arch-item"><strong>Evaluations</strong><p>Golden datasets and scorecard outputs support technical verification.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-kicker">Mermaid workflow diagrams</div>
+      <h2>Detailed pipelines for every major spec.</h2>
+      <p class="lead">These diagrams turn the system specs into inspectable workflows: full advisory orchestration, disease diagnosis, market reasoning, outbreak detection, memory sources, deployment, and the state-of-the-art agent features represented in this implementation.</p>
+
+      <div class="diagram-grid">
+        <article class="diagram-card">
+          <h3>Master Advisory Pipeline</h3>
+          <p>The complete route from farmer input to verified, persisted, memory-aware advisory.</p>
+          <pre class="mermaid">
+flowchart LR
+  F["Farmer input: text, voice, crop photo"] --> TG["Telegram bot or PWA"]
+  TG --> CTX["Build AgentContext: farmer, field, crop, location"]
+  CTX --> IMG{"Image present"}
+  IMG -- Yes --> VSN["Gemma 4 vision analysis"]
+  IMG -- No --> INTENT
+  VSN --> INTENT["Grammar constrained intent classification"]
+  INTENT --> THREAD["Route or create conversation thread"]
+  THREAD --> PAR{"Parallel grounding"}
+  PAR --> RAG["Graph-Wiki RAG: dense, lexical, rerank"]
+  PAR --> PLAN["Gemma 4 thinking mode tool plan"]
+  PLAN --> TOOLS["MCP tools: weather, mandi, MSP, scheme, finance, crop KB"]
+  RAG --> BUNDLE["Evidence bundle"]
+  TOOLS --> BUNDLE
+  BUNDLE --> MEM["Load living memory, profile, NDVI, recent outcomes"]
+  MEM --> ACT["Structured action and warning selection"]
+  ACT --> VERIFY["Verifier: structure, calibration, contradiction, pesticide safety"]
+  VERIFY --> SAFE{"Safe and grounded"}
+  SAFE -- Yes --> REPLY["Farmer reply with confidence and citations"]
+  SAFE -- No --> FALLBACK["Safe fallback or escalation language"]
+  REPLY --> STORE["Persist advisory, verifier report, turn, memory atoms"]
+  FALLBACK --> STORE
+
+  classDef farmer fill:#fff3d4,stroke:#c9952e,color:#172019;
+  classDef model fill:#e7f3e7,stroke:#1f6f43,color:#172019;
+  classDef safety fill:#f7e8df,stroke:#b05e3f,color:#172019;
+  class F,TG farmer;
+  class VSN,INTENT,PLAN,ACT model;
+  class VERIFY,SAFE,FALLBACK safety;
+          </pre>
+        </article>
+
+        <article class="diagram-card">
+          <h3>State-of-the-Art Agent Feature Map</h3>
+          <p>AgriMesh combines modern agent capabilities without letting the model act as an unchecked authority.</p>
+          <pre class="mermaid">
+flowchart TB
+  CORE["AgriMesh agent"] --> A["Multimodal crop understanding"]
+  CORE --> B["Thinking-mode tool planning"]
+  CORE --> C["Function-style MCP tools"]
+  CORE --> D["Grammar-constrained structured output"]
+  CORE --> E["Hybrid Graph-Wiki retrieval"]
+  CORE --> F["Living memory with outcomes"]
+  CORE --> G["Safety and evidence verifier"]
+  CORE --> H["Local-first Gemma 4 inference"]
+  CORE --> I["Multilingual farmer replies"]
+  CORE --> J["Capability proof surfaces"]
+
+  A --> A1["Crop photo to vision hypothesis"]
+  B --> B1["ReAct-style plan before tools"]
+  C --> C1["Weather, mandi, scheme, finance, crop KB"]
+  D --> D1["Intent, tool plan, safety, templates"]
+  E --> E1["BGE-M3, lexical boost, reranker"]
+  F --> F1["Temporal decay, outcome boost, causal chains"]
+  G --> G1["Pesticide safety, confidence calibration"]
+  H --> H1["gemma4:e4b primary, gemma4:e2b fallback"]
+  I --> I1["English or selected Indic-language preference"]
+  J --> J1["API, PWA Gemma route, Telegram footer, log"]
+
+  classDef core fill:#123620,stroke:#123620,color:#ffffff;
+  classDef feature fill:#e7f3e7,stroke:#1f6f43,color:#172019;
+  classDef proof fill:#dceff0,stroke:#356f78,color:#172019;
+  class CORE core;
+  class A,B,C,D,E,F,G,H,I feature;
+  class J,J1 proof;
+          </pre>
+        </article>
+      </div>
+
+      <div class="diagram-grid two">
+        <article class="diagram-card">
+          <h3>Disease or Pest Photo Workflow</h3>
+          <p>How a crop image becomes a cautious, evidence-grounded disease or pest advisory.</p>
+          <pre class="mermaid">
+flowchart TD
+  P["Farmer sends leaf photo with caption"] --> D["Telegram downloads largest photo"]
+  D --> G4V["Gemma 4 multimodal vision"]
+  G4V --> HYP["Vision hypothesis and uncertainty"]
+  HYP --> IC["Intent classifier"]
+  IC --> R["Retrieve crop, pest, disease evidence"]
+  IC --> W["Call weather if relevant"]
+  R --> E["Evidence cards"]
+  W --> E
+  E --> M["Recent field memory and outcomes"]
+  M --> T["Template and action selection"]
+  T --> V["Verifier checks"]
+  V --> C{"Confidence justified"}
+  C -- Yes --> A["Advisory with actions, warnings, citations"]
+  C -- No --> S["Safe fallback or human escalation"]
+  A --> O["Persist observation, advisory, verifier report, memory atom"]
+  S --> O
+          </pre>
+        </article>
+
+        <article class="diagram-card">
+          <h3>Market Decision Workflow</h3>
+          <p>How sell, store, or wait decisions use tool facts instead of unsupported generated numbers.</p>
+          <pre class="mermaid">
+flowchart TD
+  Q["Farmer asks sell, store, or wait"] --> I["Market intent classification"]
+  I --> MP["Mandi price tool"]
+  I --> MSP["MSP context tool"]
+  I --> WX["Weather and storage context"]
+  MP --> CMP["Compare market price, MSP, weather risk, storage cost"]
+  MSP --> CMP
+  WX --> CMP
+  CMP --> REASON["Gemma 4 reasoning over tool facts"]
+  REASON --> VF["Verifier rejects unsupported numbers"]
+  VF --> OUT{"Grounded recommendation"}
+  OUT -- Yes --> DEC["Decision with confidence and rationale"]
+  OUT -- No --> HEDGE["Hedged reply with missing-data warning"]
+  DEC --> SAVE["Persist advisory and market context"]
+  HEDGE --> SAVE
+          </pre>
+        </article>
+
+        <article class="diagram-card">
+          <h3>Outbreak Intelligence Workflow</h3>
+          <p>How negative outcomes become privacy-aware local threat signals.</p>
+          <pre class="mermaid">
+flowchart TD
+  O["Farmer reports outcome: worsened or no change"] --> X["Extract crop and threat"]
+  X --> VIL["Check recent reports in village"]
+  VIL --> VILOK{"10 percent and at least 2 reporters"}
+  VILOK -- Yes --> CL["Create AlertCluster"]
+  VILOK -- No --> PIN["Check pincode"]
+  PIN --> PINOK{"Threshold crossed"}
+  PINOK -- Yes --> CL
+  PINOK -- No --> TEH["Check tehsil"]
+  TEH --> TEHOK{"Threshold crossed"}
+  TEHOK -- Yes --> CL
+  TEHOK -- No --> DIS["Check district"]
+  DIS --> DISOK{"Threshold crossed"}
+  DISOK -- Yes --> CL
+  DISOK -- No --> NO["No alert yet"]
+  CL --> REVIEW["Cluster review route"]
+  REVIEW --> NOTIFY["Notify relevant farmers"]
+  REVIEW --> PUB["Write public outbreak memory atom"]
+          </pre>
+        </article>
+
+        <article class="diagram-card">
+          <h3>Registration and Context Workflow</h3>
+          <p>How the system builds the farmer, field, and crop-cycle context used by every later advisory.</p>
+          <pre class="mermaid">
+flowchart TD
+  START["/start"] --> LANG["Pick language"]
+  LANG --> REG["/register"]
+  REG --> NAME["Name and phone"]
+  NAME --> LOC["District, pincode, tehsil, village"]
+  LOC --> FIELD["Field name and area"]
+  FIELD --> SOIL["Soil type button"]
+  SOIL --> CROP["Crop name"]
+  CROP --> SOW["Sowing date"]
+  SOW --> STAGE["Crop stage button"]
+  STAGE --> ACTIVE["Active farmer-field-crop context"]
+  ACTIVE --> ASK["Farmer asks advisory question"]
+          </pre>
+        </article>
+      </div>
+
+      <div class="diagram-grid">
+        <article class="diagram-card">
+          <h3>Sources of Memory and Learning Graph</h3>
+          <p>The memory system is not a raw chat dump. It is a structured graph fed by observations, advisories, outcomes, tool facts, and privacy-gated community signals.</p>
+          <pre class="mermaid">
+flowchart LR
+  subgraph Inputs["Memory sources"]
+    TXT["Text question"]
+    IMG["Crop photo and vision hypothesis"]
+    VOICE["Voice transcript"]
+    FIELD["Field, soil, crop cycle, crop stage"]
+    TOOL["Tool facts: weather, mandi, MSP, scheme, finance"]
+    EVID["Evidence cards and official manuals"]
+    OUT["Farmer outcome feedback"]
+    FIN["Expense and sale events"]
+    CLUSTER["Outbreak cluster reports"]
+  end
+
+  subgraph Memory["Living memory atom graph"]
+    RAW["Farmer-owned raw memory"]
+    CAUSAL["Causal chain: observation to advisory to outcome"]
+    TEMP["M1 temporal decay"]
+    BOOST["M2 outcome boost or downgrade"]
+    AUDIT["M3 auditable decision trail"]
+    KANON["M4 k-anonymous shared context"]
+  end
+
+  subgraph Use["How memory is used"]
+    NEXT["Next advisory context"]
+    FOLLOW["Follow-up continuity"]
+    ALERT["Outbreak intelligence"]
+    DASH["Dashboard history"]
+    REDACT["/mydata and /forgetme controls"]
+  end
+
+  TXT --> RAW
+  IMG --> CAUSAL
+  VOICE --> RAW
+  FIELD --> RAW
+  TOOL --> CAUSAL
+  EVID --> AUDIT
+  OUT --> BOOST
+  FIN --> RAW
+  CLUSTER --> KANON
+  RAW --> TEMP
+  CAUSAL --> AUDIT
+  TEMP --> NEXT
+  BOOST --> NEXT
+  AUDIT --> FOLLOW
+  KANON --> ALERT
+  RAW --> DASH
+  RAW --> REDACT
+  KANON --> NEXT
+
+  classDef source fill:#fff3d4,stroke:#c9952e,color:#172019;
+  classDef mem fill:#e7f3e7,stroke:#1f6f43,color:#172019;
+  classDef use fill:#dceff0,stroke:#356f78,color:#172019;
+  class TXT,IMG,VOICE,FIELD,TOOL,EVID,OUT,FIN,CLUSTER source;
+  class RAW,CAUSAL,TEMP,BOOST,AUDIT,KANON mem;
+  class NEXT,FOLLOW,ALERT,DASH,REDACT use;
+          </pre>
+        </article>
+
+        <article class="diagram-card">
+          <h3>Production Deployment Workflow</h3>
+          <p>The production path separates API, bot, model, database, Redis, MCP services, and external feeds for scale and reliability.</p>
+          <pre class="mermaid">
+flowchart TD
+  U["Farmers and operators"] --> LB["Load balancer with TLS"]
+  TG["Telegram webhook"] --> BOT["Bot worker pool"]
+  LB --> API1["API instance 1"]
+  LB --> API2["API instance 2"]
+  API1 --> PG["Managed Postgres with pgvector"]
+  API2 --> PG
+  BOT --> PG
+  API1 --> REDIS["Redis sessions and rate limiting"]
+  API2 --> REDIS
+  BOT --> REDIS
+  API1 --> OLLAMA["Ollama Gemma 4 GPU pool"]
+  API2 --> OLLAMA
+  BOT --> OLLAMA
+  API1 --> MCP["MCP tool services"]
+  API2 --> MCP
+  BOT --> MCP
+  MCP --> EXT["Weather, market, scheme feeds"]
+  PG --> BACKUP["Automated backups"]
+  API1 --> OBS["Health, degradation, latency, fallback metrics"]
+  API2 --> OBS
+  BOT --> OBS
+          </pre>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-kicker">Workflow specs by use case</div>
+      <h2>The major farmer journeys.</h2>
+      <div class="process-board">
+        <article class="lane">
+          <span class="tag">Registration</span>
+          <h3>Farmer and field setup</h3>
+          <ol>
+            <li><code>/start</code> opens language and welcome flow.</li>
+            <li><code>/register</code> captures name, phone, district, pincode, tehsil, and village.</li>
+            <li>Field setup captures field name, area, soil type, crop, sowing date, and stage.</li>
+            <li>The farmer can ask questions with active field and crop context.</li>
+          </ol>
+        </article>
+        <article class="lane">
+          <span class="tag gold">Disease or pest</span>
+          <h3>Photo to advisory</h3>
+          <ol>
+            <li>Telegram downloads the largest crop photo.</li>
+            <li>Gemma 4 vision produces a crop-health hypothesis.</li>
+            <li>RAG retrieves crop and disease evidence.</li>
+            <li>Weather and crop tools are called when relevant.</li>
+            <li>Verifier gates safety, confidence, and contradictions.</li>
+            <li>Advisory, evidence, and memory atoms are persisted.</li>
+          </ol>
+        </article>
+        <article class="lane">
+          <span class="tag blue">Market decision</span>
+          <h3>Sell, store, or wait</h3>
+          <ol>
+            <li>Market intent is classified.</li>
+            <li>Mandi prices and MSP context are fetched.</li>
+            <li>Weather and storage context are considered.</li>
+            <li>Gemma 4 reasons over tool facts.</li>
+            <li>Verifier rejects unsupported numbers.</li>
+            <li>Farmer receives a decision with confidence.</li>
+          </ol>
+        </article>
+      </div>
+      <div class="process-board">
+        <article class="lane">
+          <span class="tag">Outbreak intelligence</span>
+          <h3>Local signal to alert</h3>
+          <ol>
+            <li>Outcome such as worsened or no change is captured.</li>
+            <li>Crop and threat are extracted.</li>
+            <li>Reports cascade from village to pincode to tehsil to district.</li>
+            <li>Threshold is 10% with a two-reporter floor.</li>
+            <li>Cluster can notify relevant farmers and create public outbreak memory.</li>
+          </ol>
+        </article>
+        <article class="lane">
+          <span class="tag gold">Finance</span>
+          <h3>Cycle-level profit and loss</h3>
+          <ol>
+            <li><code>/expense</code> logs crop-cycle costs.</li>
+            <li><code>/sale</code> logs crop revenue.</li>
+            <li><code>/finance</code> summarizes active-cycle P&amp;L.</li>
+            <li>The dashboard displays finance context with farm history.</li>
+          </ol>
+        </article>
+        <article class="lane">
+          <span class="tag blue">Data rights</span>
+          <h3>Farmer-owned memory</h3>
+          <ol>
+            <li><code>/mydata</code> shows the farmer's own memory digest.</li>
+            <li><code>/forgetme</code> soft-redacts raw memory atoms.</li>
+            <li>Aggregate learning remains k-anonymous.</li>
+            <li>Other farmers' raw details are never exposed.</li>
+          </ol>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-kicker">Gemma 4 implementation</div>
+      <h2>Specific model capabilities and where they show up.</h2>
+      <table class="matrix">
+        <thead><tr><th>Capability</th><th>Implementation</th><th>Workflow role</th><th>Proof surface</th></tr></thead>
+        <tbody>
+          <tr><td>Thinking mode</td><td><code>OllamaClient.chat(..., thinking=True)</code></td><td>ReAct planning for tool selection and complex agricultural decisions.</td><td>Capability log, PWA <code>/gemma4</code></td></tr>
+          <tr><td>Function calling</td><td><code>plan_tools()</code> emits schema-bound tool calls executed by <code>AgentOrchestrator._execute_tool()</code>.</td><td>Routes weather, mandi, MSP, finance, scheme, and crop KB queries to tools.</td><td>AI Advisor route, tool trace</td></tr>
+          <tr><td>Multimodal vision</td><td><code>analyze_crop_photo()</code> sends crop images to Gemma 4.</td><td>Converts leaf or crop photos into advisory context.</td><td>Capability log, advisory trace</td></tr>
+          <tr><td>Grammar constraints</td><td>JSON schemas in <code>app/schemas/</code> are passed through Ollama's <code>format</code> field.</td><td>Keeps intent, tool plans, safety checks, templates, and summaries structured.</td><td>Tests and schema outputs</td></tr>
+          <tr><td>Multilingual binding</td><td><code>_language_directive()</code> binds replies to English or selected Indic language preference.</td><td>Farmer-facing replies stay understandable while operators retain traceability.</td><td>Telegram replies</td></tr>
+          <tr><td>Local inference</td><td>Ollama hosts <code>gemma4:e4b</code> primary and <code>gemma4:e2b</code> fallback.</td><td>Reduces default per-query cloud cost and supports data sovereignty.</td><td><code>GET /api/models</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <div class="section-kicker">Safety, memory, and learning specs</div>
+      <h2>How the agent gets safer and more useful.</h2>
+      <div class="grid two">
+        <article class="check-card">
+          <span class="tag">Verifier checks</span>
+          <h3>Before a reply reaches the farmer</h3>
+          <p>Structural validity confirms selected action and warning indices resolve to real evidence. Contradiction checks compare advice with recent actions or outcomes. Calibration prevents HIGH confidence without enough evidence. Safety redirects risky pesticide, dosage, re-entry, and banned-chemical advice.</p>
+        </article>
+        <article class="check-card">
+          <span class="tag gold">Memory graph</span>
+          <h3>How use improves the system</h3>
+          <p>M1 temporal decay favors recent field facts. M2 outcome boost strengthens advice that worked and downgrades failed advice. M3 causal chains connect observation, vision, advisory, and outcome. M4 k-anonymous learning allows community context only after privacy thresholds are met.</p>
+        </article>
+      </div>
+      <table class="matrix">
+        <thead><tr><th>Responsible AI control</th><th>Actual implementation</th></tr></thead>
+        <tbody>
+          <tr><td>Farmer raw data isolation</td><td><code>/mydata</code> shows only the farmer's own memory and records.</td></tr>
+          <tr><td>Right to redact</td><td><code>/forgetme</code> soft-redacts farmer-owned raw memory atoms while preserving coarsened aggregates.</td></tr>
+          <tr><td>Aggregation privacy</td><td>Cross-farmer memory and outbreak intelligence use minimum farmer counts.</td></tr>
+          <tr><td>API auth</td><td><code>X-AgriMesh-API-Key</code> is required in production or when explicitly enabled.</td></tr>
+          <tr><td>Config fail-fast</td><td>Production rejects placeholder API keys, SQLite, wildcard CORS, demo mode, and missing Telegram token.</td></tr>
+          <tr><td>Model fallback</td><td>Fallback Gemma 4 model and deterministic safe replies avoid blank failures.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <div class="section-kicker">API and verification surfaces</div>
+      <h2>What judges and engineers can inspect.</h2>
+      <div class="endpoint-grid">
+        <div class="endpoint"><code>GET /health</code><p>Version, environment, model, grammar flag, and basic service health.</p></div>
+        <div class="endpoint"><code>GET /api/v1/capabilities</code><p>Live Gemma 4 capability proof snapshot.</p></div>
+        <div class="endpoint"><code>GET /api/models</code><p>Current and fallback model metadata.</p></div>
+        <div class="endpoint"><code>GET /api/farmer-dashboard</code><p>Full farm dashboard payload for a farmer.</p></div>
+        <div class="endpoint"><code>GET /api/ai/showcase</code><p>Latest advisory, reasoning trace, tool calls, and citations.</p></div>
+        <div class="endpoint"><code>GET /api/sources</code><p>Evidence source registry behind the advisory system.</p></div>
+        <div class="endpoint"><code>GET /api/eval/latest</code><p>Latest evaluation harness output.</p></div>
+        <div class="endpoint"><code>GET /api/clusters</code><p>Outbreak alert clusters for review.</p></div>
+        <div class="endpoint"><code>GET /api/health/degradation</code><p>Dependency health and fallback/degradation level.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-kicker">Run and deployment specs</div>
+      <h2>Local demo path and production path.</h2>
+      <div class="grid two">
+        <article class="card">
+          <span class="tag">Local prerequisites</span>
+          <h3>Development/demo environment</h3>
+          <p>Python 3.11+, Node 20+, Docker or local Python, Ollama at <code>http://localhost:11434</code>, 16 GB+ RAM recommended, optional NVIDIA GPU, and Telegram bot token for live bot usage.</p>
+        </article>
+        <article class="card">
+          <span class="tag gold">Production shape</span>
+          <h3>Scale-out architecture</h3>
+          <p>Load balancer/TLS, API instances, bot worker pool, managed Postgres with pgvector, Redis, Ollama GPU pool, MCP services, external weather/market/scheme feeds, logs, backups, and health monitoring.</p>
+        </article>
+      </div>
+      <table class="matrix">
+        <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>make pull-model</code></td><td>Pulls Gemma 4 models through Ollama.</td></tr>
+          <tr><td><code>make seed</code></td><td>Seeds database and demo data.</td></tr>
+          <tr><td><code>make run-api</code></td><td>Starts FastAPI and PWA server.</td></tr>
+          <tr><td><code>make run-bot</code></td><td>Starts Telegram bot.</td></tr>
+          <tr><td><code>make run-mcp-weather</code>, <code>make run-mcp-mandi</code>, <code>make run-mcp-scheme</code>, <code>make run-mcp-finance</code></td><td>Starts tool services used by the agent.</td></tr>
+          <tr><td><code>make test</code>, <code>make eval</code>, <code>make demo-check</code></td><td>Runs tests, evaluation harness, and demo readiness checks.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <div class="section-kicker">Evaluation coverage</div>
+      <h2>Proof that the demo is backed by engineering.</h2>
+      <p class="lead">The repository includes tests and evaluation utilities for API security, config validation, async blockers, authentication/demo sessions, conversation routing, dashboard payload shape, evidence citations, grammar-constrained output, memory M1-M4 behavior, migrations, MCP startup, outbreak warnings, retrieval, seeded dates, and Telegram flows.</p>
+      <div class="grid four">
+        <div class="card"><span class="tag">Grammar</span><h3><code>tests/test_e4b_grammar.py</code></h3><p>Checks structured Gemma output behavior.</p></div>
+        <div class="card"><span class="tag gold">Retrieval</span><h3><code>tests/test_retrieval.py</code></h3><p>Checks evidence retrieval behavior.</p></div>
+        <div class="card"><span class="tag blue">Outbreak</span><h3><code>tests/test_outbreak_warning.py</code></h3><p>Checks local alert logic.</p></div>
+        <div class="card"><span class="tag">Scorecard</span><h3><code>scripts/run_farmer_scorecard.py</code></h3><p>Runs farmer-facing evaluation harness.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <strong>AgriMesh</strong> | Built for the Kaggle Gemma 4 Good Hackathon. Source behavior is derived from the AgentAgri repository and README. Public framing sources include FAO, Government of India Agriculture Census references, Science/PMC research on digital agricultural advice, WRI, and GSMA Digital Agriculture Maps.
+  </footer>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: "strict",
+      theme: "base",
+      themeVariables: {
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+        primaryColor: "#e7f3e7",
+        primaryTextColor: "#172019",
+        primaryBorderColor: "#1f6f43",
+        lineColor: "#5f6f63",
+        secondaryColor: "#fff3d4",
+        tertiaryColor: "#dceff0",
+        clusterBkg: "#fbfdf8",
+        clusterBorder: "#d7dfd4",
+        edgeLabelBackground: "#ffffff"
+      },
+      flowchart: {
+        curve: "basis",
+        htmlLabels: false
+      }
+    });
+  </script>
+</body>
+</html>

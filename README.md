@@ -1,85 +1,93 @@
 # AgriMesh
 
-AI agricultural intelligence agent for smallholder farmers, built around Gemma 4, FastAPI, Telegram, a React PWA, MCP-style tools, living memory, Graph-Wiki retrieval, and evidence-checked advisories.
+**An evidence-based Gemma 4 agricultural intelligence agent for the full farming decision loop. The more farmers use it, the more useful its local memory becomes.**
 
-This is the single project document. All other project documentation has been consolidated here.
+AgriMesh is built for the Kaggle Gemma 4 Good Hackathon as a working proof-of-concept for smallholder agriculture. It turns a familiar chat surface, Telegram, and a React PWA dashboard into one grounded agricultural assistant for crop health, weather-aware planning, mandi and MSP context, scheme discovery, farm finance, outbreak intelligence, and farmer-owned memory.
+
+The core idea is simple and ambitious: farmers should not need five different tools to answer one field decision. They should be able to send text, voice, or a crop photo; AgriMesh classifies the intent, retrieves crop evidence, calls live tool servers, checks safety, remembers outcomes, and replies in the farmer's language with confidence, citations, and next actions.
+
+AgriMesh does not replace certified agronomists, KVK officers, pesticide labels, or local authorities. It is a first-line decision support layer that is designed to be transparent, cautious, and escalatory when uncertainty or chemical safety risk appears.
 
 ## Table Of Contents
 
-1. [What AgriMesh Solves](#what-agrimesh-solves)
-2. [Evidence And Public Value](#evidence-and-public-value)
-3. [Product Vision](#product-vision)
+1. [Why AgriMesh Matters](#why-agrimesh-matters)
+2. [The Product Thesis](#the-product-thesis)
+3. [Evidence And Public Value](#evidence-and-public-value)
 4. [System Overview](#system-overview)
-5. [How Gemma 4 Is Used](#how-gemma-4-is-used)
-6. [Feature Inventory And Logic](#feature-inventory-and-logic)
-7. [Farmer Workflows](#farmer-workflows)
-8. [Architecture](#architecture)
-9. [Engineering Details](#engineering-details)
-10. [Every Button And Command](#every-button-and-command)
-11. [API Reference](#api-reference)
-12. [Reproduce Locally](#reproduce-locally)
-13. [Production Deployment At Scale](#production-deployment-at-scale)
-14. [Security, Privacy, And Responsible AI](#security-privacy-and-responsible-ai)
-15. [Evaluation And Testing](#evaluation-and-testing)
-16. [Troubleshooting](#troubleshooting)
-17. [Sources](#sources)
+5. [How Gemma 4 Powers The Agent](#how-gemma-4-powers-the-agent)
+6. [The Advisory Pipeline](#the-advisory-pipeline)
+7. [Feature Inventory](#feature-inventory)
+8. [Farmer Workflows](#farmer-workflows)
+9. [Architecture](#architecture)
+10. [Engineering Details](#engineering-details)
+11. [Commands, Buttons, And PWA Surface](#commands-buttons-and-pwa-surface)
+12. [API Reference](#api-reference)
+13. [Run Locally](#run-locally)
+14. [Production Path](#production-path)
+15. [Security, Privacy, And Responsible AI](#security-privacy-and-responsible-ai)
+16. [Evaluation And Testing](#evaluation-and-testing)
+17. [Troubleshooting](#troubleshooting)
+18. [Sources](#sources)
 
-## What AgriMesh Solves
+## Why AgriMesh Matters
 
-AgriMesh turns a basic farmer chat into an evidence-grounded agricultural advisor. A farmer can send text, voice, or a crop photo through Telegram; the backend classifies the intent, analyzes the image if present, retrieves local agronomy knowledge, calls live tools for weather, mandi, schemes, and finance, checks the answer for safety, then replies in the farmer's language with citations and a memory trail.
+Agriculture is not one problem. It is a chain of linked decisions: diagnosis, weather timing, input safety, market timing, scheme access, cash flow, and follow-up learning. For a smallholder farmer, a late or generic answer can mean avoidable crop loss, unnecessary chemical use, or a missed selling window.
 
-The product is optimized for smallholder agriculture where advice must be timely, local, explainable, and cheap enough to run at scale. It targets three recurring problems:
+AgriMesh positions Gemma 4 as the reasoning layer inside a practical agricultural operating system:
 
-| Problem | AgriMesh Response |
+| Farmer Need | AgriMesh Response |
 |---|---|
-| Crop disease and pest decisions arrive late or without confidence. | Photo + text advisory, Graph-Wiki retrieval, official IPM manuals, confidence labels, verifier, follow-up memory. |
-| Farmers lack market and scheme context at the moment of decision. | Mandi/MSP tools, scheme matching, finance ledger, sell/store reasoning, dashboard history. |
-| One farmer's observation rarely helps nearby farmers before the issue spreads. | Privacy-gated memory atoms, k-anonymous cross-farmer learning, outbreak alerts across village, pincode, tehsil, and district. |
+| A crop leaf looks diseased, but the farmer is unsure what to do. | Photo plus text diagnosis, Graph-Wiki retrieval, official IPM/manual evidence, confidence labels, verifier, and follow-up memory. |
+| Market, MSP, weather, and storage decisions arrive together. | Mandi and MSP tools, weather context, sell/store reasoning, and dashboard history. |
+| Government schemes are hard to match to a specific farmer profile. | Scheme matching uses profile, crop, and location data to surface relevant seed scheme data. |
+| Farm finances are scattered across memory and paper. | Expenses and sales roll into active-cycle profit and loss. |
+| Nearby farmers see the same pest or disease, but the signal spreads slowly. | Privacy-gated memory atoms, k-anonymous cross-farmer learning, and outbreak alerts across village, pincode, tehsil, and district. |
 
-The system is not meant to replace certified agronomists, KVK officers, or pesticide labels. It is a first-line decision support layer that escalates uncertain and safety-critical cases.
+This is why AgriMesh is more than a chatbot. It is an evidence-checked agent with tools, memory, and a safety verifier. Each advisory can become part of a learning loop: observation -> evidence -> action -> outcome -> stronger future context.
 
-## Evidence And Public Value
+## The Product Thesis
 
-The need is real and measurable.
+**One agent. One accessible interface. Every common farming question handled with evidence, memory, and local context.**
 
-| Evidence | Why It Matters For This Agent |
-|---|---|
-| FAO reports that small family farmers produce around one-third of the world's food, while farms under one hectare are about 70% of all farms and operate only about 7% of agricultural land. | Small farms carry food-system importance despite limited land and capital, so low-cost advisory can have outsized value. |
-| FAO/IPPC reports that plant pests can destroy up to 40% of global crop production annually and cause large trade and economic losses. | Early pest and disease detection is a high-leverage use case, especially when paired with local outbreak signals. |
-| India's Agriculture Census 2015-16 reports that small and marginal holdings form about 86% of operational holdings. | The core Indian user is land-constrained; advice must improve risk, timing, input efficiency, and market access without assuming high capital. |
-| Research on digital agricultural advice notes that many farmers have weak access to science-based extension, with farmer-to-extension-worker ratios often above 1000:1 in many LMIC contexts. | AI advisory can scale routine triage and reserve scarce human extension capacity for hard or high-risk cases. |
-| WRI summarizes evidence that digital climate-informed advisory services can improve productivity and resilience, with reported high returns where services are localized and acted upon. | AgriMesh combines weather, crop stage, memory, and local market context instead of giving generic advice. |
-
-Public-good effects are expected at three levels:
-
-| Level | Impact |
-|---|---|
-| Primary | Better disease triage, safer pesticide behavior, improved market decisions, clearer scheme eligibility, and field-specific memory. |
-| Secondary | Lower avoidable crop loss, reduced unnecessary chemical use, improved household income predictability, and more confidence when negotiating with buyers or officers. |
-| Tertiary | Community outbreak intelligence, aggregated climate-risk signals, anonymized research data, and better allocation of extension-worker attention. |
-
-Risk controls are equally important. Bad agricultural advice can waste money, damage soil and water, harm applicators, or spread false confidence. AgriMesh therefore uses retrieval, official manuals, grammar-constrained model output, a verifier, confidence language, and escalation rules.
-
-## Product Vision
-
-AgriMesh's north star is: one agent, one accessible chat surface, every common farmer question handled with memory and evidence.
-
-The farmer should not need to know whether their question is about pathology, weather, finance, government schemes, or market timing. They should be able to say:
+The farmer should not need to know whether their question belongs to plant pathology, weather, finance, schemes, or market intelligence. A farmer can ask:
 
 ```text
 धान के पत्ते पर भूरे धब्बे हैं, क्या करूं?
 ```
 
-and receive:
+AgriMesh is designed to answer with:
 
-- a likely risk hypothesis;
+- a likely risk hypothesis, not false certainty;
 - immediate non-harmful actions;
-- a reason grounded in evidence;
-- a warning when chemical or severe disease escalation is unsafe;
-- a memory-aware follow-up path;
-- a dashboard trail for later review.
+- evidence-grounded reasoning;
+- warnings when pesticide, dosage, or severe-disease escalation is unsafe;
+- memory-aware follow-up;
+- a dashboard trail for review;
+- citations and confidence language.
 
-The long-term vision is a local-first agricultural operating layer that works across crops, languages, and countries by swapping the knowledge pack and tool servers while keeping the same Gemma 4 orchestration, memory, verifier, and dashboard.
+The long-term vision is a local-first agricultural intelligence layer that can expand across crops, languages, and countries by changing the knowledge pack and tool servers while keeping the Gemma 4 orchestration, memory, verifier, and dashboard architecture.
+
+## Evidence And Public Value
+
+The need is measurable, and the public-good case is strong.
+
+| Evidence | Why It Matters For AgriMesh |
+|---|---|
+| FAO reports that small family farmers produce around one-third of the world's food, while farms under one hectare are about 70% of all farms and operate only about 7% of agricultural land. | Small farms carry food-system importance despite limited land and capital, so low-cost advisory can have outsized value. |
+| FAO/IPPC reports that plant pests can destroy up to 40% of global crop production annually and cause large trade and economic losses. | Early pest and disease detection is a high-leverage use case, especially when connected to local outbreak signals. |
+| India's Agriculture Census 2015-16 reports that small and marginal holdings form about 86% of operational holdings. | The core Indian user is land-constrained; advice must improve timing, risk, input efficiency, and market access without assuming high capital. |
+| Research on digital agricultural advice notes that many farmers have weak access to science-based extension, with farmer-to-extension-worker ratios often above 1000:1 in many LMIC contexts. | AI can scale routine triage and reserve scarce human extension capacity for hard or high-risk cases. |
+| WRI summarizes evidence that digital climate-informed advisory services can improve productivity and resilience, with high returns when services are localized and acted upon. | AgriMesh combines weather, crop stage, memory, and market context instead of issuing generic advice. |
+
+Expected public value:
+
+| Level | Impact |
+|---|---|
+| Farmer | Better disease triage, safer pesticide behavior, improved market decisions, clearer scheme eligibility, and field-specific memory. |
+| Household | Lower avoidable crop loss, reduced unnecessary chemical use, improved income predictability, and more confidence with buyers or officers. |
+| Community | Outbreak intelligence, aggregated climate-risk signals, anonymized research data, and better allocation of extension-worker attention. |
+
+The same evidence that makes AgriMesh exciting also makes safety essential. Bad agricultural advice can waste money, harm applicators, damage soil and water, or spread false confidence. AgriMesh therefore uses retrieval, official manuals, grammar-constrained model output, a verifier, confidence language, and escalation rules.
 
 ## System Overview
 
@@ -104,38 +112,36 @@ flowchart TD
     DB --> Dashboard[Dashboard payloads]
 ```
 
-Runtime processes:
-
-| Process | File | Role |
+| Runtime Process | File | Role |
 |---|---|---|
-| FastAPI app | `app/main.py` | Serves REST API, PWA, health checks, model metadata, dashboard data, cluster review, eval outputs. |
-| Telegram bot | `app/bot/telegram_bot.py` | Main farmer interface: commands, onboarding, text/photo/voice handlers, buttons, signed dashboard link. |
-| Agent orchestrator | `app/services/agent.py` | 9-step advisory pipeline. |
+| FastAPI app | `app/main.py` | REST API, PWA serving, health checks, model metadata, dashboard data, cluster review, eval outputs. |
+| Telegram bot | `app/bot/telegram_bot.py` | Farmer interface for commands, onboarding, text/photo/voice handlers, buttons, and dashboard links. |
+| Agent orchestrator | `app/services/agent.py` | Main advisory pipeline. |
 | Ollama client | `app/utils/ollama_client.py` | Gemma 4 calls, grammar-constrained schemas, fallback model, capability logging. |
-| MCP servers | `app/mcp_servers/*.py` | Weather, mandi, scheme, finance, crop knowledge tools. |
-| PWA | `pwa/src/main.jsx` | Dashboard, market, weather, Gemma capability proof, history, settings. |
+| MCP servers | `app/mcp_servers/*.py` | Weather, mandi, scheme, finance, and crop knowledge tools. |
+| PWA | `pwa/src/main.jsx` | Dashboard, market, weather, Gemma capability proof, history, and settings. |
 
-## How Gemma 4 Is Used
+## How Gemma 4 Powers The Agent
 
-AgriMesh is designed to extract maximum utility from Gemma 4 without letting the model become an unchecked free-text authority.
+AgriMesh uses Gemma 4 as the agentic reasoning center, but it deliberately prevents the model from becoming an unchecked free-text authority.
 
 | Gemma 4 Capability | Implementation | Farmer Value |
 |---|---|---|
-| Thinking mode | `OllamaClient.chat(..., thinking=True)` prepends the native thinking token for ReAct planning. | More deliberate tool choice for complex questions such as sell/store, outbreak context, or scheme eligibility. |
-| Function calling | `plan_tools()` emits schema-bound tool calls; `AgentOrchestrator._execute_tool()` dispatches to MCP servers. | Weather, mandi, MSP, finance, and scheme facts come from tools instead of hallucinated numbers. |
-| Multimodal vision | `analyze_crop_photo()` sends crop images to Gemma 4 and logs `multimodal` capability events. | Farmers can show a diseased leaf instead of describing lesions precisely in text. |
-| Grammar-constrained decoding | JSON schemas in `app/schemas/` are passed through Ollama's `format` field for intent, tool plans, safety checks, templates, and cluster summaries. | The model returns constrained labels, indices, and structured fields, reducing parsing failures and unsupported claims. |
-| Multilingual output binding | `_language_directive()` binds replies to English or a selected Indic language plus English block where appropriate. | Farmers can use Hindi, English, or supported Indic-language preferences while operators still get English traceability. |
-| Local inference | Ollama hosts `gemma4:e4b` primary and `gemma4:e2b` fallback. | No per-query cloud API fee by default and better data sovereignty. |
+| Thinking mode | `OllamaClient.chat(..., thinking=True)` prepends the native thinking token for ReAct planning. | More deliberate tool choice for complex sell/store, outbreak, scheme, and crop-health questions. |
+| Function calling | `plan_tools()` emits schema-bound tool calls; `AgentOrchestrator._execute_tool()` dispatches to MCP servers. | Weather, mandi, MSP, finance, and scheme facts come from tools rather than unsupported generation. |
+| Multimodal vision | `analyze_crop_photo()` sends crop images to Gemma 4 and logs `multimodal` capability events. | Farmers can show a diseased leaf instead of describing lesions precisely. |
+| Grammar-constrained decoding | JSON schemas in `app/schemas/` are passed through Ollama's `format` field. | Intent, tool plans, safety checks, templates, and cluster summaries return structured fields. |
+| Multilingual output binding | `_language_directive()` binds replies to English or a selected Indic language plus English block where appropriate. | Farmers can use Hindi, English, or supported Indic-language preferences while operators retain traceability. |
+| Local inference | Ollama hosts `gemma4:e4b` primary and `gemma4:e2b` fallback. | Lower per-query cloud cost by default and improved data sovereignty. |
 
-Capability proof is exposed live:
+Live Gemma 4 capability proof is exposed through:
 
 - `GET /api/v1/capabilities`
 - PWA route `/gemma4`
 - Telegram advisory footer when enabled
 - in-process ring buffer in `app/services/capability_log.py`
 
-### Gemma 4 Advisory Pipeline
+## The Advisory Pipeline
 
 ```mermaid
 sequenceDiagram
@@ -168,25 +174,40 @@ sequenceDiagram
     B-->>F: Reply with citations/buttons
 ```
 
-## Feature Inventory And Logic
+`app/services/agent.py` coordinates the loop:
+
+1. Hydrate farmer, field, location, and land context.
+2. Run Gemma 4 vision for images.
+3. Load conversation context.
+4. Classify intent with grammar-constrained JSON.
+5. Route the conversation thread.
+6. Fire speculative retrieval.
+7. Plan and execute tools with thinking mode.
+8. Load memory, profile, and NDVI context.
+9. Select actions and templates with structured output.
+10. Verify safety, evidence, confidence, and contradictions.
+11. Format citations and confidence.
+12. Persist advisory, verifier report, memory atoms, and conversation turn.
+
+## Feature Inventory
 
 | Feature | Logic | Main Files |
 |---|---|---|
-| Text advisory | Free text goes to intent classification, retrieval, tool planning, memory, template selection, verifier, persistence. | `app/bot/telegram_bot.py`, `app/services/agent.py` |
-| Photo diagnosis | Bot downloads the largest Telegram photo, passes path to Gemma 4 vision, then uses the vision hypothesis as advisory context. | `handle_photo`, `OllamaClient.analyze_crop_photo` |
+| Text advisory | Free text flows through intent classification, retrieval, tool planning, memory, template selection, verifier, and persistence. | `app/bot/telegram_bot.py`, `app/services/agent.py` |
+| Photo diagnosis | Telegram photo is downloaded, passed to Gemma 4 vision, and used as advisory context. | `handle_photo`, `OllamaClient.analyze_crop_photo` |
 | Voice loop | OGG/audio is saved; Sarvam STT/TTS can transcribe, translate, synthesize, and degrade to text fallback. | `app/services/voice.py`, `handle_voice` |
-| Farmer registration | Multi-step state machine captures name, phone, district, pincode, tehsil, village, field, soil, crop, sowing date, crop stage. | `telegram_bot.py` registration handlers |
-| Field and crop cycles | Farmers can create/switch fields and crop cycles. Crop stage can be inferred from LLM intent and written back. | `models.py`, `telegram_bot.py`, `agent.py` |
-| Graph-Wiki RAG | Dense retrieval, lexical boost, cross-encoder rerank, top evidence articles, previous-advisory bias for follow-ups. | `app/services/retrieval.py` |
-| Living memory | Memory atoms have temporal decay, causal predecessors, outcome boosts, privacy scopes, and redaction support. | `app/services/memory.py`, `models_memory.py` |
+| Farmer registration | Multi-step state machine captures name, phone, district, pincode, tehsil, village, field, soil, crop, sowing date, and crop stage. | `telegram_bot.py` registration handlers |
+| Field and crop cycles | Farmers can create and switch fields and crop cycles; crop stage can be inferred from LLM intent and written back. | `models.py`, `telegram_bot.py`, `agent.py` |
+| Graph-Wiki RAG | Dense retrieval, lexical boost, cross-encoder rerank, top evidence articles, and previous-advisory bias for follow-ups. | `app/services/retrieval.py` |
+| Living memory | Memory atoms use temporal decay, causal predecessors, outcome boosts, privacy scopes, and redaction support. | `app/services/memory.py`, `models_memory.py` |
 | Cross-farmer learning | Similar-farm context is returned only after k-anonymity is satisfied. | `retrieve_similar_farm_context` |
 | Outbreak warning | Negative outcomes or pest/disease reports cascade from village to pincode to tehsil to district; threshold is 10% with a 2-reporter floor. | `app/services/outbreak.py` |
-| Market intelligence | Mandi prices, MSP context, sell/store logic, and market history are available to agent and dashboard. | `app/services/mandi.py`, `market_intel.py`, `mcp_servers/mandi_server.py` |
-| Finance | Expenses and sales roll into active-cycle P&L. | `finance.py`, Telegram `/expense`, `/sale`, `/finance` |
+| Market intelligence | Mandi prices, MSP context, sell/store logic, and market history are available to the agent and dashboard. | `app/services/mandi.py`, `market_intel.py`, `mcp_servers/mandi_server.py` |
+| Finance | Expenses and sales roll into active-cycle profit and loss. | `finance.py`, Telegram `/expense`, `/sale`, `/finance` |
 | Scheme matching | Farmer profile and crop/location data are matched against seed scheme data. | `scheme.py`, `mcp_servers/scheme_server.py` |
 | Verifier | Checks structural index validity, memory contradiction, evidence calibration, and pesticide safety. | `app/services/verifier.py` |
-| Degradation | If model/tools fail, the app can fall back to cached data, deterministic templates, or safe fallback text. | `app/services/degradation.py`, `ollama_client.py` |
-| Dashboard | Reads the same DB as the bot and shows farm, risks, evidence, tools, history, memory, model capability proof. | `pwa/src/main.jsx`, `farmer_dashboard.py` |
+| Degradation | If model or tools fail, the app falls back to cached data, deterministic templates, or safe fallback text. | `app/services/degradation.py`, `ollama_client.py` |
+| Dashboard | Reads the same DB as the bot and shows farm, risks, evidence, tools, history, memory, and model capability proof. | `pwa/src/main.jsx`, `farmer_dashboard.py` |
 
 ## Farmer Workflows
 
@@ -331,38 +352,21 @@ flowchart LR
 
 ## Engineering Details
 
-### AgentOrchestrator
-
-`app/services/agent.py` owns the high-level decision loop:
-
-1. hydrate farmer, field, location, and land context;
-2. run Gemma 4 vision for images;
-3. load conversation context;
-4. classify intent with grammar-constrained JSON;
-5. route the conversation thread;
-6. fire speculative retrieval;
-7. plan and execute tools with thinking mode;
-8. load memory, profile, and NDVI context;
-9. select actions/templates with structured output;
-10. verify;
-11. format citations and confidence;
-12. persist advisory, verifier report, memory atoms, and conversation turn.
-
 ### Retrieval
 
-The retrieval stack is deliberately hybrid:
+The retrieval stack is hybrid by design:
 
 | Layer | Purpose |
 |---|---|
-| BGE-M3 dense retrieval | Finds semantically related crop/pest/scheme content. |
+| BGE-M3 dense retrieval | Finds semantically related crop, pest, scheme, and agronomy content. |
 | Lexical boost | Favors explicit crop, title, and topic-tag matches. |
 | BGE reranker | Promotes the best final evidence cards. |
-| Previous article bias | Helps follow-up questions stay anchored to the last advisory. |
+| Previous article bias | Keeps follow-up questions anchored to the last advisory. |
 | Universal KB | Adds common issue memory and official reference manuals. |
 
 ### Verifier
 
-The verifier is the guardrail between model output and farmer action:
+The verifier is the safety gate between model output and farmer action.
 
 | Check | Action |
 |---|---|
@@ -373,18 +377,16 @@ The verifier is the guardrail between model output and farmer action:
 
 ### Memory
 
-Memory is not a chat transcript dump. It is a structured graph of facts and outcomes:
+Memory is a structured graph of facts and outcomes, not a raw chat dump.
 
 | Mechanism | Use |
 |---|---|
-| M1 temporal decay | Recent pest/weather/market facts matter more than stale facts. |
+| M1 temporal decay | Recent pest, weather, and market facts matter more than stale facts. |
 | M2 outcome boost | Advice that worked becomes stronger future evidence; failed advice is downgraded. |
 | M3 causal chain | Observation -> vision -> advisory -> outcome can be audited. |
 | M4 k-anonymous learning | Other farms help only after privacy thresholds are met. |
 
 ### Configuration
-
-Settings are typed in `app/config.py`. Important variables:
 
 | Variable | Purpose |
 |---|---|
@@ -397,96 +399,64 @@ Settings are typed in `app/config.py`. Important variables:
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token from BotFather. |
 | `AGRIMESH_API_KEY` | API key for protected routes. |
 | `AGRIMESH_REQUIRE_API_KEY` | Force API key checks outside production. |
-| `REDIS_URL` | Rate limiting/session backing store. |
+| `REDIS_URL` | Rate limiting and session backing store. |
 | `SARVAM_API_KEY` | Optional voice pipeline provider key. |
 | `WEATHER_API_KEY` | Optional live weather key. |
 
-## Every Button And Command
+## Commands, Buttons, And PWA Surface
 
 ### Telegram Commands
 
 | Command | What It Does |
 |---|---|
-| `/start` | Opens language/welcome flow, shows resume/new/register/demo/help buttons. |
+| `/start` | Opens language/welcome flow and shows resume, new, register, demo, and help buttons. |
 | `/help` | Lists available bot commands. |
 | `/demo` | Activates demo farmer data when demo secrets allow it. |
-| `/architecture` | Shows system/Gemma capability overview in chat. |
+| `/architecture` | Shows system and Gemma capability overview in chat. |
 | `/register` | Starts farmer onboarding. |
-| `/profile` | Shows or captures profile fields such as farm size, irrigation, soil, budget, mandi, schemes. |
-| `/field` | Starts field creation. |
-| `/fields` | Lists fields. |
-| `/usefield` | Switches active field. |
-| `/crop` | Starts crop setup for the active field. |
-| `/crops` | Lists crop cycles. |
-| `/usecrop` | Switches active crop cycle. |
-| `/newcycle` | Opens a new crop cycle and closes the prior active one for that field. |
-| `/closecycle` | Closes the active crop cycle. |
-| `/tasks` | Shows stage-aware field tasks. |
-| `/calendar` | Shows upcoming crop calendar actions. |
-| `/prices` | Fetches mandi/MSP context. |
-| `/expense` | Logs an expense against the active cycle. |
-| `/sale` | Logs crop sale revenue. |
-| `/finance` | Shows active-cycle P&L. |
-| `/memory` | Shows field memory atoms. |
-| `/mydata` | Shows the farmer's own raw memory digest. |
-| `/forgetme` | Confirms and soft-redacts farmer-owned raw memory. |
+| `/profile` | Shows or captures farm profile fields. |
+| `/field`, `/fields`, `/usefield` | Create, list, and switch fields. |
+| `/crop`, `/crops`, `/usecrop`, `/newcycle`, `/closecycle` | Manage crop cycles. |
+| `/tasks`, `/calendar` | Show stage-aware tasks and upcoming crop actions. |
+| `/prices` | Fetches mandi and MSP context. |
+| `/expense`, `/sale`, `/finance` | Logs farm finance and shows active-cycle profit and loss. |
+| `/memory`, `/mydata`, `/forgetme` | Shows field memory, raw data digest, and redaction path. |
 | `/edit` | Starts profile/location edit flow. |
 | `/dashboard` | Returns a signed or direct dashboard link. |
-| `/why` | Shows evidence trace for the latest advisory. |
-| `/sources` | Lists sources behind the latest advisory. |
-| `/feedback` | Captures 1-5 rating and comment for an advisory. |
-| `/outcome` | Captures whether advice worked, partially worked, failed, worsened, or had no change. |
-| `/health` | Reports bot/model/database/MCP health. |
-| `/threads` | Lists active and archived conversation threads. |
-| `/newthread` | Confirms archiving current thread and starting fresh. |
-| `/endthread` | Archives the active thread. |
-| `/voice_lang` | Sets preferred voice language. |
-| `/voice_reply` | Chooses text, text+voice, or voice reply mode. |
+| `/why`, `/sources` | Shows evidence trace and source list for the latest advisory. |
+| `/feedback`, `/outcome` | Captures rating, comment, and whether advice worked. |
+| `/health` | Reports bot, model, database, and MCP health. |
+| `/threads`, `/newthread`, `/endthread` | Manage conversation threads. |
+| `/voice_lang`, `/voice_reply` | Configure voice language and reply mode. |
 
 ### Telegram Buttons
 
-| Button | Callback | Effect |
-|---|---|---|
-| Language picker | `lang_<code>` | Sets UI/reply language and sends localized welcome. |
-| Continue | `threads_list` | Opens thread list. |
-| New | `thread_new` | Starts new-thread confirmation. |
-| Photo + Voice diagnose | `cmd_photo` | Prompts farmer to send photo or voice. |
-| Prices & MSP | `cmd_prices` | Runs price command. |
-| My data | `cmd_mydata` | Runs data digest. |
-| Help | `cmd_help` | Shows command help. |
-| Demo | `cmd_demo` | Runs demo command. |
-| Register | `cmd_register` | Starts registration. |
-| Soil buttons | `soil_loam`, `soil_clay`, `soil_sandy`, `soil_black` | Stores field soil type. |
-| Stage buttons | `stage_seedling`, `stage_vegetative`, `stage_flowering`, `stage_fruiting`, `stage_harvest` | Stores crop stage. |
-| Evidence | `show_evidence` | Shows advisory evidence cards. |
-| Verified / Safe Advice | `show_verifier` | Shows verifier report or safe fallback reason. |
-| Add Expense | `cmd_finance` | Opens finance command path. |
-| Threads | `threads_list` | Lists thread options. |
-| New thread | `thread_new` | Confirms fresh thread. |
-| Yes, close it | `newthread_confirm` | Archives current thread. |
-| Cancel | `newthread_cancel` or `edit_cancel` | Cancels pending action. |
-| Forget me confirm | `forgetme_confirm` | Redacts own raw memory atoms. |
-| Forget me cancel | `forgetme_cancel` | Cancels redaction. |
-| Edit field buttons | `edit_field:<key>` | Selects a profile/location field to edit. |
-| Show archived | `threads_show_archived` | Lists archived threads. |
-| Thread switch | `thread_switch:<id>` | Selects a thread. |
-| Dashboard link | URL button | Opens the PWA. |
+| Button Family | Effect |
+|---|---|
+| Language picker | Sets UI/reply language and sends localized welcome. |
+| Continue/New/Threads | Lists, switches, archives, or creates conversation threads. |
+| Photo + Voice diagnose | Prompts the farmer to send an image or voice question. |
+| Prices & MSP | Runs market price flow. |
+| My data | Runs farmer-owned data digest. |
+| Register, soil, and stage buttons | Complete onboarding and crop setup. |
+| Evidence and Verified/Safe Advice | Shows evidence cards and verifier report. |
+| Finance buttons | Opens expense, sale, and finance paths. |
+| Forget me confirm/cancel | Confirms or cancels redaction. |
+| Edit field buttons | Selects a profile/location field to edit. |
+| Dashboard link | Opens the PWA. |
 
-### PWA Navigation And Buttons
+### PWA Navigation
 
 | UI Element | What It Does |
 |---|---|
-| Dashboard nav | Farm overview, system readiness, latest advisory, source count, impact count. |
-| Crop Analysis nav | Active crop, NDVI mini-chart, stage, area, vision panel, crop tasks. |
-| Market Prices nav | Mandi price rows and MSP-related market data. |
-| Weather nav | Forecast cards from dashboard/weather API. |
-| AI Advisor nav | Current/fallback model metadata, selected model display, reasoning trace, tool calls, citations. |
-| Gemma 4 nav | Capability proof cards for thinking, function calls, multimodal, grammar, multilingual. |
-| History nav | Prior advisories with risk, confidence, actions, warnings. |
-| Settings nav | Runtime health, environment, model config, evidence registry. |
-| Refresh button | Re-fetches all dashboard API resources. |
-| Model toggle buttons | Locally selects which model is highlighted in the UI; API-side model switching is still environment-driven. |
-| Live activity badge | Appears when dashboard sync timestamp changes during 20-second polling. |
+| Dashboard | Farm overview, readiness, latest advisory, source count, impact count. |
+| Crop Analysis | Active crop, NDVI mini-chart, stage, area, vision panel, crop tasks. |
+| Market Prices | Mandi price rows and MSP-related market data. |
+| Weather | Forecast cards from dashboard/weather API. |
+| AI Advisor | Model metadata, reasoning trace, tool calls, and citations. |
+| Gemma 4 | Capability proof cards for thinking, function calls, multimodal, grammar, and multilingual behavior. |
+| History | Prior advisories with risk, confidence, actions, and warnings. |
+| Settings | Runtime health, environment, model config, and evidence registry. |
 
 ### Makefile Commands
 
@@ -495,24 +465,14 @@ Settings are typed in `app/config.py`. Important variables:
 | `make help` | Shows command list. |
 | `make install` | Installs Python dependencies. |
 | `make setup` / `make seed` | Seeds database/demo data. |
-| `make load-wiki` | Loads wiki articles via seed script. |
-| `make test` | Runs pytest with coverage. |
-| `make test-e4b` | Runs grammar/verifier tests. |
-| `make test-retrieval` | Runs retrieval tests. |
-| `make test-agent` | Runs agent E2E tests. |
+| `make load-wiki` | Loads wiki articles. |
+| `make test`, `make test-e4b`, `make test-retrieval`, `make test-agent` | Runs focused and full tests. |
 | `make eval` | Runs evaluation harness. |
-| `make lint` | Runs Ruff checks. |
-| `make format` | Formats Python code with Ruff. |
-| `make migrate` | Applies Alembic migrations. |
-| `make migrate-down` | Rolls back one migration. |
-| `make migrate-revision MSG="..."` | Creates an Alembic revision. |
-| `make run-bot` | Starts Telegram bot. |
-| `make run-api` | Starts FastAPI/PWA server. |
+| `make lint` / `make format` | Runs Ruff checks and formatting. |
+| `make migrate`, `make migrate-down`, `make migrate-revision MSG="..."` | Manages Alembic migrations. |
+| `make run-bot`, `make run-api` | Starts bot and API. |
 | `make demo-check` | Runs demo readiness checks. |
-| `make run-mcp-weather` | Starts weather MCP server. |
-| `make run-mcp-mandi` | Starts mandi MCP server. |
-| `make run-mcp-scheme` | Starts scheme MCP server. |
-| `make run-mcp-finance` | Starts finance MCP server. |
+| `make run-mcp-weather`, `make run-mcp-mandi`, `make run-mcp-scheme`, `make run-mcp-finance` | Starts MCP tool servers. |
 | `make pwa-build` | Installs/builds the PWA. |
 | `make demo` | Seeds and starts API demo. |
 | `make pull-model` | Pulls Gemma 4 models through Ollama. |
@@ -525,12 +485,11 @@ Protected `/api/*` routes require `X-AgriMesh-API-Key` when `APP_ENV=production`
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /health` | Basic health, version, model, grammar flag, environment. |
+| `GET /health` | Basic health, version, model, grammar flag, and environment. |
 | `GET /api/health/degradation` | Degradation level and dependency health. |
 | `POST /api/auth/demo-session` | Creates demo dashboard session. |
-| `GET /api/clusters` | Lists alert clusters. |
-| `GET /api/clusters/{cluster_id}` | Cluster detail. |
-| `POST /api/clusters/{cluster_id}/review` | Approves/rejects/broadcasts cluster review. |
+| `GET /api/clusters` and `GET /api/clusters/{cluster_id}` | Lists alert clusters and cluster detail. |
+| `POST /api/clusters/{cluster_id}/review` | Approves, rejects, or broadcasts cluster review. |
 | `GET /api/farmers/{farmer_id}/advisories` | Advisory history. |
 | `GET /api/farmer-dashboard?farmer_id=...` | Full dashboard payload. |
 | `GET /api/v1/dashboard/{token}` | Signed dashboard payload. |
@@ -538,19 +497,17 @@ Protected `/api/*` routes require `X-AgriMesh-API-Key` when `APP_ENV=production`
 | `GET /api/demo/architecture` | Demo architecture payload. |
 | `PUT /api/farmers/{farmer_id}/profile` | Updates farmer profile. |
 | `GET /api/farmers/{farmer_id}/conversation` | Conversation thread and turns. |
-| `GET /api/advisories/{advisory_id}/impact-network` | Advisory impact graph. |
-| `GET /api/impact-network` | Recent impact nodes. |
-| `GET /api/eval/latest` | Latest eval output. |
-| `GET /api/eval/history` | Eval history. |
+| `GET /api/advisories/{advisory_id}/impact-network` and `GET /api/impact-network` | Advisory impact graph and recent impact nodes. |
+| `GET /api/eval/latest` and `GET /api/eval/history` | Evaluation outputs. |
 | `GET /api/stats` | Aggregate counts. |
-| `GET /api/models` | Current/fallback model metadata. |
+| `GET /api/models` | Current and fallback model metadata. |
 | `GET /api/weather/forecast` | Forecast/history wrapper. |
 | `GET /api/market-prices` | Market/MSP wrapper. |
-| `GET /api/ai/showcase` | Latest advisory, reasoning trace, tools, citations. |
+| `GET /api/ai/showcase` | Latest advisory, reasoning trace, tools, and citations. |
 | `GET /api/memory/summaries` | Aggregated memory summaries. |
 | `GET /api/sources` | Evidence source registry. |
 
-## Reproduce Locally
+## Run Locally
 
 ### Prerequisites
 
@@ -561,7 +518,7 @@ Protected `/api/*` routes require `X-AgriMesh-API-Key` when `APP_ENV=production`
 | Docker | Docker Desktop or Docker Engine with Compose |
 | Ollama | Installed locally, listening at `http://localhost:11434` |
 | RAM | 16 GB+ for smoother local model use |
-| GPU | Optional, NVIDIA GPU improves Ollama latency |
+| GPU | Optional; NVIDIA GPU improves Ollama latency |
 | Telegram | Bot token from BotFather if using the bot |
 
 ### Option A: Docker Compose
@@ -600,7 +557,7 @@ python scripts/seed_data.py
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Start optional processes in separate terminals:
+Optional processes in separate terminals:
 
 ```powershell
 python -m app.bot.telegram_bot
@@ -619,7 +576,7 @@ npm install
 npm run dev
 ```
 
-For production serving, build the PWA:
+For production serving:
 
 ```powershell
 cd pwa
@@ -630,11 +587,9 @@ FastAPI serves the built frontend when `pwa/dist` exists.
 
 ### Demo Farmer
 
-The seed flow creates demo data such as a Bihar rice farmer, fields, memory palace, crop calendar, prices, schemes, and reference data. Use `/demo` in Telegram when demo mode/secrets are configured, or load the dashboard with a demo session/token.
+The seed flow creates demo data such as a Bihar rice farmer, fields, memory palace, crop calendar, prices, schemes, and reference data. Use `/demo` in Telegram when demo mode and secrets are configured, or load the dashboard with a demo session/token.
 
-## Production Deployment At Scale
-
-### Reference Deployment
+## Production Path
 
 ```mermaid
 flowchart TD
@@ -655,7 +610,7 @@ flowchart TD
     MCP --> External[Weather, market, scheme feeds]
 ```
 
-### Production Checklist
+Production checklist:
 
 | Area | Requirement |
 |---|---|
@@ -673,31 +628,7 @@ flowchart TD
 | Safety | Verifier cannot be disabled in production. |
 | Observability | Health, degradation, latency, model fallback, tool error, and alert metrics. |
 
-### Scaling Model
-
-The app scales along four axes:
-
-| Axis | Method |
-|---|---|
-| Chat/API concurrency | Add API/bot workers behind a load balancer; share Postgres/Redis. |
-| Model throughput | Run Ollama on one or more GPU nodes; route by model size and latency. |
-| Knowledge coverage | Add crop/country packs under `wiki/articles`, `data/seed`, and tool servers. |
-| Regional intelligence | Partition data by state/district, then aggregate with k-anonymity gates. |
-
-A practical regional deployment can start with:
-
-- 2 API containers;
-- 1 bot worker;
-- 1 Postgres with pgvector;
-- 1 Redis;
-- 1 GPU Ollama host;
-- 5 MCP services;
-- nightly backups;
-- rolling PWA deployment.
-
-### Cost Logic
-
-Local Gemma 4 inference avoids per-token cloud billing. The major costs become hardware, electricity, ops, and data integrations. This matters for public-good deployments because a farmer can ask many routine questions without each message becoming a direct API charge.
+Scaling happens across chat/API workers, Ollama GPU nodes, crop/country knowledge packs, and regional data partitions with k-anonymity gates.
 
 ## Security, Privacy, And Responsible AI
 
@@ -713,7 +644,7 @@ Local Gemma 4 inference avoids per-token cloud billing. The major costs become h
 | Evidence discipline | Official manuals, wiki articles, tool outputs, and memory atoms form evidence bundles. |
 | Model fallback | Fallback model and deterministic safe replies avoid blank failures. |
 
-The intended responsible behavior is: cite or hedge; escalate when uncertain; never expose another farmer's raw details; never fabricate market/scheme/weather numbers.
+The intended responsible behavior is clear: cite or hedge, escalate when uncertain, never expose another farmer's raw details, and never fabricate market, scheme, or weather numbers.
 
 ## Evaluation And Testing
 
@@ -733,22 +664,7 @@ python scripts/demo_readiness_check.py
 python scripts/run_farmer_scorecard.py
 ```
 
-The test suite covers:
-
-- API security and config validation;
-- async blockers;
-- authentication/demo sessions;
-- conversation routing/wiring;
-- dashboard payload shape;
-- evidence citations;
-- grammar-constrained output;
-- memory M1-M4 behavior;
-- migrations;
-- MCP startup;
-- outbreak warnings;
-- retrieval;
-- seeded dates;
-- Telegram flows.
+The test suite covers API security, config validation, async blockers, authentication/demo sessions, conversation routing, dashboard payload shape, evidence citations, grammar-constrained output, memory M1-M4 behavior, migrations, MCP startup, outbreak warnings, retrieval, seeded dates, and Telegram flows.
 
 ## Troubleshooting
 
@@ -776,4 +692,3 @@ These public sources support the problem framing and impact logic. Product-speci
 6. Fabregas, Kremer, and Schilbach, "Realizing the potential of digital development: The case of agricultural advice", Science/PMC: https://pmc.ncbi.nlm.nih.gov/articles/PMC10859166/
 7. World Resources Institute, "To Tackle Food Insecurity, Invest in Digital Climate Services for Agriculture": https://www.wri.org/insights/tackle-food-insecurity-invest-digital-climate-services-agriculture
 8. GSMA, Digital Agriculture Maps: https://www.gsma.com/digital-agriculture-maps/
-
