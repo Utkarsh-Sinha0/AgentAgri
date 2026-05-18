@@ -59,7 +59,7 @@ def get_user_state(user_id: str) -> dict:
 
 
 def _lang(state: dict) -> str:
-    """Return the farmer's selected onboarding language ('hi' or 'en').
+    """Return the farmer's selected onboarding language code (e.g. 'hi', 'en', 'bn').
 
     During registration the picker stores the choice in
     ``state["data"]["preferred_language"]``. Default to English when unset —
@@ -70,8 +70,173 @@ def _lang(state: dict) -> str:
 
 
 def _t(state: dict, hi: str, en: str) -> str:
-    """Pick a string by the farmer's onboarding language."""
+    """Pick a string by the farmer's onboarding language (legacy hi/en helper)."""
     return hi if _lang(state) == "hi" else en
+
+
+# ─── Onboarding language pack (11 Indic + English) ───────────────────
+# Sarvam-supported BCP-47 short codes. Keep in sync with _SUPPORTED_LANGS in
+# the reply-mode default and Sarvam TTS mapping.
+SUPPORTED_LANG_CODES = ["en", "hi", "bn", "mr", "ta", "te", "kn", "pa", "gu", "or", "ml"]
+
+LANG_LABELS: dict[str, dict[str, str]] = {
+    "en": {"name": "English", "native": "English", "flag": "🇬🇧", "tts": "en-IN"},
+    "hi": {"name": "Hindi", "native": "हिंदी", "flag": "🇮🇳", "tts": "hi-IN"},
+    "bn": {"name": "Bengali", "native": "বাংলা", "flag": "🇮🇳", "tts": "bn-IN"},
+    "mr": {"name": "Marathi", "native": "मराठी", "flag": "🇮🇳", "tts": "mr-IN"},
+    "ta": {"name": "Tamil", "native": "தமிழ்", "flag": "🇮🇳", "tts": "ta-IN"},
+    "te": {"name": "Telugu", "native": "తెలుగు", "flag": "🇮🇳", "tts": "te-IN"},
+    "kn": {"name": "Kannada", "native": "ಕನ್ನಡ", "flag": "🇮🇳", "tts": "kn-IN"},
+    "pa": {"name": "Punjabi", "native": "ਪੰਜਾਬੀ", "flag": "🇮🇳", "tts": "pa-IN"},
+    "gu": {"name": "Gujarati", "native": "ગુજરાતી", "flag": "🇮🇳", "tts": "gu-IN"},
+    "or": {"name": "Odia", "native": "ଓଡ଼ିଆ", "flag": "🇮🇳", "tts": "od-IN"},
+    "ml": {"name": "Malayalam", "native": "മലയാളം", "flag": "🇮🇳", "tts": "ml-IN"},
+}
+
+# Welcome body translations. English is authoritative; native copies kept
+# short + accurate so the message fits one Telegram bubble.
+WELCOME_TEXTS: dict[str, str] = {
+    "en": (
+        "🌾 *AgriMesh* — Your AI Agricultural Advisor\n\n"
+        "Weather, mandi prices, MSP, disease ID, government schemes, and full farm "
+        "accounting — all in one place. Speak, send a photo, or type.\n\n"
+        "*3 ways to start:*\n"
+        "🎙 Send a voice — say your name, village, district, and main crop together\n"
+        "⚡ /demo — load a sample farm + memory now\n"
+        "📝 /register — text step-by-step registration\n\n"
+        "📞 Kisan Call Centre: 1800-180-1551 — /help for all commands"
+    ),
+    "hi": (
+        "🌾 *AgriMesh* — आपका AI कृषि सलाहकार\n\n"
+        "मौसम, मंडी भाव, MSP, बीमारी पहचान, सरकारी योजनाएं और खेत का पूरा हिसाब — "
+        "एक ही जगह। आवाज़ में बात करें, फोटो भेजें, या लिखें।\n\n"
+        "*शुरू करने के 3 तरीके:*\n"
+        "🎙 आवाज़ भेजें — नाम, गाँव, ज़िला, फसल एक साथ बोलें\n"
+        "⚡ /demo — sample farm + memory अभी load करें\n"
+        "📝 /register — टेक्स्ट में step-by-step पंजीकरण\n\n"
+        "📞 किसान कॉल सेंटर: 1800-180-1551 — /help से सभी commands"
+    ),
+    "bn": (
+        "🌾 *AgriMesh* — আপনার AI কৃষি পরামর্শদাতা\n\n"
+        "আবহাওয়া, মান্ডি দাম, MSP, রোগ শনাক্তকরণ, সরকারি স্কিম, সম্পূর্ণ খামার হিসাব — "
+        "এক জায়গায়। কথা বলুন, ছবি পাঠান বা লিখুন।\n\n"
+        "*শুরু করার ৩টি উপায়:*\n"
+        "🎙 ভয়েস পাঠান — নাম, গ্রাম, জেলা, প্রধান ফসল একসাথে বলুন\n"
+        "⚡ /demo — নমুনা খামার লোড করুন\n"
+        "📝 /register — টেক্সটে নিবন্ধন\n\n"
+        "📞 কিষাণ কল সেন্টার: 1800-180-1551 — /help"
+    ),
+    "mr": (
+        "🌾 *AgriMesh* — तुमचा AI शेती सल्लागार\n\n"
+        "हवामान, मंडी भाव, MSP, रोग ओळख, सरकारी योजना, संपूर्ण शेत हिशेब — "
+        "एकाच ठिकाणी. बोला, फोटो पाठवा किंवा लिहा.\n\n"
+        "*सुरू करण्याचे ३ मार्ग:*\n"
+        "🎙 आवाज पाठवा — नाव, गाव, जिल्हा, मुख्य पीक एकत्र बोला\n"
+        "⚡ /demo — नमुना शेत लोड करा\n"
+        "📝 /register — मजकूरात नोंदणी\n\n"
+        "📞 किसान कॉल सेंटर: 1800-180-1551 — /help"
+    ),
+    "ta": (
+        "🌾 *AgriMesh* — உங்கள் AI விவசாய ஆலோசகர்\n\n"
+        "வானிலை, மண்டி விலை, MSP, நோய் கண்டறிதல், அரசு திட்டங்கள், முழு பண்ணை கணக்கு — "
+        "ஒரே இடத்தில். பேசுங்கள், புகைப்படம் அனுப்புங்கள், எழுதுங்கள்.\n\n"
+        "*தொடங்க 3 வழிகள்:*\n"
+        "🎙 குரல் அனுப்பு — பெயர், கிராமம், மாவட்டம், முக்கிய பயிர் ஒன்றாகச் சொல்லுங்கள்\n"
+        "⚡ /demo — மாதிரி பண்ணை ஏற்று\n"
+        "📝 /register — உரை பதிவு\n\n"
+        "📞 கிசான் கால் சென்டர்: 1800-180-1551 — /help"
+    ),
+    "te": (
+        "🌾 *AgriMesh* — మీ AI వ్యవసాయ సలహాదారు\n\n"
+        "వాతావరణం, మండి ధరలు, MSP, రోగ గుర్తింపు, ప్రభుత్వ పథకాలు, పూర్తి వ్యవసాయ ఖాతా — "
+        "ఒకే చోట. మాట్లాడండి, ఫోటో పంపండి లేదా రాయండి.\n\n"
+        "*ప్రారంభించే 3 మార్గాలు:*\n"
+        "🎙 వాయిస్ పంపండి — పేరు, గ్రామం, జిల్లా, ప్రధాన పంట కలిపి చెప్పండి\n"
+        "⚡ /demo — నమూనా వ్యవసాయం లోడ్\n"
+        "📝 /register — టెక్స్ట్ నమోదు\n\n"
+        "📞 కిసాన్ కాల్ సెంటర్: 1800-180-1551 — /help"
+    ),
+    "kn": (
+        "🌾 *AgriMesh* — ನಿಮ್ಮ AI ಕೃಷಿ ಸಲಹೆಗಾರ\n\n"
+        "ಹವಾಮಾನ, ಮಂಡಿ ಬೆಲೆಗಳು, MSP, ರೋಗ ಗುರುತಿಸುವಿಕೆ, ಸರ್ಕಾರಿ ಯೋಜನೆಗಳು, ಸಂಪೂರ್ಣ ಕೃಷಿ ಲೆಕ್ಕ — "
+        "ಒಂದೇ ಸ್ಥಳದಲ್ಲಿ. ಮಾತನಾಡಿ, ಫೋಟೋ ಕಳುಹಿಸಿ ಅಥವಾ ಬರೆಯಿರಿ.\n\n"
+        "*ಪ್ರಾರಂಭಿಸಲು 3 ಮಾರ್ಗಗಳು:*\n"
+        "🎙 ಧ್ವನಿ ಕಳುಹಿಸಿ — ಹೆಸರು, ಗ್ರಾಮ, ಜಿಲ್ಲೆ, ಮುಖ್ಯ ಬೆಳೆ ಒಟ್ಟಿಗೆ ಹೇಳಿ\n"
+        "⚡ /demo — ಮಾದರಿ ಫಾರ್ಮ್ ಲೋಡ್\n"
+        "📝 /register — ಪಠ್ಯ ನೋಂದಣಿ\n\n"
+        "📞 ಕಿಸಾನ್ ಕರೆ ಕೇಂದ್ರ: 1800-180-1551 — /help"
+    ),
+    "pa": (
+        "🌾 *AgriMesh* — ਤੁਹਾਡਾ AI ਖੇਤੀਬਾੜੀ ਸਲਾਹਕਾਰ\n\n"
+        "ਮੌਸਮ, ਮੰਡੀ ਭਾਅ, MSP, ਬੀਮਾਰੀ ਪਛਾਣ, ਸਰਕਾਰੀ ਸਕੀਮਾਂ, ਪੂਰਾ ਖੇਤੀ ਹਿਸਾਬ — "
+        "ਇੱਕੋ ਥਾਂ। ਬੋਲੋ, ਫੋਟੋ ਭੇਜੋ ਜਾਂ ਲਿਖੋ।\n\n"
+        "*ਸ਼ੁਰੂ ਕਰਨ ਦੇ 3 ਤਰੀਕੇ:*\n"
+        "🎙 ਆਵਾਜ਼ ਭੇਜੋ — ਨਾਮ, ਪਿੰਡ, ਜ਼ਿਲ੍ਹਾ, ਮੁੱਖ ਫਸਲ ਇਕੱਠੇ ਕਹੋ\n"
+        "⚡ /demo — ਨਮੂਨਾ ਖੇਤ ਲੋਡ ਕਰੋ\n"
+        "📝 /register — ਟੈਕਸਟ ਰਜਿਸਟ੍ਰੇਸ਼ਨ\n\n"
+        "📞 ਕਿਸਾਨ ਕਾਲ ਸੈਂਟਰ: 1800-180-1551 — /help"
+    ),
+    "gu": (
+        "🌾 *AgriMesh* — તમારો AI કૃષિ સલાહકાર\n\n"
+        "હવામાન, મંડી ભાવ, MSP, રોગ ઓળખ, સરકારી યોજનાઓ, સંપૂર્ણ ખેત હિસાબ — "
+        "એક જ જગ્યાએ. બોલો, ફોટો મોકલો અથવા લખો.\n\n"
+        "*શરૂ કરવાની 3 રીતો:*\n"
+        "🎙 અવાજ મોકલો — નામ, ગામ, જિલ્લો, મુખ્ય પાક સાથે કહો\n"
+        "⚡ /demo — નમૂના ખેત લોડ\n"
+        "📝 /register — ટેક્સ્ટ નોંધણી\n\n"
+        "📞 કિસાન કૉલ સેન્ટર: 1800-180-1551 — /help"
+    ),
+    "or": (
+        "🌾 *AgriMesh* — ଆପଣଙ୍କ AI କୃଷି ପରାମର୍ଶଦାତା\n\n"
+        "ପାଗ, ମଣ୍ଡି ଦର, MSP, ରୋଗ ଚିହ୍ନଟ, ସରକାରୀ ଯୋଜନା, ସମ୍ପୂର୍ଣ୍ଣ ଚାଷ ହିସାବ — "
+        "ଗୋଟିଏ ସ୍ଥାନରେ। କୁହନ୍ତୁ, ଫଟୋ ପଠାନ୍ତୁ କିମ୍ବା ଲେଖନ୍ତୁ।\n\n"
+        "*ଆରମ୍ଭ କରିବାର 3 ଉପାୟ:*\n"
+        "🎙 ସ୍ୱର ପଠାନ୍ତୁ — ନାମ, ଗ୍ରାମ, ଜିଲ୍ଲା, ମୁଖ୍ୟ ଫସଲ ଏକାଠି କୁହନ୍ତୁ\n"
+        "⚡ /demo — ନମୁନା ଚାଷ ଲୋଡ୍\n"
+        "📝 /register — ଟେକ୍ସଟ୍ ପଞ୍ଜିକରଣ\n\n"
+        "📞 କିସାନ କଲ ସେଣ୍ଟର: 1800-180-1551 — /help"
+    ),
+    "ml": (
+        "🌾 *AgriMesh* — നിങ്ങളുടെ AI കാർഷിക ഉപദേഷ്ടാവ്\n\n"
+        "കാലാവസ്ഥ, മണ്ടി വില, MSP, രോഗ തിരിച്ചറിയൽ, സർക്കാർ പദ്ധതികൾ, പൂർണ്ണ കാർഷിക കണക്ക് — "
+        "ഒരേ സ്ഥലത്ത്. സംസാരിക്കുക, ഫോട്ടോ അയയ്ക്കുക, അല്ലെങ്കിൽ എഴുതുക.\n\n"
+        "*ആരംഭിക്കാനുള്ള 3 വഴികൾ:*\n"
+        "🎙 ശബ്ദം അയയ്ക്കുക — പേര്, ഗ്രാമം, ജില്ല, പ്രധാന വിള ഒരുമിച്ച് പറയുക\n"
+        "⚡ /demo — സാമ്പിൾ ഫാം ലോഡ്\n"
+        "📝 /register — ടെക്സ്റ്റ് രജിസ്ട്രേഷൻ\n\n"
+        "📞 കിസാൻ കോൾ സെന്റർ: 1800-180-1551 — /help"
+    ),
+}
+
+PICKER_PROMPT = (
+    "🌐 *भाषा चुनें / Choose your language*\n"
+    "ভাষা / மொழி / భాష / ಭಾಷೆ / ਭਾਸ਼ਾ / ભાષા / ଭାଷା / ഭാഷ / भाषा"
+)
+
+
+def _picker_keyboard() -> InlineKeyboardMarkup:
+    """3-per-row picker with English last."""
+    order = ["hi", "bn", "mr", "ta", "te", "kn", "pa", "gu", "or", "ml", "en"]
+    buttons: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+    for code in order:
+        meta = LANG_LABELS[code]
+        label = f"{meta['flag']} {meta['native']}"
+        row.append(InlineKeyboardButton(label, callback_data=f"lang_{code}"))
+        if len(row) == 3:
+            buttons.append(row)
+            row = []
+    if row:
+        buttons.append(row)
+    return InlineKeyboardMarkup(buttons)
+
+
+def _bilingual_welcome(code: str) -> str:
+    """Render welcome in chosen language; append English block below unless choice is English."""
+    native = WELCOME_TEXTS.get(code) or WELCOME_TEXTS["en"]
+    if code == "en":
+        return native
+    return f"{native}\n\n────────\n{WELCOME_TEXTS['en']}"
 
 
 def _help_text() -> str:
@@ -150,54 +315,21 @@ async def _send_mydata(message, state: dict, user_id: str):
 
 # ─── Handlers ─────────────────────────────────────────────────────────
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /start command."""
-    user = update.effective_user
-    user_id = str(user.id)
-    state = get_user_state(user_id)
+async def _send_welcome_for_language(message, context: ContextTypes.DEFAULT_TYPE, user_id: str, state: dict, code: str) -> None:
+    """Render the bilingual welcome + action keyboard for the chosen language."""
+    welcome = _bilingual_welcome(code)
+    if state.get("_has_active_thread"):
+        if code != "en":
+            welcome += "\n\n🗂 आपकी पिछली बातचीत जारी है। /threads"
+        welcome += "\n\n🗂 Your previous conversation is active. /threads"
 
-    welcome = (
-        "🌾 *AgriMesh* — आपका AI कृषि सलाहकार\n"
-        "Your AI Agricultural Advisor\n\n"
-        "मौसम, मंडी भाव, MSP, बीमारी पहचान, सरकारी योजनाएं और खेत का पूरा हिसाब — "
-        "एक ही जगह। आवाज़ में बात करें, फोटो भेजें, या लिखें।\n\n"
-        "Weather, mandi prices, MSP, disease ID, government schemes, and full farm "
-        "accounting — all in one place. Speak, send a photo, or type.\n\n"
-        "*शुरू करने के 3 तरीके / 3 ways to start:*\n"
-        "🎙 आवाज़ भेजें — नाम, गाँव, ज़िला, फसल एक साथ बोलें (registration done)\n"
-        "⚡ /demo — sample farm + memory अभी load करें\n"
-        "📝 /register — टेक्स्ट में step-by-step पंजीकरण\n\n"
-        "📞 किसान कॉल सेंटर: 1800-180-1551 — /help से सभी commands देखें"
-    )
-
-    try:
-        async with async_session_factory() as db:
-            farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
-            if farmer:
-                state["farmer_id"] = farmer.id
-                has_thread = await db.scalar(
-                    select(ConversationThread.id)
-                    .where(
-                        ConversationThread.farmer_id == farmer.id,
-                        ConversationThread.channel == "telegram",
-                        ConversationThread.is_active == True,  # noqa: E712
-                    )
-                    .limit(1)
-                )
-                if has_thread:
-                    welcome += "\n\n🗂 आपकी पिछली बातचीत जारी है। /threads से देखें।"
-    except Exception as exc:
-        logger.warning(f"start-hint thread lookup failed: {exc}")
-
-    keyboard = []
+    keyboard: list[list[InlineKeyboardButton]] = []
     if state.get("farmer_id"):
         keyboard.append([
             InlineKeyboardButton("▶ जारी रखें / Continue", callback_data="threads_list"),
             InlineKeyboardButton("✳ नई बातचीत / New", callback_data="thread_new"),
         ])
-        keyboard.append([
-            _dashboard_button("🧭 Dashboard / Map / Memory", phone=user_id),
-        ])
+        keyboard.append([_dashboard_button("🧭 Dashboard / Map / Memory", phone=user_id)])
         keyboard.append([
             InlineKeyboardButton("📸 Photo + Voice diagnose", callback_data="cmd_photo"),
             InlineKeyboardButton("💰 Prices & MSP", callback_data="cmd_prices"),
@@ -207,38 +339,94 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("ℹ️ Help", callback_data="cmd_help"),
         ])
     else:
-        keyboard.extend([
-            [
-                InlineKeyboardButton("🇮🇳 हिंदी में जारी रखें", callback_data="lang_hi"),
-                InlineKeyboardButton("🇬🇧 Continue in English", callback_data="lang_en"),
-            ],
-            [InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")],
-            [_dashboard_button("🧭 Dashboard preview", phone=user_id)],
-            [InlineKeyboardButton("ℹ️ Help: see all commands", callback_data="cmd_help")],
-        ])
+        keyboard.append([InlineKeyboardButton("📝 Register / पंजीकरण", callback_data="cmd_register")])
+        keyboard.append([InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")])
+        keyboard.append([_dashboard_button("🧭 Dashboard preview", phone=user_id)])
+        keyboard.append([InlineKeyboardButton("ℹ️ Help: see all commands", callback_data="cmd_help")])
 
-    await update.message.reply_text(
+    await message.reply_text(
         welcome,
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
-    # First-time users: also send a Hindi voice prompt asking for the one-shot
-    # registration note. Silent if voice pipeline disabled or Sarvam fails.
+    # First-time users only: a friendly TTS prompt in their chosen language
+    # nudging the one-shot voice registration. Silent on any failure.
     if not state.get("farmer_id") and settings.enable_voice_pipeline:
+        prompts = {
+            "hi": "नमस्ते! अपना नाम, गाँव, ज़िला, और मुख्य फसल — एक ही आवाज़ संदेश में बताइए।",
+            "en": "Hello! Please record one voice note saying your name, village, district, and main crop.",
+            "bn": "নমস্কার! একটি ভয়েসে আপনার নাম, গ্রাম, জেলা ও প্রধান ফসল বলুন।",
+            "mr": "नमस्कार! एका आवाजात नाव, गाव, जिल्हा आणि मुख्य पीक सांगा.",
+            "ta": "வணக்கம்! ஒரே குரல் செய்தியில் உங்கள் பெயர், கிராமம், மாவட்டம், முக்கிய பயிர் சொல்லுங்கள்.",
+            "te": "నమస్తే! ఒక వాయిస్‌లో మీ పేరు, గ్రామం, జిల్లా, ప్రధాన పంట చెప్పండి.",
+            "kn": "ನಮಸ್ಕಾರ! ಒಂದು ಧ್ವನಿಯಲ್ಲಿ ಹೆಸರು, ಗ್ರಾಮ, ಜಿಲ್ಲೆ, ಮುಖ್ಯ ಬೆಳೆ ಹೇಳಿ.",
+            "pa": "ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਇੱਕ ਆਵਾਜ਼ ਵਿੱਚ ਨਾਮ, ਪਿੰਡ, ਜ਼ਿਲ੍ਹਾ, ਮੁੱਖ ਫਸਲ ਦੱਸੋ.",
+            "gu": "નમસ્તે! એક અવાજમાં તમારું નામ, ગામ, જિલ્લો, મુખ્ય પાક કહો.",
+            "or": "ନମସ୍କାର! ଗୋଟିଏ ସ୍ୱରରେ ନାମ, ଗ୍ରାମ, ଜିଲ୍ଲା, ମୁଖ୍ୟ ଫସଲ କୁହନ୍ତୁ.",
+            "ml": "നമസ്കാരം! ഒരു ശബ്ദത്തിൽ പേര്, ഗ്രാമം, ജില്ല, പ്രധാന വിള പറയുക.",
+        }
+        tts_target = LANG_LABELS.get(code, LANG_LABELS["hi"])["tts"]
+        prompt = prompts.get(code, prompts["en"])
         try:
             from app.services.voice import synthesize as _sarvam_tts
 
-            prompt_hi = (
-                "नमस्ते! अपना नाम, गाँव, ज़िला, और मुख्य फसल — एक ही आवाज़ संदेश में बताइए।"
-            )
-            audio = await _sarvam_tts(prompt_hi, target_lang="hi-IN", emotion="friendly")
+            audio = await _sarvam_tts(prompt, target_lang=tts_target, emotion="friendly")
             if audio:
-                await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio)
+                await context.bot.send_voice(chat_id=message.chat.id, voice=audio)
         except Exception as exc:
             logger.warning(f"start voice prompt skipped: {exc}")
 
     state["state"] = "ready" if state.get("farmer_id") else "start"
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /start command.
+
+    Language-first flow: returning farmers see the welcome in their stored
+    preferred_language; new users see ONLY the language picker and the
+    welcome is rendered after they pick.
+    """
+    user = update.effective_user
+    user_id = str(user.id)
+    state = get_user_state(user_id)
+
+    farmer = None
+    try:
+        async with async_session_factory() as db:
+            farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
+            if farmer:
+                state["farmer_id"] = farmer.id
+                stored_lang = (farmer.preferred_language or "").lower()[:2]
+                if stored_lang in WELCOME_TEXTS:
+                    state.setdefault("data", {})["preferred_language"] = stored_lang
+                has_thread = await db.scalar(
+                    select(ConversationThread.id)
+                    .where(
+                        ConversationThread.farmer_id == farmer.id,
+                        ConversationThread.channel == "telegram",
+                        ConversationThread.is_active == True,  # noqa: E712
+                    )
+                    .limit(1)
+                )
+                state["_has_active_thread"] = bool(has_thread)
+    except Exception as exc:
+        logger.warning(f"start-hint thread lookup failed: {exc}")
+
+    chosen_lang = (state.get("data") or {}).get("preferred_language")
+
+    # New user OR no stored language → show picker only and stop.
+    if not farmer or chosen_lang not in WELCOME_TEXTS:
+        await update.message.reply_text(
+            PICKER_PROMPT,
+            parse_mode="Markdown",
+            reply_markup=_picker_keyboard(),
+        )
+        state["state"] = "start"
+        return
+
+    # Returning farmer: render welcome in their language directly.
+    await _send_welcome_for_language(update.message, context, user_id, state, chosen_lang)
 
 
 async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -250,12 +438,8 @@ async def register(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Gate on language pick.
     if not state["data"].get("preferred_language"):
-        kb = InlineKeyboardMarkup([[
-            InlineKeyboardButton("🇮🇳 हिंदी", callback_data="lang_hi"),
-            InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
-        ]])
         await update.message.reply_text(
-            "भाषा चुनें / Choose your language:", reply_markup=kb
+            PICKER_PROMPT, reply_markup=_picker_keyboard(), parse_mode="Markdown"
         )
         return
 
@@ -820,32 +1004,35 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             return
 
-    if data in ("lang_hi", "lang_en"):
-        lang = "hi" if data == "lang_hi" else "en"
-        state.setdefault("data", {})["preferred_language"] = lang
-        state["state"] = "registering_name"
-        prompt = (
-            "📝 *किसान पंजीकरण*\n\nकृपया अपना पूरा नाम लिखें:"
-            if lang == "hi" else
-            "📝 *Farmer Registration*\n\nPlease enter your full name:"
-        )
-        try:
-            await query.edit_message_text(prompt, parse_mode="Markdown")
-        except BadRequest:
-            await query.message.reply_text(prompt, parse_mode="Markdown")
-        return
+    if data.startswith("lang_"):
+        code = data.split("_", 1)[1]
+        if code in WELCOME_TEXTS:
+            state.setdefault("data", {})["preferred_language"] = code
+            # Persist on farmer row if it exists so next /start skips picker.
+            try:
+                async with async_session_factory() as db:
+                    farmer = await db.scalar(select(Farmer).where(Farmer.phone == user_id))
+                    if farmer is not None:
+                        farmer.preferred_language = code
+                        await db.commit()
+            except Exception as exc:
+                logger.warning(f"Failed to persist preferred_language={code}: {exc}")
+            # Remove picker message, then render bilingual welcome + actions.
+            try:
+                await query.edit_message_reply_markup(reply_markup=None)
+            except BadRequest:
+                pass
+            await _send_welcome_for_language(query.message, context, user_id, state, code)
+            return
     if data == "cmd_demo":
         await _activate_demo_memory(query.message, user_id, state)
     elif data == "cmd_register":
         # Gate on language pick: if not chosen yet, show picker.
         if not (state.get("data") or {}).get("preferred_language"):
-            kb = InlineKeyboardMarkup([[
-                InlineKeyboardButton("🇮🇳 हिंदी", callback_data="lang_hi"),
-                InlineKeyboardButton("🇬🇧 English", callback_data="lang_en"),
-            ]])
             await query.message.reply_text(
-                "भाषा चुनें / Choose your language:",
-                reply_markup=kb,
+                PICKER_PROMPT,
+                reply_markup=_picker_keyboard(),
+                parse_mode="Markdown",
             )
             return
         state["state"] = "registering_name"
