@@ -38,7 +38,7 @@ OUTBREAK_THRESHOLD = 0.10           # 10% of registered farmers in scope
 OUTBREAK_REPORT_WINDOW_DAYS = 14    # how far back reports count
 OUTBREAK_ALERT_TTL_DAYS = 14        # how long an alert is active
 OUTBREAK_MIN_REPORTERS = 2          # absolute floor so a 1-farmer village never auto-trips
-SCOPE_CASCADE = ("village", "tehsil", "district")
+SCOPE_CASCADE = ("village", "pincode", "tehsil", "district")
 
 # atom types that count as "the farmer reported a problem"
 SYMPTOM_ATOM_TYPES = ("disease_observed", "pest_detected")
@@ -78,6 +78,7 @@ async def _registered_farmers_in_scope(
     crop_name: str,
     scope: str,
     village: str | None,
+    pincode: str | None,
     tehsil: str | None,
     district: str | None,
 ) -> list[str]:
@@ -95,6 +96,8 @@ async def _registered_farmers_in_scope(
     )
     if scope == "village" and village:
         stmt = stmt.where(func.lower(Farmer.village) == village.lower())
+    elif scope == "pincode" and pincode:
+        stmt = stmt.where(Farmer.pincode == pincode)
     elif scope == "tehsil" and tehsil:
         stmt = stmt.where(func.lower(Farmer.tehsil) == tehsil.lower())
     elif scope == "district" and district:
@@ -162,6 +165,7 @@ async def _existing_active_alert(
     crop_name: str,
     pest_or_disease: str,
     village: str | None,
+    pincode: str | None,
     tehsil: str | None,
     district: str | None,
 ) -> AlertCluster | None:
@@ -182,6 +186,8 @@ async def _existing_active_alert(
     for alert in res.scalars().all():
         # Hit if the alert's geographic scope contains the new report's area.
         if alert.scope == "village" and alert.village and village and alert.village.lower() == village.lower():
+            return alert
+        if alert.scope == "pincode" and alert.pincode and pincode and alert.pincode == pincode:
             return alert
         if alert.scope == "tehsil" and alert.tehsil and tehsil and alert.tehsil.lower() == tehsil.lower():
             return alert
@@ -220,6 +226,8 @@ async def check_and_trigger_outbreak(
     for scope in SCOPE_CASCADE:
         if scope == "village" and not farmer.village:
             continue
+        if scope == "pincode" and not farmer.pincode:
+            continue
         if scope == "tehsil" and not farmer.tehsil:
             continue
         if scope == "district" and not farmer.district:
@@ -230,6 +238,7 @@ async def check_and_trigger_outbreak(
             crop_name=crop_name,
             scope=scope,
             village=farmer.village,
+            pincode=farmer.pincode,
             tehsil=farmer.tehsil,
             district=farmer.district,
         )
@@ -260,6 +269,7 @@ async def check_and_trigger_outbreak(
             crop_name=crop_name,
             pest_or_disease=label,
             village=farmer.village if scope == "village" else None,
+            pincode=farmer.pincode if scope == "pincode" else None,
             tehsil=farmer.tehsil if scope == "tehsil" else None,
             district=farmer.district if scope == "district" else None,
         )
@@ -283,7 +293,8 @@ async def check_and_trigger_outbreak(
             issue_category="pest_disease_outbreak",
             pest_or_disease=label,
             district=farmer.district or "",
-            tehsil=farmer.tehsil or "" if scope in ("tehsil", "village") else (farmer.tehsil or ""),
+            pincode=farmer.pincode if scope == "pincode" else None,
+            tehsil=farmer.tehsil or "" if scope in ("tehsil", "village", "pincode") else (farmer.tehsil or ""),
             village=farmer.village if scope == "village" else None,
             observation_ids=[],
             advisory_ids=[],
@@ -326,6 +337,8 @@ async def list_target_farmers(
     )
     if alert.scope == "village" and alert.village:
         stmt = stmt.where(func.lower(Farmer.village) == alert.village.lower())
+    elif alert.scope == "pincode" and alert.pincode:
+        stmt = stmt.where(Farmer.pincode == alert.pincode)
     elif alert.scope == "tehsil" and alert.tehsil:
         stmt = stmt.where(func.lower(Farmer.tehsil) == alert.tehsil.lower())
     elif alert.scope == "district" and alert.district:
@@ -440,6 +453,7 @@ def format_warning_message(alert: AlertCluster) -> str:
     """Bilingual one-liner suitable for push + prepend."""
     scope_label = {
         "village": alert.village or "गाँव",
+        "pincode": (alert.pincode or "") and f"पिनकोड {alert.pincode}",
         "tehsil": alert.tehsil or "तहसील",
         "district": alert.district or "जिला",
     }.get(alert.scope or "", alert.district or "")

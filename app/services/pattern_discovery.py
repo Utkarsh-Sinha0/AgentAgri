@@ -69,35 +69,40 @@ async def discover_patterns(db: AsyncSession) -> dict:
         c_res = await db.execute(select(CropCycle).where(CropCycle.id.in_(cycle_ids)))
         cycle_map = {c.id: c for c in c_res.scalars().all()}
 
-    # Group by crop_name + district + risk_level (Bug 9: crop_cycle_id was
-    # per-field-per-season so it never collided across farmers, which made
-    # clustering effectively a no-op).
+    # Group by crop_name + geo_key + risk_level. geo_key prefers pincode
+    # (~village-scale, ~5 km radius) and falls back to district when pincode
+    # isn't filled in yet — this makes outbreaks cluster at the smallest
+    # actionable scale rather than smearing across whole districts.
+    # (Bug 9: crop_cycle_id was per-field-per-season so it never collided
+    # across farmers, which made clustering effectively a no-op.)
     groups: dict[str, list] = {}
     for obs, adv in rows:
         farmer = farmer_map.get(obs.farmer_id)
         district = farmer.district if farmer else "unknown"
+        pincode = (farmer.pincode if farmer else None) or ""
+        geo_key = f"pin:{pincode}" if pincode else f"dist:{district}"
         cycle = cycle_map.get(obs.crop_cycle_id) if obs.crop_cycle_id else None
         crop_name = (cycle.crop_name if cycle else "unknown") or "unknown"
 
-        key = f"{crop_name}:{district}:{adv.risk_level if adv else 'UNKNOWN'}"
-        if key not in groups:
-            groups[key] = []
-        groups[key].append((obs, adv, district, crop_name))
+        key = f"{crop_name}:{geo_key}:{adv.risk_level if adv else 'UNKNOWN'}"
+        groups.setdefault(key, []).append((obs, adv, district, pincode, crop_name))
 
     # ── 2. Create clusters for groups with 3+ observations ───────
     for _key, items in groups.items():
         if len(items) < 3:
             continue
-        districts = {d for _, _, d, _ in items}
-        for district in districts:
-            district_items = [
-                (o, a, c) for o, a, d, c in items if d == district
-            ]
-            if len(district_items) < 3:
+        # Each group already shares one geo_key, but we split per-district so
+        # the materialized cluster row carries a stable district label.
+        by_geo: dict[tuple[str, str], list] = {}
+        for o, a, d, p, c in items:
+            by_geo.setdefault((d, p), []).append((o, a, c))
+
+        for (district, pincode), geo_items in by_geo.items():
+            if len(geo_items) < 3:
                 continue
 
-            obs_ids = [o.id for o, _, _ in district_items]
-            adv_ids = [a.id for _, a, _ in district_items if a]
+            obs_ids = [o.id for o, _, _ in geo_items]
+            adv_ids = [a.id for _, a, _ in geo_items if a]
 
             existing = await db.execute(
                 select(AlertCluster).where(
@@ -107,21 +112,22 @@ async def discover_patterns(db: AsyncSession) -> dict:
             if existing.scalar_one_or_none():
                 continue
 
-            crop_names = {c for _, _, c in district_items if c}
+            crop_names = {c for _, _, c in geo_items if c}
             cluster_crop = next(iter(crop_names)) if len(crop_names) == 1 else "multiple"
-            first_adv = district_items[0][1]
+            first_adv = geo_items[0][1]
             risk_level = first_adv.risk_level if first_adv else "UNKNOWN"
 
             cluster = AlertCluster(
                 id=str(__import__("uuid").uuid4()),
                 district=district,
+                pincode=pincode or None,
                 tehsil="",
                 crop_name=cluster_crop,
                 issue_category=risk_level,
                 observation_ids=obs_ids,
                 advisory_ids=adv_ids,
-                farmer_count=len(district_items),
-                severity=min(0.40 + (len(district_items) * 0.05), 0.95),
+                farmer_count=len(geo_items),
+                severity=min(0.40 + (len(geo_items) * 0.05), 0.95),
                 status=AlertStatus.PENDING,
             )
             db.add(cluster)
@@ -129,8 +135,9 @@ async def discover_patterns(db: AsyncSession) -> dict:
             results["insights"].append({
                 "type": "cluster_detected",
                 "district": district,
+                "pincode": pincode or None,
                 "crop_name": cluster_crop,
-                "farmer_count": len(district_items),
+                "farmer_count": len(geo_items),
                 "risk_level": risk_level,
             })
 

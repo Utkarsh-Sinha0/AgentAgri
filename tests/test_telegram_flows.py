@@ -201,12 +201,17 @@ def test_guess_expense_falls_back_to_other():
 # ─── _dashboard_url ────────────────────────────────────────────────────
 
 
-def test_dashboard_url_with_farmer_id_uses_farmer_id_query():
+def test_dashboard_url_with_farmer_id_uses_signed_token():
     from app.bot.telegram_bot import _dashboard_url
+    from app.utils.security import verify_dashboard_token
+    from urllib.parse import urlparse, parse_qs
 
     url = _dashboard_url(farmer_id="abc-123")
-    assert "farmer_id=abc-123" in url
     assert "mode=farmer" in url
+    assert "t=" in url
+    assert "farmer_id=" not in url
+    token = parse_qs(urlparse(url).query)["t"][0]
+    assert verify_dashboard_token(token) == "abc-123"
 
 
 def test_dashboard_url_with_phone_only_uses_phone_query():
@@ -219,10 +224,15 @@ def test_dashboard_url_with_phone_only_uses_phone_query():
 
 def test_dashboard_url_prefers_farmer_id_over_phone():
     from app.bot.telegram_bot import _dashboard_url
+    from app.utils.security import verify_dashboard_token
+    from urllib.parse import urlparse, parse_qs
 
     url = _dashboard_url(farmer_id="abc", phone="9112345678")
-    assert "farmer_id=abc" in url
+    assert "t=" in url
     assert "phone=" not in url
+    assert "farmer_id=" not in url
+    token = parse_qs(urlparse(url).query)["t"][0]
+    assert verify_dashboard_token(token) == "abc"
 
 
 def test_dashboard_url_without_args_returns_base_mode():

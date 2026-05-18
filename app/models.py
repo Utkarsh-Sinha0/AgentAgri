@@ -348,6 +348,7 @@ class AlertCluster(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     district = Column(String(80), index=True)
+    pincode = Column(String(6), index=True, nullable=True)
     tehsil = Column(String(80), index=True)
     village = Column(String(120), nullable=True)
     crop_name = Column(String(60), index=True)
