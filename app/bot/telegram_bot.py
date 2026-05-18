@@ -1289,6 +1289,21 @@ def gated_command(handler):
 
 async def _handle_name_registration(update, user_id: str, name: str, state: dict):
     state["data"]["name"] = name
+    # Demo graft: on first /start of a fresh judge, rebind the seeded
+    # 180-day demo farmer to this telegram_id so all NDVI / memory /
+    # finance / alert-cluster history transfers under the judge's name.
+    # Idempotent; no-op if already rebound or DEMO_MODE is off.
+    if settings.demo_mode:
+        try:
+            from app.services.demo_seed import graft_demo_farmer
+            async with async_session_factory() as _db:
+                await graft_demo_farmer(
+                    _db,
+                    telegram_user_id=user_id,
+                    partial_profile={"name": name},
+                )
+        except Exception as _exc:
+            logger.warning(f"Demo graft on name failed (non-fatal): {_exc}")
     state["state"] = "registering_phone"
     await update.message.reply_text(
         _t(state,

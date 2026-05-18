@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     demo_allowed_farmers: list[str] = Field(default_factory=list, alias="DEMO_ALLOWED_FARMERS")
     demo_allowed_workers: list[str] = Field(default_factory=list, alias="DEMO_ALLOWED_WORKERS")
     enable_demo_sessions: bool = Field(default=False, alias="ENABLE_DEMO_SESSIONS")
+    demo_mode: bool = Field(default=False, alias="DEMO_MODE")
     enable_dev_farmer_header: bool = Field(default=False, alias="ENABLE_DEV_FARMER_HEADER")
     eval_public_token: str = Field(default="", alias="EVAL_PUBLIC_TOKEN")
 
