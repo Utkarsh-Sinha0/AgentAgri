@@ -1,0 +1,112 @@
+{
+  "version": "2026-05-18-deep-demo",
+  "scenario": "Deep 180-day Munger rice farmer memory palace for Gemma 4 capability showcase",
+  "notes": "Extends data/seed/memory_palace.json. Loaded by app.services.demo_seed.seed_demo_memory_palace_deep(). Demonstrates: 128K long memory, multimodal trail (photo+voice+text), multi-scope coarsening, k-anonymity cluster intel, sustainable-first manuals, follow-up loops, proactive outbreak warning.",
+  "field_profile_overlay": {
+    "current_stage": "reproductive",
+    "days_after_sowing": 95,
+    "sowing_offset_days": -95,
+    "expected_harvest_offset_days": 35
+  },
+  "extra_observations": [
+    {"days_ago": 178, "modality": "text", "text": "DEMO_MEMORY: Pre-season soil card showed pH 6.8, low K, medium OC. Lime not needed; potash split planned.", "outcome": "Applied FYM 8 cart-loads before puddling.", "risk_level": "NORMAL", "confidence": "HIGH", "actions": ["Use soil card before urea top-dressing.", "Split MOP into 2 doses."], "warnings": ["Do not apply extra urea on lush green leaves."], "evidence_article_ids": ["wiki_potassium_deficiency", "ref_niphm_rice_ipm"]},
+    {"days_ago": 165, "modality": "voice", "voice_lang": "hi", "text": "DEMO_MEMORY: Voice note (Hindi) — nursery sowing complete, asked about seed rate for SRI.", "outcome": "Agreed on 5 kg/acre Swarna-Sub1 with 25x25 cm spacing.", "risk_level": "NORMAL", "confidence": "HIGH", "actions": ["Maintain nursery for 21 days.", "Inspect for damping off daily."], "warnings": [], "evidence_article_ids": ["ref_niphm_rice_ipm"]},
+    {"days_ago": 150, "modality": "text", "text": "DEMO_MEMORY: Transplanting done in 2.5 acres, canal water adequate.", "outcome": "All seedlings transplanted in one day.", "risk_level": "NORMAL", "confidence": "HIGH", "actions": ["Maintain 2-3 cm standing water for first week."], "warnings": [], "evidence_article_ids": []},
+    {"days_ago": 138, "modality": "photo", "photo_tag": "weed_pressure", "text": "DEMO_MEMORY: Photo of barnyard grass and echinochloa between rows.", "outcome": "Mechanical weeding done by labour; herbicide deferred.", "risk_level": "WATCH", "confidence": "HIGH", "actions": ["Weed at 15 and 30 DAT.", "Prefer mechanical weeding for first round."], "warnings": ["Do not apply post-emergence herbicide if rice is under 3-leaf stage."], "evidence_article_ids": ["wiki_weed_management_rice"]},
+    {"days_ago": 130, "modality": "text", "text": "DEMO_MEMORY: First urea top-dressing 30 kg in 2.5 acres at active tillering.", "outcome": "Tillering improved within 10 days.", "risk_level": "NORMAL", "confidence": "HIGH", "actions": ["Second urea dose at panicle initiation, not before."], "warnings": [], "evidence_article_ids": ["wiki_nitrogen_excess"]},
+    {"days_ago": 118, "modality": "photo", "photo_tag": "healthy_canopy", "text": "DEMO_MEMORY: Photo at 47 DAT — dark green canopy, no visible stress.", "outcome": "No action needed.", "risk_level": "NORMAL", "confidence": "HIGH", "actions": [], "warnings": [], "evidence_article_ids": []},
+    {"days_ago": 105, "modality": "voice", "voice_lang": "bho", "text": "DEMO_MEMORY: Voice note (Bhojpuri) — asked about yellow patches in NE corner.", "outcome": "Diagnosed as zinc deficiency, advised ZnSO4 foliar spray 0.5%.", "risk_level": "WATCH", "confidence": "MEDIUM", "actions": ["Foliar spray 0.5% ZnSO4 at 250 L/acre."], "warnings": ["Do not mix Zn with phosphate fertilizer in same spray."], "evidence_article_ids": ["wiki_zinc_deficiency"]},
+    {"days_ago": 92, "modality": "photo", "photo_tag": "brown_spot_early", "text": "DEMO_MEMORY: Photo — small oval brown spots on lower leaves after 3 cloudy days.", "outcome": "Drainage improved, urea paused, spots did not progress.", "risk_level": "PREVENTIVE_ACTION", "confidence": "HIGH", "actions": ["Drain excess water.", "Pause N for 7 days."], "warnings": ["Do not spray fungicide unless lesions exceed 5% leaf area."], "evidence_article_ids": ["wiki_rice_brown_spot", "ref_niphm_rice_ipm"]},
+    {"days_ago": 78, "modality": "text", "text": "DEMO_MEMORY: Stem borer moth light-trap caught 14 moths in one night, dead hearts at 1 per 20 hills.", "outcome": "Below ETL; continued scouting, no spray.", "risk_level": "WATCH", "confidence": "MEDIUM", "actions": ["Scout 20 random hills every 3 days.", "Release Trichogramma cards if pressure rises."], "warnings": ["Avoid calendar sprays."], "evidence_article_ids": ["wiki_stem_borer", "ref_niphm_rice_ipm"]},
+    {"days_ago": 60, "modality": "voice", "voice_lang": "hi", "text": "DEMO_MEMORY: Voice note (Hindi) — asked when to apply 2nd urea.", "outcome": "Advised wait till panicle initiation at ~70 DAS.", "risk_level": "NORMAL", "confidence": "HIGH", "actions": ["Apply 2nd urea 25 kg/acre at PI."], "warnings": [], "evidence_article_ids": []},
+    {"days_ago": 45, "modality": "photo", "photo_tag": "bph_underleaf", "text": "DEMO_MEMORY: Photo of brown planthoppers clustering on lower stem at base of hill.", "outcome": "Hot-spot identified; spot treatment with neem oil + alleyway drainage.", "risk_level": "EARLY_WARNING", "confidence": "HIGH", "actions": ["Drain field for 3 days.", "Spot-spray neem oil 5 ml/L on hot-spots."], "warnings": ["Do NOT use pyrethroids — they cause BPH resurgence."], "evidence_article_ids": ["wiki_brown_planthopper", "ref_niphm_rice_ipm"]},
+    {"days_ago": 30, "modality": "text", "text": "DEMO_MEMORY: Panicle initiation visible; applied 2nd urea 25 kg/acre as planned.", "outcome": "Healthy panicle emergence by day 7.", "risk_level": "NORMAL", "confidence": "HIGH", "actions": ["Maintain 5 cm water through flowering."], "warnings": [], "evidence_article_ids": []},
+    {"days_ago": 14, "modality": "text", "text": "DEMO_MEMORY: Mandi modal price for paddy Rs 2080/qtl vs MSP Rs 2300. Considering hold.", "outcome": "Decision deferred till outbreak risk and storage cost evaluated.", "risk_level": "WATCH", "confidence": "HIGH", "actions": ["Compare modal vs MSP weekly.", "Check FCI procurement centre availability."], "warnings": ["Do not distress-sell."], "evidence_article_ids": ["wiki_mandi_selling_guide", "wiki_pm_kisan_guide"]}
+  ],
+  "extra_ndvi_weekly": [
+    {"weeks_ago": 24, "ndvi": 0.18, "cloud_cover_pct": 22},
+    {"weeks_ago": 23, "ndvi": 0.21, "cloud_cover_pct": 14},
+    {"weeks_ago": 22, "ndvi": 0.26, "cloud_cover_pct": 11},
+    {"weeks_ago": 21, "ndvi": 0.32, "cloud_cover_pct": 9},
+    {"weeks_ago": 20, "ndvi": 0.38, "cloud_cover_pct": 16},
+    {"weeks_ago": 19, "ndvi": 0.42, "cloud_cover_pct": 25},
+    {"weeks_ago": 18, "ndvi": 0.47, "cloud_cover_pct": 19},
+    {"weeks_ago": 17, "ndvi": 0.51, "cloud_cover_pct": 12},
+    {"weeks_ago": 16, "ndvi": 0.55, "cloud_cover_pct": 10},
+    {"weeks_ago": 15, "ndvi": 0.58, "cloud_cover_pct": 14},
+    {"weeks_ago": 14, "ndvi": 0.46, "cloud_cover_pct": 71, "note": "DIP — cloudy week + brown spot stress event at day 92"},
+    {"weeks_ago": 13, "ndvi": 0.52, "cloud_cover_pct": 38},
+    {"weeks_ago": 12, "ndvi": 0.58, "cloud_cover_pct": 22},
+    {"weeks_ago": 11, "ndvi": 0.62, "cloud_cover_pct": 11},
+    {"weeks_ago": 10, "ndvi": 0.66, "cloud_cover_pct": 9},
+    {"weeks_ago": 9, "ndvi": 0.69, "cloud_cover_pct": 14}
+  ],
+  "extra_finance_entries": [
+    {"days_ago": 178, "type": "expense", "category": "soil_test", "amount": 250, "description": "DEMO: Soil health card lab fee"},
+    {"days_ago": 175, "type": "expense", "category": "manure", "amount": 1600, "description": "DEMO: FYM 8 cart-loads"},
+    {"days_ago": 165, "type": "expense", "category": "seed", "amount": 1850, "description": "DEMO: Swarna-Sub1 5kg/acre"},
+    {"days_ago": 150, "type": "expense", "category": "labour", "amount": 4200, "description": "DEMO: transplanting 6 workers"},
+    {"days_ago": 130, "type": "expense", "category": "fertilizer", "amount": 1800, "description": "DEMO: 1st urea top-dressing"},
+    {"days_ago": 105, "type": "expense", "category": "fertilizer", "amount": 420, "description": "DEMO: ZnSO4 foliar"},
+    {"days_ago": 78, "type": "expense", "category": "biocontrol", "amount": 320, "description": "DEMO: Trichogramma cards (preventive)"},
+    {"days_ago": 45, "type": "expense", "category": "pesticide", "amount": 280, "description": "DEMO: neem oil spot spray for BPH"},
+    {"days_ago": 30, "type": "expense", "category": "fertilizer", "amount": 1500, "description": "DEMO: 2nd urea at PI"},
+    {"days_ago": 18, "type": "expense", "category": "irrigation", "amount": 950, "description": "DEMO: canal cleaning + pump diesel"},
+    {"days_ago": 5, "type": "expense", "category": "labour", "amount": 600, "description": "DEMO: scouting wages"}
+  ],
+  "alert_clusters": [
+    {"village": "Bariarpur", "tehsil": "Munger Sadar", "district": "Munger", "crop": "rice", "issue_category": "brown_planthopper", "farmer_count": 4, "severity": 0.62, "status": "PENDING", "broadcast_message": "BPH hot-spots reported in Bariarpur and 2 nearby villages. Drain fields and avoid pyrethroids — they cause resurgence."},
+    {"village": "Jamalpur", "tehsil": "Munger Sadar", "district": "Munger", "crop": "rice", "issue_category": "brown_spot", "farmer_count": 6, "severity": 0.55, "status": "PENDING", "broadcast_message": "Brown spot rising in humid pockets across Jamalpur. Improve drainage, pause urea, scout lower leaves."},
+    {"village": "Lakhisarai", "tehsil": "Lakhisarai", "district": "Lakhisarai", "crop": "wheat", "issue_category": "karnal_bunt", "farmer_count": 3, "severity": 0.48, "status": "PENDING", "broadcast_message": "Karnal bunt traces found in wheat samples — advisory for next rabi sowing, use certified seed."}
+  ],
+  "memory_atoms_by_scope": {
+    "field": [
+      {"summary": "Field Purab Wala Khet: clay loam, pH 6.8, canal-irrigated, prone to brown spot in humid pockets.", "evidence_days_ago": [178, 92], "confidence": 0.92},
+      {"summary": "First urea applied at 48 DAS, second at 65 DAS — tillering and panicle response both healthy.", "evidence_days_ago": [130, 30], "confidence": 0.88},
+      {"summary": "BPH hot-spot observed at 135 DAS, controlled without pyrethroid — IPM compliance maintained.", "evidence_days_ago": [45], "confidence": 0.85},
+      {"summary": "NDVI dipped to 0.46 in week 14 then recovered to 0.69 — stress event resolved.", "evidence_days_ago": [92], "confidence": 0.9},
+      {"summary": "Farmer prefers Hindi voice notes; switched to Bhojpuri once during stress query.", "evidence_days_ago": [165, 105, 60], "confidence": 0.87}
+    ],
+    "village": [
+      {"summary": "Bariarpur village shows recurring BPH pressure in reproductive stage; 4 farmers reporting.", "evidence_days_ago": [45], "confidence": 0.78},
+      {"summary": "Village preference: canal irrigation over tube-well, FYM-heavy nutrition pattern.", "evidence_days_ago": [175], "confidence": 0.72}
+    ],
+    "tehsil": [
+      {"summary": "Munger Sadar tehsil: brown spot + BPH dual pressure in this kharif, humid cloudy windows the common trigger.", "evidence_days_ago": [92, 45], "confidence": 0.81},
+      {"summary": "Mandi modal price tracking below MSP for paddy in last 2 weeks across tehsil.", "evidence_days_ago": [14], "confidence": 0.83}
+    ],
+    "district": [
+      {"summary": "Munger district outbreak watch: BPH severity 0.62 in 4 villages; brown spot severity 0.55 in 6.", "evidence_days_ago": [45, 92], "confidence": 0.79},
+      {"summary": "District-wide canal water availability stable; no drought stress signals.", "evidence_days_ago": [150], "confidence": 0.74}
+    ],
+    "state": [
+      {"summary": "Bihar kharif 2026: rice sowing on time, MSP gap visible in eastern districts.", "evidence_days_ago": [14], "confidence": 0.7},
+      {"summary": "State sustainable-first IPM compliance encouraged — NIPHM rice IPM package referenced.", "evidence_days_ago": [78], "confidence": 0.76}
+    ],
+    "national": [
+      {"summary": "All-India paddy MSP 2025-26 Rs 2300/qtl common variety, Rs 2320/qtl grade A.", "evidence_days_ago": [14], "confidence": 0.95}
+    ]
+  },
+  "follow_up_loops": [
+    {"opened_days_ago": 30, "topic": "2nd urea at panicle initiation", "status": "closed", "outcome": "Applied as advised — healthy panicle emergence confirmed."},
+    {"opened_days_ago": 14, "topic": "Mandi sale vs hold decision", "status": "open", "outcome": "Awaiting farmer reply after weather + outbreak risk review.", "next_check_days": 3}
+  ],
+  "proactive_outbreak": {
+    "trigger_in_days": 2,
+    "issue_category": "brown_planthopper",
+    "scope": "Munger Sadar tehsil",
+    "severity": 0.71,
+    "message_hi": "⚠️ चेतावनी: अगले 2 दिनों में मुंगेर सदर में ब्राउन प्लांटहोपर का खतरा बढ़ने की संभावना है। खेत का पानी निकालें और पाइरेथ्राइड स्प्रे से बचें।",
+    "message_en": "⚠️ Early warning: BPH risk rising in Munger Sadar in next 2 days. Drain fields and avoid pyrethroids — they cause BPH resurgence.",
+    "evidence_refs": ["ref_niphm_rice_ipm", "wiki_brown_planthopper"]
+  },
+  "demo_capability_map": {
+    "long_field_memory": ["extra_observations", "memory_atoms_by_scope.field", "extra_ndvi_weekly"],
+    "multi_scope_coarsening": ["memory_atoms_by_scope.village", "memory_atoms_by_scope.tehsil", "memory_atoms_by_scope.district", "memory_atoms_by_scope.state", "memory_atoms_by_scope.national"],
+    "early_warning_proactive": ["proactive_outbreak", "alert_clusters"],
+    "multimodal_trail": ["extra_observations (photo+voice+text mix)"],
+    "closed_loop_followups": ["follow_up_loops"],
+    "k_anonymity_cluster_intel": ["alert_clusters (farmer_count >=3)"],
+    "sustainable_first_manuals": ["evidence_article_ids referencing ref_niphm_rice_ipm"]
+  }
+}
