@@ -337,7 +337,7 @@ class AgentOrchestrator:
 
         _is_weather_intent = intent.get("intent") == "weather_query"
         if needs_retrieval and not evidence.weather_data and (
-            ctx.crop_name or ctx.field_id or ctx.pincode or _is_weather_intent
+            _is_weather_intent or ctx.crop_name or ctx.field_id
         ):
             try:
                 from app.services.weather import get_forecast, get_historical_weather
@@ -1342,7 +1342,7 @@ class AgentOrchestrator:
             forecast_rows = None
             _w_district = ""
         want_weather = intent_name == "weather_query"
-        if (isinstance(forecast_rows, list) and forecast_rows) or want_weather:
+        if want_weather:
             district = _w_district
             blk: list[str] = []
             header = (
@@ -1412,7 +1412,7 @@ class AgentOrchestrator:
 
         sell = tool_results.get("sell_decision")
         is_sell = self._is_sell_intent(ctx.message, intent)
-        if sell or is_sell or want_market:
+        if sell or is_sell:
             blk = []
             blk.append("बेचने का निर्णय:" if is_hindi else "Sell Decision:")
             if sell:
@@ -1500,11 +1500,12 @@ class AgentOrchestrator:
     @staticmethod
     def _is_sell_intent(message: str, intent: dict | None = None) -> bool:
         msg = (message or "").lower()
-        markers = (
-            "sell", "selling", "sale", "mandi", "market", "price", "msp",
-            "बेच", "बिक्री", "मंडी", "भाव", "एमएसपी",
+        sell_verbs = (
+            "sell", "selling", "sale", "bech", "बेच", "बिक्री",
+            "should i sell", "kab bechu", "kab bechun", "when to sell",
+            "store", "storage", "warehouse", "godown", "भंडार",
         )
-        return (intent or {}).get("intent") == "market_query" or any(m in msg for m in markers)
+        return any(v in msg for v in sell_verbs)
 
     @staticmethod
     def _is_cluster_intent(message: str) -> bool:
