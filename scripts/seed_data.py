@@ -217,6 +217,12 @@ async def main():
                 "ndvi_points={ndvi_points}".format(**summary)
             )
 
+        logger.info("Layering 180-day deep demo seed...")
+        from app.services.demo_seed import seed_demo_deep_layer
+        async with async_session_factory() as db_deep:
+            deep_summary = await seed_demo_deep_layer(db_deep, telegram_user_id="demo_farmer")
+            logger.info(f"Deep demo layer: {deep_summary}")
+
     logger.info("Loading wiki articles...")
     await load_wiki_articles()
 
