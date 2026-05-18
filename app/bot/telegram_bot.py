@@ -1554,15 +1554,12 @@ async def _process_farmer_query(
             await update.message.reply_text("⚠️ पहले /field और /crop पूरा करें।")
             return
 
+        # Stage inference is now LLM-driven inside the agent pipeline
+        # (intent classifier emits crop_stage from the farmer's text + photo).
+        # The previous date-math prepend ("today's main points") fired on
+        # every turn whenever sowing date didn't match the stored stage,
+        # which produced unsolicited advisories — drop it.
         stage_notice = ""
-        try:
-            from app.services.crop_cycle import advance_stage, stage_message_hi
-
-            new_stage = await advance_stage(db, cycle)
-            if new_stage:
-                stage_notice = stage_message_hi(cycle, new_stage) + "\n\n"
-        except Exception as exc:
-            logger.warning(f"stage advance skipped: {exc}")
 
         import uuid
         observation = Observation(

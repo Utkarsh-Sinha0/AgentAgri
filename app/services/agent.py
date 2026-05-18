@@ -180,6 +180,25 @@ class AgentOrchestrator:
         if llm_crop_stage and not ctx.crop_stage:
             ctx.crop_stage = llm_crop_stage
 
+        # Persist LLM-inferred stage back to the crop cycle so future turns,
+        # the dashboard, and the calendar reflect what the farmer actually
+        # described — instead of stale date-math from an inaccurate sowing
+        # date. Only write when (a) we have a cycle to update, (b) the LLM
+        # produced a non-empty stage, and (c) it actually changed.
+        if llm_crop_stage and ctx.crop_cycle_id:
+            try:
+                from app.models import CropCycle as _Cycle
+
+                _cycle_row = await db.get(_Cycle, ctx.crop_cycle_id)
+                if _cycle_row and (_cycle_row.current_stage or "").lower() != llm_crop_stage.lower():
+                    logger.info(
+                        f"Stage update from LLM inference: '{_cycle_row.current_stage}' -> '{llm_crop_stage}'"
+                    )
+                    _cycle_row.current_stage = llm_crop_stage
+                    await db.commit()
+            except Exception as exc:
+                logger.warning(f"stage write-back skipped: {exc}")
+
         # ── Step 1.5: Durable conversation routing ───────────────
         previous_article_ids: list[str] = []
         routed_thread_id: str | None = None
