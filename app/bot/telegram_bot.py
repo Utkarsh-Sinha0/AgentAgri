@@ -62,10 +62,11 @@ def _lang(state: dict) -> str:
     """Return the farmer's selected onboarding language ('hi' or 'en').
 
     During registration the picker stores the choice in
-    ``state["data"]["preferred_language"]``. Default to Hindi if unset so
-    legacy paths keep their current behavior.
+    ``state["data"]["preferred_language"]``. Default to English when unset —
+    the language picker shows on /start, so unset means the farmer has not
+    yet chosen and English is the safer fallback for system prompts.
     """
-    return (state.get("data") or {}).get("preferred_language") or "hi"
+    return (state.get("data") or {}).get("preferred_language") or "en"
 
 
 def _t(state: dict, hi: str, en: str) -> str:
