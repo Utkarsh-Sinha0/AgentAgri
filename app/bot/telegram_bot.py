@@ -1667,7 +1667,9 @@ async def _process_farmer_query(
             InlineKeyboardButton("✳ नई बातचीत / New thread", callback_data="thread_new"),
         ])
 
-        msg += f"\n\n---\n{response.latency_ms}ms | {response.model_used} | {response.retrieval_path}"
+        # Footer always visible: model · confidence (no flag gate).
+        _conf = getattr(response, "confidence", "") or "—"
+        msg += f"\n\n---\n_{response.model_used} · {_conf}_"
 
         # Bilingual reply policy:
         # - text always contains English.
