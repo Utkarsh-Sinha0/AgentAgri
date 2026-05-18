@@ -335,13 +335,17 @@ class AgentOrchestrator:
         if "match_schemes" in tool_results:
             evidence.scheme_data = tool_results.get("match_schemes")
 
-        if needs_retrieval and not evidence.weather_data and (ctx.crop_name or ctx.field_id):
+        _is_weather_intent = intent.get("intent") == "weather_query"
+        if needs_retrieval and not evidence.weather_data and (
+            ctx.crop_name or ctx.field_id or ctx.pincode or _is_weather_intent
+        ):
             try:
                 from app.services.weather import get_forecast, get_historical_weather
 
+                _place_override = (llm_state or "").strip() or None
                 forecast, history = await asyncio.gather(
-                    get_forecast(field_id=ctx.field_id, days=3, pincode=ctx.pincode),
-                    get_historical_weather(field_id=ctx.field_id, days=3, pincode=ctx.pincode),
+                    get_forecast(field_id=ctx.field_id, days=3, pincode=ctx.pincode, place=_place_override),
+                    get_historical_weather(field_id=ctx.field_id, days=3, pincode=ctx.pincode, place=_place_override),
                     return_exceptions=True,
                 )
                 evidence.weather_data = {
