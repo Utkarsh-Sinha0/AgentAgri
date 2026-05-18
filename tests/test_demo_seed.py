@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from sqlalchemy import func, select
 
-from app.models import Advisory, AlertCluster, Farmer, FinanceEntry, Observation, SatelliteNDVI
-from app.services.demo_seed import seed_demo_memory_palace
+from app.models import Advisory, AlertCluster, CropCycle, Farmer, Field, FinanceEntry, Observation, SatelliteNDVI
+from app.services.demo_seed import graft_demo_farmer, seed_demo_memory_palace
 
 
 async def test_demo_memory_palace_seed_is_rich_and_idempotent(db_session):
@@ -41,3 +41,43 @@ async def test_demo_memory_palace_seed_is_rich_and_idempotent(db_session):
     assert finance_count == first["finance_entries"]
     assert ndvi_count == first["ndvi_points"]
     assert cluster_count == 1
+
+
+async def test_per_step_graft_mutates_fields_in_order(db_session):
+    """Walk every reg step's graft call; assert each one only mutates its own field."""
+    judge_id = "judge-walk-test"
+    await seed_demo_memory_palace(db_session, telegram_user_id="demo_farmer")
+
+    # name → also rebinds phone from "demo_farmer" to judge_id
+    r = await graft_demo_farmer(db_session, telegram_user_id=judge_id, partial_profile={"name": "Anita Singh"})
+    assert r["status"] == "ok"
+    f = (await db_session.execute(select(Farmer).where(Farmer.phone == judge_id))).scalar_one()
+    assert f.name == "Anita Singh"
+
+    await graft_demo_farmer(db_session, telegram_user_id=judge_id, partial_profile={"district": "Patna"})
+    await graft_demo_farmer(db_session, telegram_user_id=judge_id, partial_profile={"pincode": "800001"})
+    await graft_demo_farmer(db_session, telegram_user_id=judge_id, partial_profile={"tehsil": "Phulwari"})
+    await graft_demo_farmer(db_session, telegram_user_id=judge_id, partial_profile={"village": "Naubatpur"})
+    await graft_demo_farmer(db_session, telegram_user_id=judge_id, partial_profile={"soil_type": "clay", "area_acres": 3.5})
+    await graft_demo_farmer(db_session, telegram_user_id=judge_id, partial_profile={"crop_name": "wheat"})
+
+    await db_session.refresh(f)
+    assert f.district == "Patna"
+    assert f.pincode == "800001"
+    assert f.tehsil == "Phulwari"
+    assert f.village == "Naubatpur"
+
+    field = (await db_session.execute(select(Field).where(Field.farmer_id == f.id))).scalars().first()
+    assert field is not None
+    await db_session.refresh(field)
+    assert field.soil_type == "clay"
+    assert float(field.area_acres) == 3.5
+
+    cycle = (
+        await db_session.execute(
+            select(CropCycle).where(CropCycle.field_id == field.id, CropCycle.is_active)
+        )
+    ).scalars().first()
+    assert cycle is not None
+    await db_session.refresh(cycle)
+    assert cycle.crop_name == "wheat"

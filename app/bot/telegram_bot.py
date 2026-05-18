@@ -1292,23 +1292,31 @@ def gated_command(handler):
 
 # ─── Registration Handlers ────────────────────────────────────────────
 
+async def _graft_step(user_id: str, partial: dict, step: str) -> None:
+    """Per-step demo graft: overwrite only the fields the judge just entered.
+
+    No-op when DEMO_MODE is off or no seeded demo_farmer row exists. Never
+    raises — registration must not break if graft has a hiccup.
+    """
+    if not settings.demo_mode:
+        return
+    try:
+        from app.services.demo_seed import graft_demo_farmer
+        async with async_session_factory() as _db:
+            await graft_demo_farmer(
+                _db,
+                telegram_user_id=user_id,
+                partial_profile=partial,
+            )
+    except Exception as _exc:
+        logger.warning(f"Demo graft on {step} failed (non-fatal): {_exc}")
+
+
 async def _handle_name_registration(update, user_id: str, name: str, state: dict):
     state["data"]["name"] = name
-    # Demo graft: on first /start of a fresh judge, rebind the seeded
-    # 180-day demo farmer to this telegram_id so all NDVI / memory /
-    # finance / alert-cluster history transfers under the judge's name.
-    # Idempotent; no-op if already rebound or DEMO_MODE is off.
-    if settings.demo_mode:
-        try:
-            from app.services.demo_seed import graft_demo_farmer
-            async with async_session_factory() as _db:
-                await graft_demo_farmer(
-                    _db,
-                    telegram_user_id=user_id,
-                    partial_profile={"name": name},
-                )
-        except Exception as _exc:
-            logger.warning(f"Demo graft on name failed (non-fatal): {_exc}")
+    # Per-field graft: rebinds seeded demo_farmer to this judge's telegram_id
+    # on first call, then overwrites only the name. 180-day history stays.
+    await _graft_step(user_id, {"name": name}, "name")
     state["state"] = "registering_phone"
     await update.message.reply_text(
         _t(state,
@@ -1328,6 +1336,7 @@ async def _handle_phone_registration(update, user_id: str, phone: str, state: di
 
 async def _handle_district_registration(update, user_id: str, district: str, state: dict):
     state["data"]["district"] = district
+    await _graft_step(user_id, {"district": district}, "district")
     # preferred_language is already set from the picker; don't overwrite.
     state["state"] = "registering_pincode"
     await update.message.reply_text(
@@ -1349,6 +1358,7 @@ async def _handle_pincode_registration(update, user_id: str, pincode: str, state
         )
         return
     state["data"]["pincode"] = cleaned
+    await _graft_step(user_id, {"pincode": cleaned}, "pincode")
     state["state"] = "registering_tehsil"
     await update.message.reply_text(
         _t(state, "तहसील / ब्लॉक का नाम लिखें:", "Enter your tehsil / block:")
@@ -1357,6 +1367,7 @@ async def _handle_pincode_registration(update, user_id: str, pincode: str, state
 
 async def _handle_tehsil_registration(update, user_id: str, tehsil: str, state: dict):
     state["data"]["tehsil"] = tehsil
+    await _graft_step(user_id, {"tehsil": tehsil}, "tehsil")
     state["state"] = "registering_village"
     await update.message.reply_text(
         _t(state, "गाँव का नाम लिखें:", "Enter your village:")
@@ -1365,6 +1376,7 @@ async def _handle_tehsil_registration(update, user_id: str, tehsil: str, state: 
 
 async def _handle_village_registration(update, user_id: str, village: str, state: dict):
     state["data"]["village"] = village
+    await _graft_step(user_id, {"village": village}, "village")
 
     district = state["data"].get("district", "")
     pincode = state["data"].get("pincode", "")
@@ -1465,6 +1477,14 @@ async def _handle_field_area(update, user_id: str, area_str: str, state: dict):
 
 async def _handle_field_soil(update, user_id: str, soil: str, state: dict):
     state["data"]["soil_type"] = soil
+    await _graft_step(
+        user_id,
+        {
+            "soil_type": soil,
+            "area_acres": state["data"].get("field_area"),
+        },
+        "field_soil",
+    )
 
     async with async_session_factory() as db:
         # Find farmer
@@ -1508,6 +1528,7 @@ async def _handle_field_soil(update, user_id: str, soil: str, state: dict):
 
 async def _handle_crop_name(update, user_id: str, crop_name: str, state: dict):
     state["data"]["crop_name"] = crop_name
+    await _graft_step(user_id, {"crop_name": crop_name}, "crop_name")
     state["state"] = "registering_crop_sowing"
     await update.message.reply_text(
         _t(state,
@@ -1581,6 +1602,14 @@ async def _handle_crop_sowing(update, user_id: str, text: str, state: dict):
 
 async def _persist_field_from_callback(query, user_id: str, soil: str, state: dict):
     state["data"]["soil_type"] = soil
+    await _graft_step(
+        user_id,
+        {
+            "soil_type": soil,
+            "area_acres": state["data"].get("field_area"),
+        },
+        "field_soil_callback",
+    )
 
     async with async_session_factory() as db:
         phone = state.get("phone", user_id)
