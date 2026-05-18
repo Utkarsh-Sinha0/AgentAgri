@@ -1812,9 +1812,12 @@ async def _process_farmer_query(
             pass
 
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
-        # Default: text + audio for every reply (audio in the conversation's
-        # detected language). User can override with /replymode.
-        reply_mode = state.get("reply_mode") or "both"
+        # Default reply mode:
+        #   - English-preference farmers → text only (avoid spurious TTS latency).
+        #   - All other (Indic) prefs → text + audio in detected language.
+        # User can override with /replymode.
+        _default_mode = "text" if pref_lang.startswith("en") else "both"
+        reply_mode = state.get("reply_mode") or _default_mode
         send_text = reply_mode in {"text", "both"}
         send_audio = reply_mode in {"both", "voice"} and settings.enable_voice_pipeline
 
