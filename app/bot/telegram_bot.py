@@ -339,8 +339,8 @@ async def _send_welcome_for_language(message, context: ContextTypes.DEFAULT_TYPE
             InlineKeyboardButton("ℹ️ Help", callback_data="cmd_help"),
         ])
     else:
+        keyboard.append([InlineKeyboardButton("🎬 Demo / डेमो — judge tour", callback_data="cmd_demo")])
         keyboard.append([InlineKeyboardButton("📝 Register / पंजीकरण", callback_data="cmd_register")])
-        keyboard.append([InlineKeyboardButton("⚡ Demo: sample farm + memory", callback_data="cmd_demo")])
         keyboard.append([_dashboard_button("🧭 Dashboard preview", phone=user_id)])
         keyboard.append([InlineKeyboardButton("ℹ️ Help: see all commands", callback_data="cmd_help")])
 
@@ -1023,7 +1023,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await _send_welcome_for_language(query.message, context, user_id, state, code)
             return
     if data == "cmd_demo":
-        await _activate_demo_memory(query.message, user_id, state)
+        from app.services.demo_architecture import format_demo_index
+        lang = (state.get("data") or {}).get("preferred_language")
+        await query.message.reply_text(
+            format_demo_index(lang=lang),
+            parse_mode="Markdown",
+        )
     elif data == "cmd_register":
         # Gate on language pick: if not chosen yet, show picker.
         if not (state.get("data") or {}).get("preferred_language"):
@@ -2434,12 +2439,13 @@ async def demo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = str(update.effective_user.id)
     state = get_user_state(user_id)
+    lang = (state.get("data") or {}).get("preferred_language")
     await update.message.reply_chat_action(ChatAction.TYPING)
 
     args = context.args if context and context.args else []
     if not args:
         # No arg: show the judge menu (does NOT graft — graft happens on /start register).
-        await update.message.reply_text(format_demo_index(), parse_mode="Markdown")
+        await update.message.reply_text(format_demo_index(lang=lang), parse_mode="Markdown")
         return
 
     arg = args[0].strip().lower()
@@ -2450,12 +2456,12 @@ async def demo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         n = int(arg)
     except ValueError:
-        await update.message.reply_text(format_demo_index(), parse_mode="Markdown")
+        await update.message.reply_text(format_demo_index(lang=lang), parse_mode="Markdown")
         return
 
-    text = format_scenario(n)
+    text = format_scenario(n, lang=lang)
     if text is None:
-        await update.message.reply_text(format_demo_index(), parse_mode="Markdown")
+        await update.message.reply_text(format_demo_index(lang=lang), parse_mode="Markdown")
         return
     await update.message.reply_text(text, parse_mode="Markdown")
 
@@ -2463,8 +2469,11 @@ async def demo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def architecture_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /architecture — show Gemma 4 → AgriMesh capability map."""
     from app.services.demo_architecture import format_architecture
+    user_id = str(update.effective_user.id)
+    state = get_user_state(user_id)
+    lang = (state.get("data") or {}).get("preferred_language")
     await update.message.reply_chat_action(ChatAction.TYPING)
-    await update.message.reply_text(format_architecture(), parse_mode="Markdown")
+    await update.message.reply_text(format_architecture(lang=lang), parse_mode="Markdown")
 
 
 async def _activate_demo_memory(message, user_id: str, state: dict):
@@ -3510,8 +3519,9 @@ async def endthread_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ─── Bot Runner ───────────────────────────────────────────────────────
 
 BOT_COMMAND_MENU: list[tuple[str, str]] = [
+    ("demo", "Judge demo tour (/demo N for scenario)"),
+    ("architecture", "Gemma 4 capability map"),
     ("start", "Main menu, resume chat"),
-    ("demo", "Load sample farm + memory"),
     ("register", "Register (text step-by-step)"),
     ("edit", "Edit registration details"),
     ("dashboard", "Open private dashboard"),
@@ -3534,8 +3544,6 @@ BOT_COMMAND_MENU: list[tuple[str, str]] = [
     ("why", "Explain last advice"),
     ("sources", "Show evidence sources"),
     ("help", "All commands"),
-    ("demo", "Judge demo menu (/demo N for scenario)"),
-    ("architecture", "Gemma 4 capability map"),
 ]
 
 
