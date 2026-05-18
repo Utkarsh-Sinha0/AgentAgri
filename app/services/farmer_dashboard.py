@@ -21,6 +21,7 @@ from app.models import (
     Farmer,
     Field,
     FinanceEntry,
+    Observation,
     SatelliteNDVI,
 )
 from app.models_memory import (
@@ -62,6 +63,22 @@ async def get_farmer_dashboard(
     onboarding = _profile_questions(profile)
     weather_skin = _weather_skin(weather)
 
+    # last_event_at = most recent agent-side write for this farmer. The PWA
+    # uses this as a freshness cursor: when it advances between polls, the
+    # dashboard flashes a "new activity" badge so the user sees the bot
+    # conversation reflected live.
+    last_obs = await db.scalar(
+        select(func.max(Observation.created_at)).where(Observation.farmer_id == farmer.id)
+    )
+    last_adv = await db.scalar(
+        select(func.max(Advisory.created_at)).where(Advisory.farmer_id == farmer.id)
+    )
+    last_atom = await db.scalar(
+        select(func.max(MemoryAtom.event_at)).where(MemoryAtom.farmer_id == farmer.id)
+    )
+    candidates = [t for t in (last_obs, last_adv, last_atom) if t is not None]
+    last_event_at = max(candidates).isoformat() if candidates else None
+
     return {
         "farmer": {
             "id": farmer.id,
@@ -88,6 +105,7 @@ async def get_farmer_dashboard(
         "memory": memory,
         "sync": {
             "server_generated_at": utc_now().isoformat(),
+            "last_event_at": last_event_at,
             "local_cache_key": f"agrimesh_farmer_dashboard_{farmer.id}",
             "offline_ready": True,
         },

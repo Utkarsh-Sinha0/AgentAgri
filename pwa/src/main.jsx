@@ -94,6 +94,8 @@ function useAppData() {
   const [apiKey, setApiKeyState] = useState(localStorage.getItem('agrimesh_api_key') || '');
   const [farmerId, setFarmerId] = useState(localStorage.getItem('agrimesh_farmer_id') || '');
   const [dashboardToken, setDashboardToken] = useState(readDashboardToken());
+  const [lastEventAt, setLastEventAt] = useState('');
+  const [liveBadge, setLiveBadge] = useState(false);
 
   async function refresh() {
     setLoading(true);
@@ -137,6 +139,16 @@ function useAppData() {
       if (dashboard?.farmer?.id) {
         localStorage.setItem('agrimesh_farmer_id', dashboard.farmer.id);
         setFarmerId(dashboard.farmer.id);
+      }
+      const incomingEventAt = dashboard?.sync?.last_event_at || '';
+      if (incomingEventAt && incomingEventAt !== lastEventAt) {
+        if (lastEventAt) {
+          // Only flash once we have a prior cursor — avoids a spurious
+          // "new activity" on the very first load.
+          setLiveBadge(true);
+          setTimeout(() => setLiveBadge(false), 3000);
+        }
+        setLastEventAt(incomingEventAt);
       }
       setState({
         dashboard: dashboard?.error ? null : dashboard,
@@ -190,6 +202,8 @@ function useAppData() {
     setFarmerId,
     dashboardToken,
     setDashboardToken,
+    liveBadge,
+    lastEventAt,
   };
 }
 
@@ -257,6 +271,23 @@ function AppShell() {
               <h2>{farmerTitle(data.dashboard)}</h2>
             </div>
             <div className="operator-controls">
+              {data.liveBadge && (
+                <span
+                  style={{
+                    background: '#16a34a',
+                    color: '#fff',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    marginRight: '8px',
+                    animation: 'pulse 1.5s ease-in-out',
+                  }}
+                  title={`Last event: ${data.lastEventAt}`}
+                >
+                  🟢 New activity
+                </span>
+              )}
               <Button variant="secondary" onClick={data.refresh} disabled={data.loading}>
                 <RefreshCw className={data.loading ? 'spin' : ''} size={16} />
                 Refresh
