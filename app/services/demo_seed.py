@@ -20,6 +20,7 @@ from app.config import settings
 from app.models import (
     Advisory,
     AlertCluster,
+    AlertKind,
     AlertStatus,
     CropCalendarTask,
     CropCycle,
@@ -686,6 +687,11 @@ async def graft_demo_farmer(
     # pre-baked outbreak (e.g. brown_planthopper) always covers wherever the
     # judge says they're from. Without this the demo cluster stays anchored
     # to Bariarpur/Munger and the judge's geography never matches.
+    #
+    # Also promote the primary cluster (rice) to a real OUTBREAK row so that
+    # `fetch_pending_outbreak_for_farmer` (which filters on AlertKind.OUTBREAK
+    # + expires_at) can surface it after registration. Seeded rows default to
+    # kind=PATTERN with no pest_or_disease/expires_at; we fill those in once.
     geo_keys = {"village", "tehsil", "district", "pincode"}
     crop_keys = {"crop_name"}
     if any(k in (partial_profile or {}) for k in geo_keys | crop_keys):
@@ -703,16 +709,96 @@ async def graft_demo_farmer(
                     mutated = True
                     changed[f"cluster.{key}"] = value
             crop_value = (partial_profile or {}).get("crop_name")
+            is_primary = bool(cluster.crop_name) and cluster.crop_name.lower() == "rice"
             if crop_value and cluster.crop_name and cluster.crop_name.lower() != crop_value.lower():
                 # Only re-home crop on the farmer's primary cluster (matches
                 # the seeded farmer's current crop). Leave unrelated crop
                 # clusters (e.g. wheat karnal bunt) alone.
-                if cluster.crop_name.lower() == "rice":
+                if is_primary:
                     cluster.crop_name = crop_value
                     mutated = True
                     changed["cluster.crop_name"] = crop_value
+            # Promote the primary cluster to an OUTBREAK row so
+            # fetch_pending_outbreak_for_farmer can find it.
+            if is_primary:
+                if cluster.kind != AlertKind.OUTBREAK:
+                    cluster.kind = AlertKind.OUTBREAK
+                    mutated = True
+                if not cluster.pest_or_disease and cluster.issue_category:
+                    cluster.pest_or_disease = cluster.issue_category.replace("_", " ")
+                    mutated = True
+                if not cluster.scope:
+                    cluster.scope = "village"
+                    mutated = True
+                if not cluster.expires_at or cluster.expires_at <= utc_now():
+                    cluster.expires_at = utc_now() + timedelta(days=14)
+                    mutated = True
             if mutated:
                 pass  # commit happens once below
 
     await db.commit()
     return {"status": "ok", "farmer_id": farmer.id, "changed": changed}
+
+
+async def find_primary_demo_outbreak(
+    db: AsyncSession,
+    *,
+    farmer: Farmer,
+) -> AlertCluster | None:
+    """Return the seeded OUTBREAK cluster matching this farmer's geo+crop, if any."""
+    crop_q = await db.execute(
+        select(CropCycle.crop_name)
+        .join(Field, Field.id == CropCycle.field_id)
+        .where(Field.farmer_id == farmer.id, CropCycle.is_active.is_(True))
+    )
+    crop_name = crop_q.scalars().first()
+    stmt = select(AlertCluster).where(
+        AlertCluster.kind == AlertKind.OUTBREAK,
+        AlertCluster.status == AlertStatus.PENDING,
+    )
+    if farmer.village:
+        stmt = stmt.where(AlertCluster.village == farmer.village)
+    if crop_name:
+        stmt = stmt.where(func.lower(AlertCluster.crop_name) == crop_name.lower())
+    res = await db.execute(stmt)
+    return res.scalars().first()
+
+
+async def reset_demo_outbreak_notifications(
+    db: AsyncSession,
+    *,
+    telegram_user_id: str | None = None,
+) -> int:
+    """Clear notified/consumed lists on demo PENDING outbreak clusters.
+
+    Called on every /demo invocation so each replay re-fires the warning.
+    If `telegram_user_id` is provided, only clears entries for that user's
+    farmer; otherwise wipes the lists entirely (single-judge demo).
+    """
+    clusters_q = await db.execute(
+        select(AlertCluster).where(
+            AlertCluster.kind == AlertKind.OUTBREAK,
+            AlertCluster.status == AlertStatus.PENDING,
+        )
+    )
+    cleared = 0
+    farmer_id: str | None = None
+    if telegram_user_id:
+        f_q = await db.execute(select(Farmer.id).where(Farmer.phone == telegram_user_id))
+        farmer_id = f_q.scalar_one_or_none()
+    for cluster in clusters_q.scalars().all():
+        if farmer_id:
+            notified = [fid for fid in (cluster.notified_farmer_ids or []) if fid != farmer_id]
+            consumed = [fid for fid in (cluster.consumed_farmer_ids or []) if fid != farmer_id]
+        else:
+            notified, consumed = [], []
+        if notified != (cluster.notified_farmer_ids or []) or consumed != (
+            cluster.consumed_farmer_ids or []
+        ):
+            cluster.notified_farmer_ids = notified
+            cluster.consumed_farmer_ids = consumed
+            cluster.farmers_notified = len(notified)
+            cleared += 1
+    if cleared:
+        await db.commit()
+    return cleared

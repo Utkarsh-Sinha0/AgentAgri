@@ -1312,6 +1312,72 @@ async def _graft_step(user_id: str, partial: dict, step: str) -> None:
         logger.warning(f"Demo graft on {step} failed (non-fatal): {_exc}")
 
 
+async def _push_post_reg_outbreak(message, user_id: str, state: dict) -> None:
+    """After /start registration completes, surface the seeded outbreak
+    re-homed to the judge's village/crop and push LLM-generated preventive
+    tips in the judge's language. No-op if DEMO_MODE off or no cluster found.
+    """
+    if not settings.demo_mode:
+        return
+    try:
+        from app.services.demo_seed import find_primary_demo_outbreak
+        from app.services.outbreak import (
+            format_warning_message,
+            mark_outbreak_notified,
+            write_outbreak_memory_atoms,
+        )
+
+        async with async_session_factory() as db:
+            farmer_q = await db.execute(select(Farmer).where(Farmer.phone == user_id))
+            farmer = farmer_q.scalar_one_or_none()
+            if farmer is None:
+                return
+            alert = await find_primary_demo_outbreak(db, farmer=farmer)
+            if alert is None:
+                logger.info("Post-reg outbreak push: no matching seeded cluster")
+                return
+            await mark_outbreak_notified(db, alert, [farmer.id])
+            await write_outbreak_memory_atoms(db, alert, [farmer])
+
+            lang = (state.get("data") or {}).get("preferred_language", "hi")
+            threat = (alert.pest_or_disease or "outbreak").title()
+            crop = (alert.crop_name or "your crop").title()
+            village = alert.village or farmer.village or ""
+            banner = format_warning_message(alert)
+
+        tips_text: str | None = None
+        try:
+            from app.utils.ollama_client import OllamaClient
+            client = OllamaClient()
+            sys_prompt = (
+                "You are an agricultural extension officer. Reply in the user's preferred "
+                "language. Give 3 concrete, low-cost preventive measures (single short "
+                "sentences each) for the pest/disease in question. No preamble."
+            )
+            user_prompt = (
+                f"Preferred language: {lang}. Crop: {crop}. Threat: {threat}. "
+                f"Village: {village}. List 3 preventive steps as bullet points."
+            )
+            result = await client.chat(
+                messages=[
+                    {"role": "system", "content": sys_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.3,
+                max_tokens=400,
+            )
+            tips_text = (result.get("content") or "").strip() or None
+        except Exception as exc:
+            logger.warning(f"Outbreak tips LLM call failed (non-fatal): {exc}")
+
+        body = banner
+        if tips_text:
+            body = f"{banner}\n\n*🛡️ Preventive measures:*\n{tips_text}"
+        await message.reply_text(body, parse_mode="Markdown")
+    except Exception as exc:
+        logger.warning(f"Post-reg outbreak push failed (non-fatal): {exc}")
+
+
 async def _handle_name_registration(update, user_id: str, name: str, state: dict):
     state["data"]["name"] = name
     # Per-field graft: rebinds seeded demo_farmer to this judge's telegram_id
@@ -1700,6 +1766,7 @@ async def _persist_crop_stage_from_callback(query, user_id: str, stage: str, sta
         ),
         parse_mode="Markdown",
     )
+    await _push_post_reg_outbreak(query.message, user_id, state)
 
 
 async def _handle_crop_stage(update, user_id: str, stage: str, state: dict):
@@ -1750,6 +1817,7 @@ async def _handle_crop_stage(update, user_id: str, stage: str, state: dict):
         "📸 फोटो भेजें 📝 या लिखें...",
         parse_mode="Markdown",
     )
+    await _push_post_reg_outbreak(update.message, user_id, state)
 
 
 # ─── Query Handler ────────────────────────────────────────────────────
@@ -2470,6 +2538,16 @@ async def demo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     state = get_user_state(user_id)
     lang = (state.get("data") or {}).get("preferred_language")
     await update.message.reply_chat_action(ChatAction.TYPING)
+
+    # Fresh-start per demo run: clear notified/consumed lists on the seeded
+    # outbreak so the post-registration warning re-fires every replay.
+    if settings.demo_mode:
+        try:
+            from app.services.demo_seed import reset_demo_outbreak_notifications
+            async with async_session_factory() as _db:
+                await reset_demo_outbreak_notifications(_db, telegram_user_id=user_id)
+        except Exception as _exc:
+            logger.warning(f"Demo outbreak reset failed (non-fatal): {_exc}")
 
     args = context.args if context and context.args else []
     if not args:

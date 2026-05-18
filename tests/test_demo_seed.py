@@ -2,8 +2,14 @@ from __future__ import annotations
 
 from sqlalchemy import func, select
 
-from app.models import Advisory, AlertCluster, CropCycle, Farmer, Field, FinanceEntry, Observation, SatelliteNDVI
-from app.services.demo_seed import graft_demo_farmer, seed_demo_memory_palace
+from app.models import Advisory, AlertCluster, AlertKind, CropCycle, Farmer, Field, FinanceEntry, Observation, SatelliteNDVI
+from app.services.demo_seed import (
+    find_primary_demo_outbreak,
+    graft_demo_farmer,
+    reset_demo_outbreak_notifications,
+    seed_demo_memory_palace,
+)
+from app.services.outbreak import fetch_pending_outbreak_for_farmer, mark_outbreak_notified
 
 
 async def test_demo_memory_palace_seed_is_rich_and_idempotent(db_session):
@@ -98,3 +104,48 @@ async def test_per_step_graft_mutates_fields_in_order(db_session):
     assert rice_cluster.tehsil == "Phulwari"
     assert rice_cluster.district == "Patna"
     assert rice_cluster.pincode == "800001"
+    # Promoted to a proper OUTBREAK so fetch_pending_outbreak_for_farmer
+    # can surface it after registration.
+    assert rice_cluster.kind == AlertKind.OUTBREAK
+    assert rice_cluster.pest_or_disease  # populated from issue_category
+    assert rice_cluster.expires_at is not None
+
+
+async def test_post_reg_outbreak_lookup_and_reset(db_session):
+    """After full registration the seeded cluster is findable; reset clears notify state."""
+    judge_id = "judge-push-test"
+    await seed_demo_memory_palace(db_session, telegram_user_id="demo_farmer")
+
+    for partial in (
+        {"name": "Test Judge"},
+        {"district": "Patna"},
+        {"pincode": "800001"},
+        {"tehsil": "Phulwari"},
+        {"village": "Naubatpur"},
+        {"soil_type": "clay", "area_acres": 3.5},
+        {"crop_name": "wheat"},
+    ):
+        await graft_demo_farmer(db_session, telegram_user_id=judge_id, partial_profile=partial)
+
+    farmer = (
+        await db_session.execute(select(Farmer).where(Farmer.phone == judge_id))
+    ).scalar_one()
+
+    alert = await find_primary_demo_outbreak(db_session, farmer=farmer)
+    assert alert is not None, "rehomed cluster must be discoverable by post-reg helper"
+    assert alert.kind == AlertKind.OUTBREAK
+    assert alert.village == "Naubatpur"
+    assert (alert.crop_name or "").lower() == "wheat"
+
+    # Simulate push: mark farmer notified, fetch_pending must surface it.
+    await mark_outbreak_notified(db_session, alert, [farmer.id])
+    pending = await fetch_pending_outbreak_for_farmer(db_session, farmer.id)
+    assert pending is not None and pending.id == alert.id
+
+    # Fresh-start reset clears this farmer's notify state.
+    cleared = await reset_demo_outbreak_notifications(db_session, telegram_user_id=judge_id)
+    assert cleared >= 1
+    await db_session.refresh(alert)
+    assert farmer.id not in (alert.notified_farmer_ids or [])
+    pending_after = await fetch_pending_outbreak_for_farmer(db_session, farmer.id)
+    assert pending_after is None, "after reset farmer must re-need the warning"
