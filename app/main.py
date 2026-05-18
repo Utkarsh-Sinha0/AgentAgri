@@ -939,14 +939,18 @@ if pwa_dir.exists():
     _pwa_index = pwa_dir / "index.html"
     app.mount("/assets", StaticFiles(directory=str(pwa_dir / "assets")), name="pwa-assets")
 
+    _NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate"}
+
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        # Serve actual files (manifest, icons, etc.) if they exist
         candidate = pwa_dir / full_path
         if full_path and candidate.is_file() and candidate.resolve().is_relative_to(pwa_dir.resolve()):
+            # index.html and the manifest must always be revalidated so a
+            # rebuild with new asset hashes is picked up on next load.
+            if candidate.name in {"index.html", "manifest.webmanifest"}:
+                return FileResponse(candidate, headers=_NO_CACHE)
             return FileResponse(candidate)
-        # Everything else falls through to index.html for the SPA router
-        return FileResponse(_pwa_index)
+        return FileResponse(_pwa_index, headers=_NO_CACHE)
 else:
     @app.get("/")
     async def root():
