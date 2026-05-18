@@ -1773,6 +1773,18 @@ async def _process_farmer_query(
                 logger.warning(f"bilingual render skipped ({detected_lang}/{native_lang}): {exc}")
         effective_lang = "en-IN" if english_only else (native_lang or "hi-IN")
 
+        try:
+            from app.services.capability_log import snapshot as _cap_snap
+
+            _snap = _cap_snap()
+            _proven = [c["name"] for c in _snap.get("capabilities", []) if c.get("proven")]
+            if _proven:
+                _icons = {"thinking": "🧠", "function_call": "🛠", "multimodal": "📷", "grammar": "📐", "multilingual": "🌐"}
+                _badges = " ".join(_icons.get(n, "·") for n in _proven)
+                msg = f"{msg}\n\n_Gemma 4: {_badges} {len(_proven)}/5_"
+        except Exception:
+            pass
+
         reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
         # Default: text + audio for every reply (audio in the conversation's
         # detected language). User can override with /replymode.

@@ -470,6 +470,13 @@ async def farmer_dashboard_by_token(
     return data
 
 
+@app.get("/api/v1/capabilities")
+async def gemma4_capabilities():
+    """Live snapshot of Gemma 4 capability events — used by PWA "Gemma 4" tab."""
+    from app.services.capability_log import snapshot
+    return snapshot()
+
+
 @app.put("/api/farmers/{farmer_id}/profile")
 async def update_farmer_profile(
     farmer_id: str,

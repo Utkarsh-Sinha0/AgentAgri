@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   BarChart3,
   Bot,
+  Brain,
   Check,
   CheckCircle2,
   CloudRain,
@@ -34,6 +35,7 @@ const routes = [
   { path: '/market-prices', label: 'Market Prices', icon: IndianRupee, page: MarketPricesPage },
   { path: '/weather', label: 'Weather', icon: CloudRain, page: WeatherPage },
   { path: '/ai-advisor', label: 'AI Advisor', icon: Bot, page: AIAdvisorPage },
+  { path: '/gemma4', label: 'Gemma 4', icon: Brain, page: Gemma4Page },
   { path: '/history', label: 'History', icon: History, page: HistoryPage },
   { path: '/settings', label: 'Settings', icon: Settings, page: SettingsPage },
 ];
@@ -51,6 +53,7 @@ const defaultState = {
   weather: null,
   market: null,
   health: null,
+  capabilities: null,
 };
 
 function apiHeaders() {
@@ -114,6 +117,7 @@ function useAppData() {
         weather,
         market,
         health,
+        capabilities,
       ] = await Promise.all([
         api(dashboardPath).catch((err) => ({ error: err.message })),
         api('/api/stats').catch((err) => ({ error: err.message })),
@@ -127,6 +131,7 @@ function useAppData() {
         api('/api/weather/forecast').catch(() => null),
         api('/api/market-prices?crop=rice').catch(() => null),
         api('/health').catch(() => null),
+        api('/api/v1/capabilities').catch(() => null),
       ]);
 
       if (dashboard?.farmer?.id) {
@@ -146,6 +151,7 @@ function useAppData() {
         weather,
         market,
         health,
+        capabilities,
       });
       setError(dashboard?.error || stats?.error || '');
     } catch (err) {
@@ -507,6 +513,74 @@ function AIAdvisorPage({ data }) {
       <section className="farmer-overview-grid">
         <ToolCallPanel tools={showcase.tool_calls || []} />
         <CitationPanel citations={showcase.citations || []} />
+      </section>
+    </Page>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Gemma 4 Capabilities Page
+   ═══════════════════════════════════════════ */
+
+const GEMMA4_CAPS = [
+  { name: 'thinking', label: 'Thinking Mode', blurb: 'Native <|think|> token: deliberate, multi-step reasoning before answering.' },
+  { name: 'function_call', label: 'Function Calling', blurb: 'Tool calls planned by the model (get_forecast, match_schemes, get_mandi_prices…).' },
+  { name: 'multimodal', label: 'Multimodal Vision', blurb: 'Image-first crop photo analysis (image BEFORE text — Gemma 4 best practice).' },
+  { name: 'grammar', label: 'Grammar-Constrained Decoding', blurb: 'JSON schema constraint via Ollama format=schema → llama.cpp GBNF.' },
+  { name: 'multilingual', label: 'Multilingual (Hindi+English)', blurb: 'Devanagari + Latin script input handled natively.' },
+];
+
+function Gemma4Page({ data }) {
+  const snap = data.capabilities || { capabilities: [], recent: [], total: 0 };
+  const byName = Object.fromEntries((snap.capabilities || []).map((c) => [c.name, c]));
+  return (
+    <Page title="Gemma 4" loading={data.loading && !data.capabilities}>
+      <div className="dashboard-hero">
+        <div className="hero-content">
+          <h2>Gemma 4 — 5 Capabilities, Live Proof</h2>
+          <p>Each capability records an event the moment Ollama exercises it. Counts below are this process&apos;s lifetime.</p>
+          <div className="hero-badges">
+            <span className="hero-badge hero-badge-green">{snap.total} events</span>
+            <span className="hero-badge hero-badge-amber">{(snap.capabilities || []).filter((c) => c.proven).length}/5 proven</span>
+          </div>
+        </div>
+      </div>
+      <div className="section-label">Capability Matrix</div>
+      <section className="metric-grid">
+        {GEMMA4_CAPS.map((cap) => {
+          const live = byName[cap.name] || { count: 0, proven: false, last: null };
+          return (
+            <Card key={cap.name} className={live.proven ? 'card-accent-green' : ''}>
+              <CardHeader>
+                <div className="row-between">
+                  <CardTitle>{cap.label}</CardTitle>
+                  <Badge variant={live.proven ? 'success' : 'outline'}>{live.proven ? 'proven' : 'pending'}</Badge>
+                </div>
+                <CardDescription>{cap.blurb}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MetricLine label="Events" value={String(live.count)} />
+                <MetricLine label="Last model" value={live.last?.model || 'n/a'} />
+                <MetricLine label="Last detail" value={live.last?.detail || 'n/a'} />
+              </CardContent>
+            </Card>
+          );
+        })}
+      </section>
+      <div className="section-label">Recent Events</div>
+      <section className="list-grid">
+        {(snap.recent || []).slice(0, 12).map((evt, i) => (
+          <Card key={`${evt.ts}-${i}`}>
+            <CardContent className="metric-card">
+              <Brain size={18} />
+              <div>
+                <span>{evt.capability} · {evt.model || 'n/a'}</span>
+                <strong>{evt.detail || '—'}{evt.latency_ms ? ` · ${evt.latency_ms} ms` : ''}</strong>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+        {!(snap.recent || []).length && <EmptyState icon={Brain} text="No capability events yet. Send a query through the Telegram bot to populate proof." />}
       </section>
     </Page>
   );
