@@ -17,6 +17,7 @@ from loguru import logger
 from ollama import AsyncClient
 
 from app.config import settings
+from app.services import capability_log
 
 # ─── Schema loader ────────────────────────────────────────────────────
 
@@ -204,6 +205,18 @@ class OllamaClient:
                 raise
 
         latency_ms = int((time.perf_counter() - t0) * 1000)
+        if thinking:
+            capability_log.record("thinking", model=model, detail=schema_name or "chat", latency_ms=latency_ms)
+        if schema_name and settings.use_grammar_decoding:
+            capability_log.record("grammar", model=model, detail=schema_name, latency_ms=latency_ms)
+        try:
+            last_user = next((m for m in reversed(messages) if m.get("role") == "user"), None)
+            if last_user:
+                text = str(last_user.get("content", ""))
+                if any("ऀ" <= ch <= "ॿ" for ch in text):
+                    capability_log.record("multilingual", model=model, detail="hi+en input", latency_ms=latency_ms)
+        except Exception:
+            pass
         return {
             "content": content,
             "raw_response": response,
@@ -300,7 +313,16 @@ class OllamaClient:
             {"role": "system", "content": AGENT_SYSTEM_PROMPT},
             {"role": "user", "content": f"Context: {json.dumps(context, ensure_ascii=False)}\n\nFarmer: {user_message}\n\nPlan which tools to call."},
         ]
-        return await self.structured_chat(msgs, "tool_call", thinking=True)
+        result = await self.structured_chat(msgs, "tool_call", thinking=True)
+        try:
+            parsed = result.get("parsed") or {}
+            tools = parsed.get("tools") or parsed.get("tool_calls") or []
+            if tools:
+                names = ",".join(str((t or {}).get("name", "?")) for t in tools)[:120]
+                capability_log.record("function_call", model=result.get("model_used", ""), detail=names)
+        except Exception:
+            pass
+        return result
 
     async def select_template(
         self,
@@ -392,6 +414,7 @@ class OllamaClient:
                 f"Ollama vision chat timed out after {settings.ollama_timeout_seconds}s"
             ) from exc
         content = response.get("message", {}).get("content", "")
+        capability_log.record("multimodal", model=model, detail=img_path.name)
         return {"vision_analysis": content, "raw": response}
 
     # ── Properties ─────────────────────────────────────────────────
