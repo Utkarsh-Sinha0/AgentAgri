@@ -67,17 +67,39 @@ async function api(path) {
   return body;
 }
 
+function readDashboardToken() {
+  if (typeof window === 'undefined') return '';
+  const url = new URL(window.location.href);
+  const fromQuery = url.searchParams.get('t');
+  if (fromQuery) {
+    try {
+      localStorage.setItem('agrimesh_dashboard_token', fromQuery);
+    } catch (_) {}
+    return fromQuery;
+  }
+  try {
+    return localStorage.getItem('agrimesh_dashboard_token') || '';
+  } catch (_) {
+    return '';
+  }
+}
+
 function useAppData() {
   const [state, setState] = useState(defaultState);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [apiKey, setApiKeyState] = useState(localStorage.getItem('agrimesh_api_key') || '');
   const [farmerId, setFarmerId] = useState(localStorage.getItem('agrimesh_farmer_id') || '');
+  const [dashboardToken, setDashboardToken] = useState(readDashboardToken());
 
   async function refresh() {
     setLoading(true);
     setError('');
     const farmerQuery = farmerId ? `?farmer_id=${encodeURIComponent(farmerId)}` : '';
+    // Prefer the signed share token minted by the Telegram bot when present.
+    const dashboardPath = dashboardToken
+      ? `/api/v1/dashboard/${encodeURIComponent(dashboardToken)}`
+      : `/api/farmer-dashboard${farmerQuery}`;
     try {
       const [
         dashboard,
@@ -93,7 +115,7 @@ function useAppData() {
         market,
         health,
       ] = await Promise.all([
-        api(`/api/farmer-dashboard${farmerQuery}`).catch((err) => ({ error: err.message })),
+        api(dashboardPath).catch((err) => ({ error: err.message })),
         api('/api/stats').catch((err) => ({ error: err.message })),
         api('/api/clusters').catch(() => ({ clusters: [] })),
         api('/api/memory/summaries').catch(() => ({ summaries: [] })),
@@ -141,9 +163,28 @@ function useAppData() {
 
   useEffect(() => {
     refresh();
-  }, []);
+    // Live mode: when arriving via the Telegram bot's signed link, poll every
+    // 5s so the dashboard mirrors the latest bot interactions in near-real-time.
+    if (!dashboardToken) return undefined;
+    const id = setInterval(() => {
+      refresh();
+    }, 5000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardToken]);
 
-  return { ...state, loading, error, refresh, apiKey, setApiKey, farmerId, setFarmerId };
+  return {
+    ...state,
+    loading,
+    error,
+    refresh,
+    apiKey,
+    setApiKey,
+    farmerId,
+    setFarmerId,
+    dashboardToken,
+    setDashboardToken,
+  };
 }
 
 class PageErrorBoundary extends Component {
