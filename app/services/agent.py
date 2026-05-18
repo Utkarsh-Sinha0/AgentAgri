@@ -54,6 +54,7 @@ class AgentContext:
     previous_advisory_id: str | None = None
     # Populated from DB at process() entry — real value, never a placeholder.
     land_owned_acres: float | None = None
+    pincode: str | None = None
 
 
 @dataclass
@@ -112,6 +113,19 @@ class AgentOrchestrator:
                     ctx.land_owned_acres = float(_acres)
             except Exception as exc:
                 logger.warning(f"Land acres hydration failed: {exc}")
+
+        # Hydrate pincode from the Farmer row so weather is location-correct.
+        if not ctx.pincode and ctx.farmer_id:
+            try:
+                from sqlalchemy import select as _sa_select
+
+                from app.models import Farmer as _FarmerModel
+                _res = await db.execute(_sa_select(_FarmerModel.pincode).where(_FarmerModel.id == ctx.farmer_id))
+                _pin = _res.scalar_one_or_none()
+                if _pin:
+                    ctx.pincode = str(_pin).strip()
+            except Exception as exc:
+                logger.warning(f"Pincode hydration failed: {exc}")
 
         # ── Step 0: Vision analysis (if photo provided) ──────────
         vision_result = None
@@ -311,8 +325,8 @@ class AgentOrchestrator:
                 from app.services.weather import get_forecast, get_historical_weather
 
                 forecast, history = await asyncio.gather(
-                    get_forecast(field_id=ctx.field_id, days=3),
-                    get_historical_weather(field_id=ctx.field_id, days=3),
+                    get_forecast(field_id=ctx.field_id, days=3, pincode=ctx.pincode),
+                    get_historical_weather(field_id=ctx.field_id, days=3, pincode=ctx.pincode),
                     return_exceptions=True,
                 )
                 evidence.weather_data = {
@@ -623,6 +637,9 @@ class AgentOrchestrator:
 
         if tool_name in ("get_forecast", "get_historical_weather"):
             params.setdefault("field_id", field_default)
+            pincode_default = ctx.pincode if ctx else None
+            if pincode_default:
+                params.setdefault("pincode", pincode_default)
             if "days_ahead" in params and "days" not in params:
                 params["days"] = params.pop("days_ahead")
         elif tool_name == "get_mandi_prices":
